@@ -6,7 +6,9 @@ Pierwszy etap aplikacji do spacerów socjalizacyjnych, oparty na Next.js 16.3.4 
 
 Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków i podgląd należności.
 
-**Brak skonfigurowanego projektu Supabase.** Kod aplikacji jest przygotowany do podłączenia, ale wysyłka maili, prawdziwe sesje i cały przepływ na usłudze Supabase nie zostały jeszcze zweryfikowane. Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atrapami schematów Auth/Storage; nie zastępują integracji z usługą ani równoległego testu wielosesyjnego.
+**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano wszystkie cztery migracje; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Do ukończenia pozostają konfiguracja adresu powrotu po logowaniu, pierwsze konto administratora i weryfikacja wysyłki maili oraz pełnego przepływu użytkownika. Ustawienia uwierzytelniania w chmurze nie zostały zmienione.
+
+Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atrapami schematów Auth/Storage; nie zastępują integracji z usługą ani równoległego testu wielosesyjnego.
 
 `/demo` to **dostarczony prototyp referencyjny**, osadzony oddzielnie od aplikacji. Ma fikcyjne dane i lokalny zapis w przeglądarce. Nie jest panelem połączonym z bazą ani mechanizmem obejścia logowania. Prawdziwe panele `/admin` i `/app` nigdy nie przechodzą na dane demo. Nie wpisuj prawdziwych danych klientów w demo.
 
@@ -39,6 +41,8 @@ Otwórz `http://localhost:3000/demo`. Na `/login` zobaczysz informację o braku 
 
 3. Zastosuj po kolei **wszystkie cztery migracje** z `supabase/migrations/` w SQL Editorze. Alternatywnie użyj Supabase CLI: `supabase link --project-ref TWOJ_REF`, potem `supabase db push`. Używaj nowego projektu dedykowanego tej aplikacji.
 4. W Authentication → URL Configuration ustaw Site URL identyczny z `NEXT_PUBLIC_APP_URL` i dodaj Redirect URL `http://localhost:3000/auth/callback`. Po wdrożeniu użyj docelowej domeny HTTPS. Nie mieszaj `localhost` i `127.0.0.1`: logowanie i callback muszą korzystać z tego samego hosta, ponieważ PKCE używa cookies.
+
+   `supabase/config.toml` służy do lokalnego środowiska deweloperskiego. Nie publikuj całego pliku do chmury przez `supabase config push`: zawiera lokalne ustawienia potwierdzania e-maili. Adresy powrotu ustaw oddzielnie, zachowując ustawienia bezpieczeństwa projektu.
 5. Włącz logowanie e-mail / magic link i możliwość samodzielnej rejestracji opiekunów. Zachowaj szablon magic link używający `{{ .ConfirmationURL }}`, aby Supabase przekierowało do callbacku PKCE z parametrem `code`. Na produkcji skonfiguruj własny SMTP i limity wysyłki w Supabase.
 6. Uruchom ponownie serwer po zmianie środowiska. Otwórz adres z `NEXT_PUBLIC_APP_URL` i zaloguj się własnym e-mailem. Nowe konto zawsze otrzymuje rolę `client`, niezależnie od metadanych rejestracji.
 7. Uzupełnij profil. Rolę behawiorysty nadaj ręcznie według poniższej instrukcji.
