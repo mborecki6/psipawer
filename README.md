@@ -104,7 +104,7 @@ Bez lokalnego Supabase test jest oznaczany jako pominięty. Wysyłka poczty i Au
 
 ## Wdrożenie
 
-To pełna aplikacja Next.js z serwerem, nie eksport statyczny. Wdróż ją na hostingu obsługującym Next.js/Node (np. standardowy runtime Node lub Vercel). Ustaw publiczne zmienne środowiskowe **przed buildem**, a potem popraw URL aplikacji i callback w Supabase. Nie używaj static export ani publicznego hostingu katalogu `.next`. `output: standalone` jest włączone; przy własnym serwerze skopiuj też `public` i `.next/static` do odpowiednich katalogów standalone.
+To pełna aplikacja Next.js z serwerem, nie eksport statyczny. Wdróż ją na hostingu obsługującym Next.js/Node (np. standardowy runtime Node lub Vercel). Ustaw publiczne zmienne środowiskowe **przed buildem**, a potem popraw URL aplikacji i callback w Supabase. Nie używaj static export ani publicznego hostingu katalogu `.next`. Przy własnym serwerze Node uruchom `pnpm build`, a następnie `pnpm start`; zachowaj katalogi `public`, `.next` i zależności produkcyjne.
 
 Nie opublikowano wdrożenia produkcyjnego. Sites wymaga formatu Cloudflare Worker lub statycznego eksportu; ten projekt zachowuje wymagany Next.js z jego serwerem. Dostosowanie hostingu nie powinno zastępować aplikacji samym prototypem.
 
