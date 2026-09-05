@@ -14,6 +14,12 @@ Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atr
 
 Finanse (wpłaty, automatyczne księgowanie, pakiety), edycja/moderacja Psiutków, zainteresowania i zarządzanie relacjami mają przygotowany schemat pod kolejny etap. Ostrzeżenia o istniejących relacjach są widoczne dla admina. Lista rezerwowa nie awansuje automatycznie. Nie ma czatu, AI, automatycznych płatności ani wielofirmowości.
 
+## Wersja internetowa do testów
+
+Adres: https://psipawer.vercel.app — opublikowano na Vercel 5 września 2026. Publiczny formularz logowania odpowiada poprawnie; wejście do panelu administratora bez sesji przekierowuje na logowanie. Supabase URL i klucz publishable są zapisane w konfiguracji hostingu, bez klucza administratora.
+
+Pełne logowanie testerów wymaga własnej wysyłki SMTP: domyślna poczta Supabase obsługuje tylko adresy członków organizacji. Publiczny callback `https://psipawer.vercel.app/auth/callback` musi być zapisany w Supabase Auth; jego zapis jest obecnie w toku. Nie potwierdzono jeszcze pełnego logowania przez pocztę.
+
 ## Uruchomienie bez Supabase
 
 Wymagany Node.js 22 LTS lub nowszy i pnpm 11.
