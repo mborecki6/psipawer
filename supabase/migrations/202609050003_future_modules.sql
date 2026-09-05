@@ -1,0 +1,32 @@
+-- Stage two foundations. Financial records are append-only through future audited RPCs.
+create table public.packages(id uuid primary key default gen_random_uuid(),dog_id uuid not null references public.dogs,name text not null,price_cents integer not null check(price_cents>0),purchased_at timestamptz not null default now(),expires_at timestamptz,status text not null default 'active' check(status in ('active','expired','completed','cancelled')));
+alter table public.walk_registrations add foreign key(package_id) references public.packages;
+create index packages_dog_idx on public.packages(dog_id);
+create table public.package_transactions(id uuid primary key default gen_random_uuid(),package_id uuid not null references public.packages,available_delta integer not null default 0,reserved_delta integer not null default 0,used_delta integer not null default 0,reason text not null,registration_id uuid references public.walk_registrations,author_id uuid not null references public.profiles,created_at timestamptz not null default now());
+create index package_transactions_package_idx on public.package_transactions(package_id);
+create index package_transactions_registration_idx on public.package_transactions(registration_id);
+create table public.payments(id uuid primary key default gen_random_uuid(),guardian_id uuid not null references public.profiles,dog_id uuid references public.dogs,registration_id uuid references public.walk_registrations,package_id uuid references public.packages,amount_cents integer not null check(amount_cents>0),method text not null,status public.payment_status not null default 'due',paid_at timestamptz,note text,author_id uuid not null references public.profiles,created_at timestamptz not null default now());
+create index payments_guardian_idx on public.payments(guardian_id);
+create index payments_dog_idx on public.payments(dog_id);
+create index payments_package_idx on public.payments(package_id);
+create index payments_registration_idx on public.payments(registration_id);
+create table public.dog_relations(id uuid primary key default gen_random_uuid(),dog_a uuid not null references public.dogs,dog_b uuid not null references public.dogs,level text not null check(level in ('unknown','good','neutral','caution','block','possible_duet')),note text not null default '',last_met_at timestamptz,author_id uuid not null references public.profiles,updated_at timestamptz not null default now(),check(dog_a<dog_b),unique(dog_a,dog_b));
+create index dog_relations_b_idx on public.dog_relations(dog_b);
+-- Explicitly public profile fields only: never join private behavior/contact data into the catalog.
+create table public.psiutki_profiles(dog_id uuid primary key references public.dogs on delete cascade,display_name text not null,moderation_status text not null default 'pending' check(moderation_status in ('pending','approved','rejected')),published boolean not null default false,area text not null default '',headline text not null default '',seeking text not null default '',traits text[] not null default '{}',likes text not null default '',dislikes text not null default '',avatar_path text);
+create table public.psiutki_interests(id uuid primary key default gen_random_uuid(),from_dog_id uuid not null references public.dogs,to_dog_id uuid not null references public.dogs,status text not null default 'open' check(status in ('open','matched','reviewed','rejected')),created_at timestamptz not null default now(),check(from_dog_id<>to_dog_id),unique(from_dog_id,to_dog_id));
+create index interests_to_idx on public.psiutki_interests(to_dog_id);
+alter table public.packages enable row level security;
+alter table public.package_transactions enable row level security;
+alter table public.payments enable row level security;
+alter table public.dog_relations enable row level security;
+alter table public.psiutki_profiles enable row level security;
+alter table public.psiutki_interests enable row level security;
+create policy packages_read on public.packages for select to authenticated using(public.is_admin() or public.owns_dog(dog_id));
+create policy transactions_read on public.package_transactions for select to authenticated using(public.is_admin() or exists(select 1 from public.packages p where p.id=package_id and public.owns_dog(p.dog_id)));
+create policy payments_read on public.payments for select to authenticated using(public.is_admin() or guardian_id=auth.uid());
+create policy relations_read on public.dog_relations for select to authenticated using(public.is_admin());
+create policy psiutki_read on public.psiutki_profiles for select to authenticated using(public.is_admin() or (published and moderation_status='approved'));
+create policy interests_read on public.psiutki_interests for select to authenticated using(public.is_admin() or public.owns_dog(from_dog_id));
+revoke all on public.packages,public.package_transactions,public.payments,public.dog_relations,public.psiutki_profiles,public.psiutki_interests from anon,authenticated;
+grant select on public.packages,public.package_transactions,public.payments,public.dog_relations,public.psiutki_profiles,public.psiutki_interests to authenticated;
