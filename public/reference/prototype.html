@@ -1,0 +1,5404 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#211d1a" />
+  <meta name="description" content="Psi Pawer — panel spacerów socjalizacyjnych, profili psów, pakietów i społeczności Psiutki." />
+  <title>Psi Pawer — MVP</title>
+  <style>
+:root {
+  --ink: #211d1a;
+  --ink-soft: #5b5550;
+  --paper: #f6f1eb;
+  --paper-2: #fffaf4;
+  --surface: #fffaf4;
+  --forest: #211d1a;
+  --forest-2: #332d29;
+  --sage: #dfe8e5;
+  --sage-2: #edf2ef;
+  --clay: #be8174;
+  --clay-2: #e1d3cb;
+  --sand: #ead9bf;
+  --amber: #b67b37;
+  --amber-soft: #f2e2c7;
+  --red: #9a5147;
+  --red-soft: #ecd5cf;
+  --blue: #55727a;
+  --blue-soft: #dfe8e5;
+  --line: #ded8d0;
+  --line-strong: #c8c0b7;
+  --shadow: 0 14px 40px rgba(33, 29, 26, 0.09);
+  --shadow-soft: 0 8px 24px rgba(33, 29, 26, 0.07);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --sidebar: 264px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--paper);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, rgba(217, 153, 139, 0.18), transparent 30%),
+    radial-gradient(circle at 0 85%, rgba(220, 232, 221, 0.65), transparent 34%),
+    var(--paper);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(61, 106, 122, 0.28);
+  outline-offset: 2px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 18px 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.09), transparent 24%),
+    linear-gradient(180deg, #294f43 0%, #1f3d34 100%);
+  box-shadow: 10px 0 34px rgba(25, 46, 39, 0.1);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px;
+}
+
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: var(--forest);
+  background: var(--paper-2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.brand-mark svg {
+  width: 28px;
+  height: 28px;
+}
+
+.brand-copy strong {
+  display: block;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.brand-copy span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.role-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px 20px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.role-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--forest);
+  background: var(--sand);
+  font-weight: 800;
+}
+
+.role-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.role-copy strong,
+.role-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-copy strong {
+  font-size: 13px;
+}
+
+.role-copy span {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 11px;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.nav-label {
+  margin: 12px 12px 7px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.76);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.nav-item.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.nav-item svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+
+.nav-item span {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nav-count {
+  min-width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: 99px;
+  color: var(--forest);
+  background: var(--clay-2);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.role-switcher {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.role-switcher option {
+  color: var(--ink);
+}
+
+.sidebar-foot-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-mini-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sidebar-mini-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-mini-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.main {
+  grid-column: 2;
+  min-width: 0;
+  padding: 0 34px 46px;
+}
+
+.topbar {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  padding: 16px 0;
+  background: linear-gradient(180deg, rgba(246, 241, 232, 0.96) 72%, rgba(246, 241, 232, 0));
+  backdrop-filter: blur(8px);
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+.page-heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.page-heading h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.page-heading p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-button {
+  position: relative;
+  width: 43px;
+  height: 43px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  box-shadow: 0 5px 18px rgba(31, 61, 52, 0.04);
+}
+
+.icon-button:hover {
+  border-color: var(--line-strong);
+  background: #fff;
+}
+
+.icon-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--clay);
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button,
+.small-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: 150ms ease;
+}
+
+.primary-button {
+  min-height: 43px;
+  padding: 10px 16px;
+  border: 1px solid var(--forest);
+  color: #fff;
+  background: var(--forest);
+  box-shadow: 0 9px 22px rgba(36, 72, 61, 0.18);
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  background: var(--forest-2);
+}
+
+.primary-button svg,
+.secondary-button svg,
+.ghost-button svg,
+.danger-button svg,
+.small-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.secondary-button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: #fff;
+}
+
+.secondary-button:hover {
+  border-color: var(--line-strong);
+  background: var(--paper-2);
+}
+
+.ghost-button {
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 0;
+  color: var(--forest);
+  background: transparent;
+}
+
+.ghost-button:hover {
+  background: var(--sage-2);
+}
+
+.danger-button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid var(--red-soft);
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.small-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: #fff;
+  font-size: 11px;
+}
+
+.small-button:hover {
+  border-color: var(--line-strong);
+}
+
+.small-button.primary {
+  border-color: var(--forest);
+  color: #fff;
+  background: var(--forest);
+}
+
+.small-button.soft {
+  border-color: var(--sage);
+  color: var(--forest);
+  background: var(--sage-2);
+}
+
+.small-button.warn {
+  border-color: var(--amber-soft);
+  color: #855818;
+  background: var(--amber-soft);
+}
+
+.small-button.danger {
+  border-color: var(--red-soft);
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.page-content {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.stack {
+  display: grid;
+  gap: 20px;
+}
+
+.stack-sm {
+  display: grid;
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.72fr);
+  gap: 22px;
+}
+
+.card {
+  border: 1px solid rgba(201, 194, 183, 0.72);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.card.pad {
+  padding: 22px;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 0;
+}
+
+.card-head h2,
+.card-head h3,
+.section-title h2,
+.section-title h3 {
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.card-head h2,
+.section-title h2 {
+  font-size: 20px;
+}
+
+.card-head h3,
+.section-title h3 {
+  font-size: 16px;
+}
+
+.card-head p,
+.section-title p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.card-body {
+  padding: 18px 22px 22px;
+}
+
+.section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.kpi-card {
+  min-height: 126px;
+  position: relative;
+  padding: 18px;
+  border: 1px solid rgba(201, 194, 183, 0.72);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  right: -28px;
+  bottom: -30px;
+  border-radius: 50%;
+  background: var(--kpi-accent, var(--sage));
+  opacity: 0.72;
+}
+
+.kpi-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kpi-label {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kpi-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--forest);
+  background: var(--kpi-accent, var(--sage));
+}
+
+.kpi-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.kpi-value {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+
+.kpi-note {
+  position: relative;
+  z-index: 1;
+  margin-top: 7px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.kpi-card--clickable {
+  width: 100%;
+  appearance: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.kpi-card--clickable:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 34px rgba(33, 29, 26, 0.12);
+}
+
+.kpi-card--clickable:active {
+  transform: translateY(0);
+}
+
+.kpi-card--clickable .kpi-note {
+  padding-right: 58px;
+}
+
+.kpi-link {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.kpi-link svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 160ms ease;
+}
+
+.kpi-card--clickable:hover .kpi-link svg {
+  transform: translateX(2px);
+}
+
+.jump-target {
+  scroll-margin-top: 112px;
+}
+
+.jump-highlight {
+  border-color: rgba(190, 129, 116, 0.72);
+  box-shadow: 0 14px 38px rgba(190, 129, 116, 0.16);
+}
+
+.hero-card {
+  position: relative;
+  min-height: 220px;
+  padding: 26px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(255, 255, 255, 0.13), transparent 20%),
+    linear-gradient(135deg, #2d594b 0%, #1f3d34 100%);
+}
+
+.hero-card::before,
+.hero-card::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-card::before {
+  width: 260px;
+  height: 260px;
+  right: -92px;
+  top: -90px;
+}
+
+.hero-card::after {
+  width: 170px;
+  height: 170px;
+  right: -15px;
+  bottom: -118px;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 580px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-card h2 {
+  max-width: 540px;
+  margin: 0;
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.hero-card p {
+  max-width: 530px;
+  margin: 13px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.hero-card .primary-button {
+  border-color: var(--paper-2);
+  color: var(--forest);
+  background: var(--paper-2);
+}
+
+.hero-card .secondary-button {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.list {
+  display: grid;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.list-row:first-child {
+  padding-top: 0;
+}
+
+.list-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.list-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.list-main strong {
+  display: block;
+  font-size: 13px;
+}
+
+.list-main span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.date-tile {
+  width: 48px;
+  height: 52px;
+  flex: 0 0 48px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border-radius: 13px;
+  color: var(--forest);
+  background: var(--sage-2);
+}
+
+.date-tile b {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.date-tile span {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 25px;
+  padding: 5px 9px;
+  border-radius: 99px;
+  color: var(--ink-soft);
+  background: #f0eee9;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+.badge.green {
+  color: #2d6753;
+  background: var(--sage-2);
+}
+
+.badge.amber {
+  color: #8d601e;
+  background: var(--amber-soft);
+}
+
+.badge.red {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.badge.blue {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.badge.clay {
+  color: #8b5347;
+  background: var(--clay-2);
+}
+
+.badge.dark {
+  color: #fff;
+  background: var(--forest);
+}
+
+.badge.no-dot::before {
+  display: none;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border-radius: 13px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.alert svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-top: 1px;
+}
+
+.alert.amber {
+  color: #6f4c1a;
+  background: var(--amber-soft);
+}
+
+.alert.red {
+  color: #7c3938;
+  background: var(--red-soft);
+}
+
+.alert.green {
+  color: #2b5d4d;
+  background: var(--sage-2);
+}
+
+.alert.blue {
+  color: #315966;
+  background: var(--blue-soft);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.search-box {
+  position: relative;
+  min-width: 250px;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  color: var(--ink-soft);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.search-box input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px 9px 37px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.filter-select {
+  min-height: 42px;
+  padding: 9px 34px 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.walk-list {
+  display: grid;
+  gap: 12px;
+}
+
+.walk-row {
+  display: grid;
+  grid-template-columns: 72px minmax(210px, 1.25fr) minmax(180px, 1fr) minmax(150px, 0.75fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(201, 194, 183, 0.75);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 7px 20px rgba(40, 51, 46, 0.045);
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.walk-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.walk-date {
+  text-align: center;
+  padding: 8px 6px;
+  border-right: 1px solid var(--line);
+}
+
+.walk-date b,
+.walk-date span,
+.walk-date small {
+  display: block;
+}
+
+.walk-date b {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.walk-date span {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.walk-date small {
+  margin-top: 5px;
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.walk-info,
+.walk-meta {
+  min-width: 0;
+}
+
+.walk-info strong,
+.walk-meta strong {
+  display: block;
+  font-size: 13px;
+}
+
+.walk-info span,
+.walk-meta span {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.capacity {
+  min-width: 150px;
+}
+
+.capacity-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.capacity-track {
+  height: 7px;
+  border-radius: 99px;
+  background: #ece9e2;
+  overflow: hidden;
+}
+
+.capacity-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--forest-2);
+}
+
+.capacity-fill.full {
+  background: var(--clay);
+}
+
+.walk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+}
+
+.mini-avatar {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: -8px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  overflow: hidden;
+  color: var(--forest);
+  background: var(--sage);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.mini-avatar img,
+.avatar img,
+.dog-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  color: var(--forest);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.back-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.detail-title h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 38px);
+  letter-spacing: -0.05em;
+}
+
+.detail-title p {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.info-box {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-2);
+}
+
+.info-box span,
+.info-box strong {
+  display: block;
+}
+
+.info-box span {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-box strong {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #ece9e2;
+}
+
+.tab-button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--ink-soft);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tab-button.active {
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 3px 11px rgba(40, 51, 46, 0.08);
+}
+
+.application-list {
+  display: grid;
+  gap: 10px;
+}
+
+.application-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--paper-2);
+}
+
+.application-card.accepted {
+  border-color: #c8ddce;
+  background: #f6faf6;
+}
+
+.application-card.waitlist {
+  border-color: #ead5af;
+  background: #fffaf1;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--sage);
+}
+
+.avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.application-main {
+  min-width: 0;
+}
+
+.application-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.application-name strong {
+  font-size: 13px;
+}
+
+.application-main > p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.dog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dog-admin-card {
+  padding: 14px;
+  border: 1px solid rgba(201, 194, 183, 0.75);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 7px 20px rgba(40, 51, 46, 0.045);
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.dog-admin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.dog-admin-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dog-admin-head .avatar {
+  width: 58px;
+  height: 58px;
+  flex-basis: 58px;
+}
+
+.dog-admin-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.dog-admin-copy strong,
+.dog-admin-copy span {
+  display: block;
+}
+
+.dog-admin-copy strong {
+  font-size: 15px;
+}
+
+.dog-admin-copy span {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.dog-admin-card .tag-row {
+  margin-top: 13px;
+}
+
+.dog-admin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.3fr);
+  gap: 20px;
+}
+
+.profile-summary {
+  position: sticky;
+  top: 105px;
+  align-self: start;
+}
+
+.profile-visual {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--sage);
+}
+
+.profile-visual svg,
+.profile-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-visual-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 36px 18px 16px;
+  color: #fff;
+  background: linear-gradient(180deg, transparent, rgba(18, 37, 31, 0.78));
+}
+
+.profile-visual-overlay h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.profile-visual-overlay p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+}
+
+.profile-summary-content {
+  padding: 17px;
+}
+
+.profile-quote {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.profile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.definition-list {
+  display: grid;
+  gap: 0;
+}
+
+.definition-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.48fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.definition-row:last-child {
+  border-bottom: 0;
+}
+
+.definition-row dt {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.definition-row dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.timeline {
+  display: grid;
+  gap: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 25px;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--forest);
+  background: var(--sage-2);
+}
+
+.timeline-dot svg {
+  width: 13px;
+  height: 13px;
+}
+
+.timeline-copy strong,
+.timeline-copy span {
+  display: block;
+}
+
+.timeline-copy strong {
+  font-size: 12px;
+}
+
+.timeline-copy span {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.package-card {
+  position: relative;
+  padding: 18px;
+  border: 1px solid rgba(201, 194, 183, 0.75);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 7px 20px rgba(40, 51, 46, 0.045);
+  overflow: hidden;
+}
+
+.package-card::after {
+  content: "";
+  position: absolute;
+  width: 94px;
+  height: 94px;
+  right: -42px;
+  bottom: -48px;
+  border-radius: 50%;
+  background: var(--sage);
+  opacity: 0.65;
+}
+
+.package-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.package-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.package-copy strong,
+.package-copy span {
+  display: block;
+}
+
+.package-copy strong {
+  font-size: 14px;
+}
+
+.package-copy span {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.package-balance {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 17px;
+}
+
+.package-balance b {
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.package-balance span {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.package-dots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 5px;
+  margin-top: 13px;
+}
+
+.package-dot {
+  width: 25px;
+  height: 7px;
+  border-radius: 99px;
+  background: #e7e3db;
+}
+
+.package-dot.used {
+  background: var(--clay);
+}
+
+.package-dot.reserved {
+  background: var(--amber);
+}
+
+.package-dot.available {
+  background: var(--forest-2);
+}
+
+.finance-list {
+  display: grid;
+}
+
+.finance-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.25fr) minmax(120px, 0.8fr) minmax(100px, 0.7fr) minmax(100px, 0.6fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.finance-row:last-child {
+  border-bottom: 0;
+}
+
+.finance-row strong,
+.finance-row span {
+  display: block;
+}
+
+.finance-row strong {
+  font-size: 12px;
+}
+
+.finance-row span {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.money {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.psinder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.psinder-card {
+  border: 1px solid rgba(201, 194, 183, 0.76);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.dog-visual {
+  position: relative;
+  height: 245px;
+  overflow: hidden;
+  background: var(--sage);
+}
+
+.dog-visual svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dog-visual-top {
+  position: absolute;
+  inset: 12px 12px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dog-distance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 99px;
+  color: #fff;
+  background: rgba(28, 47, 41, 0.54);
+  backdrop-filter: blur(7px);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.dog-distance svg {
+  width: 13px;
+  height: 13px;
+}
+
+.psinder-body {
+  padding: 17px;
+}
+
+.psinder-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.psinder-title h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.psinder-title span {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.psinder-copy {
+  min-height: 66px;
+  margin: 12px 0 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.psinder-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.round-action {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--ink-soft);
+  background: #fff;
+  cursor: pointer;
+}
+
+.round-action:hover {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.round-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.client-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(310px, 0.65fr);
+  gap: 22px;
+}
+
+.client-next-walk {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(201, 194, 183, 0.75);
+  border-radius: 18px;
+  background: var(--paper-2);
+}
+
+.client-next-date {
+  width: 66px;
+  height: 72px;
+  display: grid;
+  place-content: center;
+  border-radius: 17px;
+  color: #fff;
+  background: var(--forest);
+  text-align: center;
+}
+
+.client-next-date b {
+  font-size: 27px;
+  line-height: 1;
+}
+
+.client-next-date span {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.client-next-copy {
+  min-width: 0;
+}
+
+.client-next-copy h3 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.03em;
+}
+
+.client-next-copy p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.walk-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.client-walk-card {
+  display: grid;
+  gap: 14px;
+  padding: 17px;
+  border: 1px solid rgba(201, 194, 183, 0.75);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.87);
+  box-shadow: 0 7px 20px rgba(40, 51, 46, 0.045);
+}
+
+.client-walk-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.client-walk-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.client-walk-date-tile {
+  width: 48px;
+  height: 52px;
+  display: grid;
+  place-content: center;
+  border-radius: 13px;
+  color: var(--forest);
+  background: var(--sage-2);
+  text-align: center;
+}
+
+.client-walk-date-tile b {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.client-walk-date-tile span {
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.client-walk-date-copy strong,
+.client-walk-date-copy span {
+  display: block;
+}
+
+.client-walk-date-copy strong {
+  font-size: 13px;
+}
+
+.client-walk-date-copy span {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.client-walk-card > p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.client-walk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.price {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.price span {
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 250px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.empty-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  color: var(--forest);
+  background: var(--sage-2);
+}
+
+.empty-icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.empty-state h3 {
+  margin: 15px 0 0;
+  font-size: 16px;
+}
+
+.empty-state p {
+  max-width: 380px;
+  margin: 7px 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.empty-state .primary-button {
+  margin-top: 15px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 35, 30, 0.55);
+  backdrop-filter: blur(5px);
+  animation: fadeIn 150ms ease;
+}
+
+.modal {
+  width: min(670px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 24px;
+  background: var(--paper-2);
+  box-shadow: 0 26px 80px rgba(15, 31, 25, 0.28);
+  animation: liftIn 180ms ease;
+}
+
+.modal.wide {
+  width: min(860px, 100%);
+}
+
+.modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 21px 22px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 253, 248, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 21px;
+  letter-spacing: -0.04em;
+}
+
+.modal-head p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.modal-close svg {
+  width: 17px;
+  height: 17px;
+}
+
+.modal-body {
+  padding: 21px 22px 24px;
+}
+
+.modal-foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 15px 22px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 253, 248, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field label {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.field small {
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.field textarea {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--forest-2);
+}
+
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.check-row input {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  accent-color: var(--forest);
+}
+
+.check-row label {
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #ece9e2;
+}
+
+.segmented label {
+  position: relative;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented span {
+  min-height: 37px;
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border-radius: 9px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segmented input:checked + span {
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(40, 51, 46, 0.08);
+}
+
+.toast-stack {
+  position: fixed;
+  z-index: 200;
+  right: 22px;
+  bottom: 22px;
+  display: grid;
+  gap: 9px;
+  pointer-events: none;
+}
+
+.toast {
+  width: min(360px, calc(100vw - 44px));
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  color: #fff;
+  background: var(--forest);
+  box-shadow: 0 16px 45px rgba(17, 34, 28, 0.25);
+  animation: toastIn 220ms ease;
+}
+
+.toast.error {
+  background: #803d3b;
+}
+
+.toast.warn {
+  background: #79571f;
+}
+
+.toast svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.toast strong,
+.toast span {
+  display: block;
+}
+
+.toast strong {
+  font-size: 11px;
+}
+
+.toast span {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.mobile-nav {
+  display: none;
+}
+
+.drawer-backdrop {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes liftIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1180px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dog-grid,
+  .psinder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .walk-row {
+    grid-template-columns: 68px minmax(180px, 1fr) minmax(150px, 0.8fr) auto;
+  }
+
+  .walk-row .capacity {
+    display: none;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  :root {
+    --sidebar: 230px;
+  }
+
+  .main {
+    padding-inline: 24px;
+  }
+
+  .dashboard-grid,
+  .client-grid,
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-summary {
+    position: static;
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .walk-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-row {
+    grid-template-columns: minmax(180px, 1fr) minmax(100px, 0.7fr) auto;
+  }
+
+  .finance-row > :nth-child(2),
+  .finance-row > :nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: 76px;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    width: min(290px, 86vw);
+    transform: translateX(-105%);
+    transition: transform 190ms ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    display: block;
+    border: 0;
+    background: rgba(17, 31, 26, 0.45);
+    backdrop-filter: blur(3px);
+  }
+
+  .main {
+    padding: 0 16px 28px;
+  }
+
+  .topbar {
+    min-height: 78px;
+    padding: 12px 0;
+  }
+
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .mobile-menu-button svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .page-heading h1 {
+    font-size: 25px;
+  }
+
+  .page-heading p {
+    display: none;
+  }
+
+  .topbar-actions .primary-button span,
+  .topbar-actions .secondary-button span {
+    display: none;
+  }
+
+  .topbar-actions .primary-button,
+  .topbar-actions .secondary-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4,
+  .dog-grid,
+  .psinder-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card {
+    min-height: 114px;
+  }
+
+  .dashboard-grid,
+  .client-grid {
+    gap: 16px;
+  }
+
+  .hero-card {
+    min-height: 0;
+    padding: 22px;
+  }
+
+  .hero-card h2 {
+    font-size: 30px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-actions > * {
+    width: 100%;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .search-box {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .filter-select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .walk-row {
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .walk-row .walk-meta {
+    display: none;
+  }
+
+  .walk-actions .avatars,
+  .walk-actions .badge {
+    display: none;
+  }
+
+  .detail-header {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-actions {
+    width: 100%;
+  }
+
+  .detail-actions > * {
+    flex: 1;
+  }
+
+  .application-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .application-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .client-next-walk {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .client-next-walk > .secondary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .definition-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid .full {
+    grid-column: auto;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .modal,
+  .modal.wide {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    inset: auto 10px 10px;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 7px;
+    border: 1px solid rgba(201, 194, 183, 0.8);
+    border-radius: 18px;
+    background: rgba(255, 253, 248, 0.92);
+    box-shadow: 0 14px 44px rgba(25, 45, 38, 0.18);
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-nav button {
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    padding: 7px 2px;
+    border: 0;
+    border-radius: 12px;
+    color: var(--ink-soft);
+    background: transparent;
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  .mobile-nav button.active {
+    color: var(--forest);
+    background: var(--sage-2);
+  }
+
+  .mobile-nav svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .toast-stack {
+    right: 12px;
+    bottom: 88px;
+  }
+}
+
+@media (max-width: 460px) {
+  .main {
+    padding-inline: 12px;
+  }
+
+  .topbar-actions .icon-button {
+    display: none;
+  }
+
+  .card.pad,
+  .card-body {
+    padding: 17px;
+  }
+
+  .card-head {
+    padding: 17px 17px 0;
+  }
+
+  .grid-4 {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .kpi-card {
+    min-height: 108px;
+    padding: 14px;
+  }
+
+  .kpi-value {
+    font-size: 26px;
+  }
+
+  .kpi-icon {
+    width: 31px;
+    height: 31px;
+  }
+
+  .psinder-grid {
+    display: block;
+  }
+
+  .psinder-card {
+    margin-bottom: 15px;
+  }
+
+  .dog-visual {
+    height: 285px;
+  }
+
+  .walk-row {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+  }
+
+  .walk-date {
+    padding-inline: 3px;
+  }
+
+  .walk-date b {
+    font-size: 18px;
+  }
+
+  .walk-info strong {
+    font-size: 12px;
+  }
+
+  .walk-info span {
+    font-size: 10px;
+  }
+}
+
+
+@media (max-width: 460px) {
+  .kpi-link span {
+    display: none;
+  }
+
+  .kpi-card--clickable .kpi-note {
+    padding-right: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card--clickable,
+  .kpi-link svg {
+    transition: none;
+  }
+}
+
+
+
+/* Psi Pawer brand skin: original MVP layout, public-site palette and wordmark */
+body {
+  background:
+    radial-gradient(circle at top right, rgba(190, 129, 116, 0.18), transparent 30%),
+    radial-gradient(circle at 0 85%, rgba(147, 151, 140, 0.22), transparent 34%),
+    var(--paper);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: rgba(190, 129, 116, 0.42);
+}
+
+.sidebar {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 7%, rgba(190, 129, 116, 0.16), transparent 24%),
+    linear-gradient(180deg, #fffaf4 0%, #f6f1eb 100%);
+  border-right: 1px solid var(--line);
+  box-shadow: 10px 0 34px rgba(33, 29, 26, 0.07);
+}
+
+.brand-mark {
+  border-radius: 50%;
+  color: #fffaf4;
+  background: var(--ink);
+  box-shadow: 0 8px 20px rgba(33, 29, 26, 0.14);
+}
+
+.brand-copy strong {
+  color: var(--ink);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+.brand-copy span,
+.role-copy span,
+.nav-label {
+  color: var(--ink-soft);
+}
+
+.role-pill {
+  border-color: var(--line-strong);
+  background: rgba(255, 250, 244, 0.86);
+}
+
+.role-avatar {
+  color: var(--ink);
+  background: var(--clay-2);
+}
+
+.role-copy strong {
+  color: var(--ink);
+}
+
+.nav-item {
+  color: rgba(33, 29, 26, 0.72);
+}
+
+.nav-item:hover {
+  color: var(--ink);
+  background: rgba(190, 129, 116, 0.10);
+}
+
+.nav-item.active {
+  color: #fffaf4;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 244, 0.08);
+}
+
+.nav-count {
+  color: var(--ink);
+  background: var(--clay-2);
+}
+
+.role-switcher {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: rgba(255, 250, 244, 0.92);
+}
+
+.sidebar-mini-button {
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+}
+
+.sidebar-mini-button:hover {
+  color: var(--ink);
+  background: rgba(190, 129, 116, 0.10);
+}
+
+.topbar {
+  background: linear-gradient(180deg, rgba(246, 241, 235, 0.96) 72%, rgba(246, 241, 235, 0));
+}
+
+.primary-button,
+.small-button.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  box-shadow: 0 9px 22px rgba(33, 29, 26, 0.17);
+}
+
+.primary-button:hover {
+  background: var(--forest-2);
+}
+
+.ghost-button {
+  color: var(--ink);
+}
+
+.ghost-button:hover {
+  background: var(--clay-2);
+}
+
+.hero-card {
+  background:
+    radial-gradient(circle at 88% 20%, rgba(190, 129, 116, 0.34), transparent 21%),
+    linear-gradient(135deg, #2b2622 0%, #211d1a 100%);
+}
+
+.hero-card::before {
+  border-color: rgba(190, 129, 116, 0.42);
+}
+
+.hero-card::after {
+  border-color: rgba(147, 151, 140, 0.48);
+}
+
+.hero-card .primary-button {
+  border-color: var(--paper-2);
+  color: var(--ink);
+  background: var(--paper-2);
+  box-shadow: none;
+}
+
+.hero-card .secondary-button {
+  border-color: rgba(255, 250, 244, 0.24);
+  color: #fffaf4;
+  background: rgba(255, 250, 244, 0.08);
+}
+
+.notification-dot {
+  background: var(--clay);
+}
+
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-stack" aria-live="polite"></div>
+  <script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "psi-pawer-reference-demo-v1";
+  const TODAY = "2026-09-05";
+
+  const ICONS = {
+    paw: '<path d="M11.6 11.4c-2.7.2-5.5 2.5-5.3 5.2.2 2.5 2.6 3.4 5.7 3.4s5.5-.9 5.7-3.4c.2-2.7-2.6-5-5.3-5.2h-.8Z"/><path d="M7.1 9.8c1.5-.5 2.1-2.5 1.4-4.5S6.1 2.1 4.7 2.6 2.6 5.1 3.3 7s2.3 3.3 3.8 2.8ZM16.9 9.8c-1.5-.5-2.1-2.5-1.4-4.5s2.4-3.2 3.8-2.7 2.1 2.5 1.4 4.4-2.3 3.3-3.8 2.8ZM12 8.4c1.6 0 2.8-1.8 2.8-4S13.6.5 12 .5 9.2 2.3 9.2 4.4s1.2 4 2.8 4Z"/>',
+    dashboard: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    dogs: '<path d="M8.5 10.5c-2.3 0-4.5 1.8-4.5 4.4C4 18.2 7.1 20 12 20s8-1.8 8-5.1c0-2.6-2.2-4.4-4.5-4.4"/><path d="M9.4 9.2C8.1 8 7.8 5.7 8.7 3.8c.8-1.6 2.5-2 3.3-.5.8-1.5 2.5-1.1 3.3.5.9 1.9.6 4.2-.7 5.4"/><circle cx="9.2" cy="13.9" r=".7" fill="currentColor" stroke="none"/><circle cx="14.8" cy="13.9" r=".7" fill="currentColor" stroke="none"/><path d="M10.2 16.5c1.2.8 2.4.8 3.6 0"/>',
+    wallet: '<path d="M4 6.5h14a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V6.7A3.7 3.7 0 0 1 5.7 3H18"/><path d="M21 11h-5a2.5 2.5 0 0 0 0 5h5"/><circle cx="16" cy="13.5" r=".6" fill="currentColor" stroke="none"/>',
+    community: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3.5 20c.2-4 2.2-6 5.5-6s5.3 2 5.5 6M14 15c.7-.8 1.7-1.2 3-1.2 2.6 0 4.1 1.7 4.3 5"/>',
+    home: '<path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.4-5 3-7.5 8-7.5S19.6 16 20 21"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+    chevronRight: '<path d="m9 18 6-6-6-6"/>',
+    chevronLeft: '<path d="m15 18-6-6 6-6"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>',
+    map: '<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    x: '<path d="m6 6 12 12M18 6 6 18"/>',
+    hourglass: '<path d="M6 3h12M6 21h12M8 3c0 4 1.2 6.2 4 9-2.8 2.8-4 5-4 9M16 3c0 4-1.2 6.2-4 9 2.8 2.8 4 5 4 9"/>',
+    alert: '<path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v4M12 17h.01"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
+    edit: '<path d="m4 20 4.2-1 10.9-10.9a2.2 2.2 0 0 0-3.2-3.2L5 15.8 4 20Z"/><path d="m14.5 6.5 3 3"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/>',
+    heart: '<path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/>',
+    heartFill: '<path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z" fill="currentColor"/>',
+    filter: '<path d="M4 5h16M7 12h10M10 19h4"/>',
+    refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18.7 6.5L20 12M4 12l1.3 5.5A7 7 0 0 0 17.9 16"/>',
+    logout: '<path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M8 12h10"/>',
+    users: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.4-4 2.4-6 6-6s5.6 2 6 6M15 14.2c3.6-.5 5.7 1.5 6 5.2"/>',
+    credit: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/>',
+    activity: '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
+    walk: '<circle cx="8" cy="5" r="2"/><path d="m10 9-3 4 3 2 2 6M11 9l3 3 4-1M7 13l-3 3"/>',
+    note: '<path d="M5 3h11l3 3v15H5V3Z"/><path d="M16 3v4h4M8 11h8M8 15h8"/>',
+    upload: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',
+    eye: '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+    eyeOff: '<path d="m3 3 18 18M10.6 6.1A11.8 11.8 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.2 2.8M6.2 6.2C3.7 8 2.5 12 2.5 12s3.5 6 9.5 6c1 0 2-.2 2.8-.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    dots: '<circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/>',
+    location: '<path d="M12 21s7-5.5 7-12a7 7 0 1 0-14 0c0 6.5 7 12 7 12Z"/><circle cx="12" cy="9" r="2"/>',
+    package: '<path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 7 8 4 8-4v10l-8 4-8-4V7ZM12 11v10"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
+    euro: '<circle cx="12" cy="12" r="9"/><path d="M16 8.2c-.8-.8-1.8-1.2-3-1.2-2.5 0-4.5 2.2-4.5 5s2 5 4.5 5c1.2 0 2.2-.4 3-1.2M6.5 10.5h7M6.5 13.5h7"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>',
+    phone: '<path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-4-2-2 2c-3.5-1.5-6.5-4.5-8-8l2-2-2-4Z"/>',
+    spark: '<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15ZM5 14l.8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14Z"/>',
+    lock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+    arrowUp: '<path d="m12 19 0-14M6 11l6-6 6 6"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 3 3 2-2 6 5"/>'
+  };
+
+  function icon(name, className = "") {
+    const body = ICONS[name] || ICONS.info;
+    return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  }
+
+  const DEFAULT_STATE = {
+    version: 1,
+    role: "admin",
+    view: "admin-dashboard",
+    activeGuardianId: "g1",
+    activeDogId: "d1",
+    ui: {
+      selectedWalkId: null,
+      selectedDogId: null,
+      modal: null,
+      sidebarOpen: false,
+      search: "",
+      walkFilter: "upcoming",
+      dogFilter: "all",
+      walkTab: "applications",
+      financeFocus: "all"
+    },
+    guardians: [
+      { id: "g1", name: "Opiekun Testowy", email: "opiekun@example.test", phone: "000 000 000", area: "Wrocław" },
+      { id: "g2", name: "Anna Nowak", email: "anna@example.test", phone: "000 000 000", area: "Wrocław, Fabryczna" },
+      { id: "g3", name: "Marta Lis", email: "marta@example.test", phone: "000 000 000", area: "Wrocław, Psie Pole" },
+      { id: "g4", name: "Paweł Krawiec", email: "pawel@example.test", phone: "000 000 000", area: "Wrocław, Krzyki" },
+      { id: "g5", name: "Julia Baran", email: "julia@example.test", phone: "000 000 000", area: "Wrocław, Śródmieście" },
+      { id: "g6", name: "Ola Zięba", email: "ola@example.test", phone: "000 000 000", area: "Wrocław, Oporów" }
+    ],
+    dogs: [
+      {
+        id: "d1",
+        guardianId: "g1",
+        name: "Kluska",
+        breed: "Lagotto Romagnolo",
+        age: "1 rok",
+        sex: "suczka",
+        weight: "10 kg",
+        color: "jasna",
+        status: "approved-conditional",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Biskupin",
+          distance: "4 km",
+          headline: "Zawodowo kopie dziury. Prywatnie ocenia inne psy z odległości 40 metrów.",
+          seeking: "Szuka spokojnego kumpla, który nie podchodzi bez pytania.",
+          traits: ["ciekawska", "wrażliwa", "królowa kałuż"],
+          likes: "węszenie, błoto i spokojne równoległe spacery",
+          dislikes: "nagłe wejście w przestrzeń i nachalne powitania"
+        },
+        privateProfile: {
+          comfortDistance: "8–10 m na początku",
+          reactions: "Zatrzymuje się i obserwuje. Przy zbyt szybkim podejściu może szczeknąć i wycofać się.",
+          triggers: "szybko biegnące psy, bezpośrednie podejście, napięta smycz",
+          helps: "łuk, możliwość węszenia, spokojny ruch równoległy",
+          health: "bez ograniczeń",
+          muzzle: "nie jest wymagany",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["potrzebuje dystansu", "nie dotykać bez zgody", "dobrze pracuje równolegle"],
+          notes: "Przy wejściu do grupy dać jej chwilę na obserwację. Nie sadzać naprzeciw innych psów."
+        },
+        history: [
+          { date: "2026-08-29", type: "walk", title: "Spacer socjalizacyjny", note: "Spokojne przejście z Figą. Dystans zmniejszony z 12 do 7 metrów." },
+          { date: "2026-08-21", type: "note", title: "Aktualizacja profilu", note: "Opiekun zgłosił większą pewność przy mijaniu spokojnych psów." },
+          { date: "2026-08-09", type: "walk", title: "Pierwszy spacer", note: "Dużo obserwacji, bez eskalacji. Najlepiej działa ruch po łuku." }
+        ],
+        art: { bg: "#dce8dd", coat: "#d8c39d", ear: "#b38f63", muzzle: "#efe3ca", accent: "#f7f1e5", ears: "floppy", curls: true }
+      },
+      {
+        id: "d2",
+        guardianId: "g2",
+        name: "Figo",
+        breed: "mieszaniec",
+        age: "3 lata",
+        sex: "pies",
+        weight: "18 kg",
+        color: "rudy",
+        status: "approved",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Fabryczna",
+          distance: "6 km",
+          headline: "Specjalista od spokojnego mijania i profesjonalnego wąchania każdego krzaka.",
+          seeking: "Szukam psa, który rozumie, że cisza też jest rozmową.",
+          traits: ["spokojny", "cierpliwy", "krzakolog"],
+          likes: "długie spacery i psy o dobrych manierach",
+          dislikes: "hałaśliwe wejścia i zabawy z rozpędu"
+        },
+        privateProfile: {
+          comfortDistance: "3–4 m",
+          reactions: "Zwykle neutralny. Przy bardzo pobudzonym psie odchodzi za opiekunem.",
+          triggers: "psy wpadające z rozpędu",
+          helps: "spokojny marsz i zadania węchowe",
+          health: "lekka dysplazja, bez długich sprintów",
+          muzzle: "nie",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["dobry pies wspierający", "bez dynamicznej zabawy"],
+          notes: "Dobry kandydat do duetów z psami lękliwymi."
+        },
+        history: [
+          { date: "2026-09-01", type: "walk", title: "Spacer przy Orbicie", note: "Spokojny kontakt z Taco i Pyzą." },
+          { date: "2026-08-29", type: "walk", title: "Spacer z Kluską", note: "Dobrze utrzymywał dystans, bez presji." }
+        ],
+        art: { bg: "#f0dfc7", coat: "#bd6f3b", ear: "#8f4c2c", muzzle: "#e9c39d", accent: "#fff0dc", ears: "floppy", curls: false }
+      },
+      {
+        id: "d3",
+        guardianId: "g3",
+        name: "Taco",
+        breed: "Jack Russell Terrier",
+        age: "4 lata",
+        sex: "pies",
+        weight: "8 kg",
+        color: "biało-rudy",
+        status: "approved-conditional",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Psie Pole",
+          distance: "8 km",
+          headline: "Mały pies z dużym kalendarzem. Wolne terminy ma głównie na węszenie.",
+          seeking: "Najchętniej pozna kogoś, kto nie komentuje jego wzrostu.",
+          traits: ["energiczny", "bystry", "konkretny"],
+          likes: "zadania, ruch i jasne zasady",
+          dislikes: "nachylanie się nad nim i blokowanie drogi"
+        },
+        privateProfile: {
+          comfortDistance: "6 m",
+          reactions: "Szczeka przy frontalnym podejściu. W ruchu równoległym szybko wraca do pracy.",
+          triggers: "duże czarne psy, blokowanie, napięcie smyczy",
+          helps: "szeroki łuk, nagrody na ziemię, dużo przestrzeni",
+          health: "bez ograniczeń",
+          muzzle: "w grupie zalecany",
+          biteHistory: "jedno uszczypnięcie psa bez przerwania skóry",
+          marketingConsent: false,
+          flags: ["kaganiec w grupie", "duże czarne psy", "brak zgody marketingowej"],
+          notes: "Nie łączyć z Pyzą."
+        },
+        history: [
+          { date: "2026-09-01", type: "walk", title: "Spacer przy Orbicie", note: "Pracował za barierą. Dwa szczeknięcia, szybki powrót." }
+        ],
+        art: { bg: "#d9e8ef", coat: "#f5eee2", ear: "#ae653f", muzzle: "#ffffff", accent: "#c87b4d", ears: "pointy", curls: false }
+      },
+      {
+        id: "d4",
+        guardianId: "g4",
+        name: "Pyza",
+        breed: "bulldog francuski",
+        age: "2 lata",
+        sex: "suczka",
+        weight: "12 kg",
+        color: "czarna",
+        status: "approved",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Krzyki",
+          distance: "5 km",
+          headline: "Oddycha głośno, myśli spokojnie. Nigdy nie odmawia krótkiego spaceru i długiej przerwy.",
+          seeking: "Szukam kompana, który nie urządza maratonu bez konsultacji.",
+          traits: ["towarzyska", "uparta", "przerwowa"],
+          likes: "spokojne psy i odpoczynek w cieniu",
+          dislikes: "upał, presja i zbyt długie trasy"
+        },
+        privateProfile: {
+          comfortDistance: "2 m",
+          reactions: "Przyjazna, ale potrafi wejść zbyt bezpośrednio.",
+          triggers: "frustracja przy braku kontaktu",
+          helps: "krótkie odcinki, częste przerwy",
+          health: "BOAS, unikać upału i intensywnego wysiłku",
+          muzzle: "nie",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["krótka trasa", "unikać upału", "bez Taco"],
+          notes: "Nie łączyć z Taco."
+        },
+        history: [
+          { date: "2026-09-01", type: "walk", title: "Spacer przy Orbicie", note: "Dobry spacer. Potrzebowała dwóch dłuższych przerw." }
+        ],
+        art: { bg: "#ead7d3", coat: "#343836", ear: "#242826", muzzle: "#5a5f5c", accent: "#f0b6a7", ears: "pointy", curls: false }
+      },
+      {
+        id: "d5",
+        guardianId: "g5",
+        name: "Precel",
+        breed: "golden retriever",
+        age: "5 lat",
+        sex: "pies",
+        weight: "31 kg",
+        color: "złoty",
+        status: "approved",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Śródmieście",
+          distance: "3 km",
+          headline: "Wygląda jak gospodarz imprezy. Naprawdę woli stać przy wyjściu i obserwować.",
+          seeking: "Spokojna obecność mile widziana. Piłki nie są tematem do negocjacji.",
+          traits: ["łagodny", "obserwator", "smakosz"],
+          likes: "spokojny marsz, woda i smaczki",
+          dislikes: "zabieranie zabawek i gwałtowne powitania"
+        },
+        privateProfile: {
+          comfortDistance: "2–3 m",
+          reactions: "Neutralny. Może pilnować piłki i patyków.",
+          triggers: "psy podchodzące do zasobów",
+          helps: "brak zabawek na spacerze, ruch",
+          health: "bez ograniczeń",
+          muzzle: "nie",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["obrona zasobów", "bez zabawek"],
+          notes: "W grupie usunąć piłki i patyki."
+        },
+        history: [
+          { date: "2026-09-02", type: "walk", title: "Na Niskich Łąkach", note: "Spokojny spacer z Zenkiem." }
+        ],
+        art: { bg: "#e7ead7", coat: "#d6aa62", ear: "#bd8745", muzzle: "#eacb93", accent: "#f9e9c8", ears: "floppy", curls: false }
+      },
+      {
+        id: "d6",
+        guardianId: "g6",
+        name: "Zenek",
+        breed: "owczarek niemiecki",
+        age: "6 lat",
+        sex: "pies",
+        weight: "36 kg",
+        color: "czarno-podpalany",
+        status: "approved-conditional",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Oporów",
+          distance: "7 km",
+          headline: "Ochroniarz z twarzy, księgowy z charakteru. Wszystko musi się zgadzać.",
+          seeking: "Najlepiej dogada się z psem, który nie robi niespodzianek.",
+          traits: ["stabilny", "uważny", "porządkowy"],
+          likes: "przewidywalne trasy i spokojne psy",
+          dislikes: "chaos, tłok i szybkie podejście od tyłu"
+        },
+        privateProfile: {
+          comfortDistance: "5 m",
+          reactions: "Obserwuje i usztywnia się przy podejściu od tyłu.",
+          triggers: "psy wbiegające od tyłu, ciasne przejścia",
+          helps: "widoczność, spokojny prowadzący, szeroka ścieżka",
+          health: "spondyloza, umiarkowane tempo",
+          muzzle: "w nowych grupach",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["kaganiec w nowej grupie", "umiarkowane tempo", "bez podejścia od tyłu"],
+          notes: "Dobry w przewidywalnym składzie."
+        },
+        history: [
+          { date: "2026-09-02", type: "walk", title: "Na Niskich Łąkach", note: "Neutralny wobec Precla, dobry kontakt z opiekunem." }
+        ],
+        art: { bg: "#ded9cf", coat: "#8c694c", ear: "#252826", muzzle: "#bc9467", accent: "#272b29", ears: "pointy", curls: false }
+      },
+      {
+        id: "d7",
+        guardianId: "g2",
+        name: "Alaska",
+        breed: "samoyed",
+        age: "3 lata",
+        sex: "suczka",
+        weight: "22 kg",
+        color: "biała",
+        status: "needs-review",
+        firstWalk: true,
+        publicProfile: {
+          published: true,
+          area: "Fabryczna",
+          distance: "6 km",
+          headline: "Chmura na smyczy. Ma wiele opinii i wszystkie ogłasza publicznie.",
+          seeking: "Pies z poczuciem humoru i odpornością na komentarze.",
+          traits: ["gadatliwa", "radosna", "puszysta"],
+          likes: "ruch i duża przestrzeń",
+          dislikes: "ciasne przejścia i długie czekanie"
+        },
+        privateProfile: {
+          comfortDistance: "do oceny",
+          reactions: "Według opiekuna szczeka z frustracji. Brak obserwacji behawiorysty.",
+          triggers: "czekanie, brak możliwości podejścia",
+          helps: "do ustalenia",
+          health: "bez ograniczeń",
+          muzzle: "nie",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["pierwszy spacer", "wymaga oceny"],
+          notes: "Przed grupą krótka ocena indywidualna."
+        },
+        history: [
+          { date: "2026-09-04", type: "note", title: "Nowe zgłoszenie", note: "Profil oczekuje na ocenę." }
+        ],
+        art: { bg: "#d8e9ec", coat: "#f7f5ef", ear: "#e7e3da", muzzle: "#ffffff", accent: "#b7d9df", ears: "pointy", curls: true }
+      },
+      {
+        id: "d8",
+        guardianId: "g3",
+        name: "Rexi",
+        breed: "border collie",
+        age: "2 lata",
+        sex: "pies",
+        weight: "17 kg",
+        color: "czarno-biały",
+        status: "approved-conditional",
+        firstWalk: false,
+        publicProfile: {
+          published: true,
+          area: "Psie Pole",
+          distance: "8 km",
+          headline: "Patrzy intensywnie, bo analizuje sytuację. I ciebie. I liść za tobą.",
+          seeking: "Spokojnego psa, który nie bierze kontaktu wzrokowego osobiście.",
+          traits: ["skupiony", "szybki", "analityk"],
+          likes: "zadania i ruch równoległy",
+          dislikes: "chaos i bieganie bez planu"
+        },
+        privateProfile: {
+          comfortDistance: "7 m",
+          reactions: "Kładzie się i wpatruje. Przy zbliżeniu może ruszyć gwałtownie.",
+          triggers: "szybkie psy, ruch poprzeczny",
+          helps: "przerwanie patrzenia, łuk, zadanie węchowe",
+          health: "bez ograniczeń",
+          muzzle: "nie",
+          biteHistory: "brak",
+          marketingConsent: true,
+          flags: ["wpatrywanie", "ruch poprzeczny", "potrzebuje zadania"],
+          notes: "Nie pozwalać długo leżeć i fiksować się na drugim psie."
+        },
+        history: [
+          { date: "2026-09-03", type: "walk", title: "Park Marii Dąbrowskiej", note: "Dobrze po przerwaniu fiksacji. Trzy udane minięcia." }
+        ],
+        art: { bg: "#eadbd5", coat: "#272b29", ear: "#202321", muzzle: "#f3f0e8", accent: "#ffffff", ears: "pointy", curls: false }
+      }
+    ],
+    walks: [
+      {
+        id: "w1",
+        date: "2026-09-05",
+        time: "10:30",
+        location: "Park Pawłowicki",
+        locationDetails: "Parking przy ul. Pawłowickiej, wejście od strony stawu",
+        mapUrl: "https://maps.google.com/?q=Park+Pawlowicki+Wroclaw",
+        type: "Spacer przy zwierzętach gospodarskich",
+        price: 80,
+        capacity: 4,
+        mode: "approval",
+        info: "Spokojna trasa z możliwością obserwowania zwierząt z dużego dystansu.",
+        tags: ["zwierzęta gospodarskie", "dużo przestrzeni"],
+        status: "open",
+        leader: "Joanna",
+        applications: [
+          { id: "a1", dogId: "d1", status: "accepted", paymentStatus: "package-reserved", packageId: "p1", attendance: "pending", createdAt: "2026-09-03" },
+          { id: "a2", dogId: "d2", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "pending", createdAt: "2026-09-03" },
+          { id: "a3", dogId: "d7", status: "pending", paymentStatus: "none", packageId: null, attendance: "pending", createdAt: "2026-09-04" }
+        ]
+      },
+      {
+        id: "w2",
+        date: "2026-09-05",
+        time: "11:30",
+        location: "Park Pawłowicki",
+        locationDetails: "Parking przy ul. Pawłowickiej, wejście od strony stawu",
+        mapUrl: "https://maps.google.com/?q=Park+Pawlowicki+Wroclaw",
+        type: "Spacer socjalizacyjny",
+        price: 80,
+        capacity: 4,
+        mode: "approval",
+        info: "Klasyczny spacer równoległy. Tempo spokojne.",
+        tags: ["spokojne tempo", "trasa leśna"],
+        status: "open",
+        leader: "Joanna",
+        applications: [
+          { id: "a4", dogId: "d5", status: "accepted", paymentStatus: "package-reserved", packageId: "p3", attendance: "pending", createdAt: "2026-09-02" },
+          { id: "a5", dogId: "d6", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "pending", createdAt: "2026-09-02" }
+        ]
+      },
+      {
+        id: "w3",
+        date: "2026-09-08",
+        time: "18:00",
+        location: "Park Marii Dąbrowskiej",
+        locationDetails: "Wejście od ul. Na Ostatnim Groszu, przy drewnianej tablicy",
+        mapUrl: "https://maps.google.com/?q=Park+Marii+Dabrowskiej+Wroclaw",
+        type: "Spacer socjalizacyjny",
+        price: 80,
+        capacity: 4,
+        mode: "approval",
+        info: "Po deszczu trasa bywa błotnista. Weź ręcznik dla psa.",
+        tags: ["możliwe błoto", "szerokie alejki"],
+        status: "open",
+        leader: "Joanna",
+        applications: [
+          { id: "a6", dogId: "d7", status: "pending", paymentStatus: "none", packageId: null, attendance: "pending", createdAt: "2026-09-04" },
+          { id: "a7", dogId: "d8", status: "accepted", paymentStatus: "package-reserved", packageId: "p4", attendance: "pending", createdAt: "2026-09-03" },
+          { id: "a8", dogId: "d4", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "pending", createdAt: "2026-09-03" }
+        ]
+      },
+      {
+        id: "w4",
+        date: "2026-09-09",
+        time: "17:45",
+        location: "Na Niskich Łąkach",
+        locationDetails: "Polana za kładką, od strony ul. Rakowieckiej",
+        mapUrl: "https://maps.google.com/?q=Niskie+Laki+Wroclaw",
+        type: "Spotkanie przez barierę",
+        price: 80,
+        capacity: 3,
+        mode: "invite",
+        info: "Opcja spotkania psów przez barierę. Termin dla psów wymagających większej kontroli.",
+        tags: ["bariera", "większy dystans", "na zaproszenie"],
+        status: "open",
+        leader: "Joanna",
+        applications: [
+          { id: "a9", dogId: "d3", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "pending", createdAt: "2026-09-01" },
+          { id: "a10", dogId: "d6", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "pending", createdAt: "2026-09-01" }
+        ]
+      },
+      {
+        id: "w5",
+        date: "2026-09-10",
+        time: "09:15",
+        location: "Park Zachodni, okolice Orbity",
+        locationDetails: "Przy wejściu od Wejherowskiej, obok stojaków rowerowych",
+        mapUrl: "https://maps.google.com/?q=Park+Zachodni+Orbita+Wroclaw",
+        type: "Duet socjalizacyjny",
+        price: 90,
+        capacity: 2,
+        mode: "invite",
+        info: "Indywidualnie dobrany duet. Cena 90 zł za psa.",
+        tags: ["duet", "na zaproszenie"],
+        status: "open",
+        leader: "Joanna",
+        applications: [
+          { id: "a11", dogId: "d1", status: "pending", paymentStatus: "none", packageId: null, attendance: "pending", createdAt: "2026-09-04" }
+        ]
+      },
+      {
+        id: "w6",
+        date: "2026-09-12",
+        time: "09:30",
+        location: "Park Pawłowicki",
+        locationDetails: "Parking przy ul. Pawłowickiej, wejście od strony stawu",
+        mapUrl: "https://maps.google.com/?q=Park+Pawlowicki+Wroclaw",
+        type: "Spacer socjalizacyjny",
+        price: 80,
+        capacity: 4,
+        mode: "approval",
+        info: "Spokojny spacer dla psów mających już doświadczenie w grupie.",
+        tags: ["dla stałych uczestników", "spokojne tempo"],
+        status: "open",
+        leader: "Joanna",
+        applications: []
+      },
+      {
+        id: "w7",
+        date: "2026-08-29",
+        time: "10:00",
+        location: "Park Zachodni",
+        locationDetails: "Archiwalna lokalizacja",
+        mapUrl: "https://maps.google.com/?q=Park+Zachodni+Wroclaw",
+        type: "Spacer socjalizacyjny",
+        price: 80,
+        capacity: 4,
+        mode: "approval",
+        info: "Zakończony spacer.",
+        tags: ["zakończony"],
+        status: "completed",
+        leader: "Joanna",
+        applications: [
+          { id: "a12", dogId: "d1", status: "accepted", paymentStatus: "package-used", packageId: "p1", attendance: "present", createdAt: "2026-08-26" },
+          { id: "a13", dogId: "d2", status: "accepted", paymentStatus: "paid", packageId: null, attendance: "present", createdAt: "2026-08-26" }
+        ]
+      }
+    ],
+    packages: [
+      { id: "p1", dogId: "d1", name: "Pakiet 4 spacerów", total: 4, used: 1, reserved: 1, price: 250, purchasedAt: "2026-08-08", expiresAt: "2026-11-08", status: "active" },
+      { id: "p2", dogId: "d2", name: "Pakiet 4 spacerów", total: 4, used: 3, reserved: 0, price: 250, purchasedAt: "2026-07-20", expiresAt: "2026-10-20", status: "active" },
+      { id: "p3", dogId: "d5", name: "Pakiet 4 spacerów", total: 4, used: 2, reserved: 1, price: 250, purchasedAt: "2026-08-01", expiresAt: "2026-11-01", status: "active" },
+      { id: "p4", dogId: "d8", name: "Pakiet 4 spacerów", total: 4, used: 1, reserved: 1, price: 250, purchasedAt: "2026-08-22", expiresAt: "2026-11-22", status: "active" },
+      { id: "p5", dogId: "d6", name: "Pakiet 4 spacerów", total: 4, used: 4, reserved: 0, price: 250, purchasedAt: "2026-06-10", expiresAt: "2026-09-10", status: "completed" }
+    ],
+    payments: [
+      { id: "pay1", date: "2026-09-03", guardianId: "g4", dogId: "d4", amount: 80, method: "BLIK", status: "paid", description: "Spacer 8 września" },
+      { id: "pay2", date: "2026-09-02", guardianId: "g5", dogId: "d5", amount: 250, method: "przelew", status: "paid", description: "Pakiet 4 spacerów" },
+      { id: "pay3", date: "2026-09-01", guardianId: "g3", dogId: "d3", amount: 80, method: "przelew", status: "paid", description: "Spotkanie przez barierę" },
+      { id: "pay4", date: "2026-08-29", guardianId: "g2", dogId: "d2", amount: 80, method: "gotówka", status: "paid", description: "Spacer 29 sierpnia" },
+      { id: "pay5", date: "2026-08-22", guardianId: "g3", dogId: "d8", amount: 250, method: "przelew", status: "paid", description: "Pakiet 4 spacerów" }
+    ],
+    relations: [
+      { dogA: "d1", dogB: "d2", level: "good", note: "Dobre doświadczenie. Figo utrzymuje dystans i nie wywiera presji." },
+      { dogA: "d1", dogB: "d8", level: "caution", note: "Kluska może reagować na wpatrywanie Rexiego. Potrzebny duży łuk." },
+      { dogA: "d3", dogB: "d4", level: "block", note: "Nie łączyć. Dwa trudne spotkania i szybka eskalacja Taco." },
+      { dogA: "d5", dogB: "d6", level: "good", note: "Spokojny wspólny spacer. Oba psy przewidywalne." },
+      { dogA: "d2", dogB: "d7", level: "caution", note: "Alaska może nakręcać się przy spokojnym Figo. Zacząć od 12 metrów." }
+    ],
+    interests: [
+      { id: "i1", fromDogId: "d2", toDogId: "d1", createdAt: "2026-09-04", status: "open" },
+      { id: "i2", fromDogId: "d5", toDogId: "d6", createdAt: "2026-09-03", status: "matched" },
+      { id: "i3", fromDogId: "d6", toDogId: "d5", createdAt: "2026-09-03", status: "matched" }
+    ]
+  };
+
+  let state = loadState();
+
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return deepClone(DEFAULT_STATE);
+      const parsed = JSON.parse(saved);
+      if (parsed.version !== DEFAULT_STATE.version) return deepClone(DEFAULT_STATE);
+      return {
+        ...deepClone(DEFAULT_STATE),
+        ...parsed,
+        ui: { ...deepClone(DEFAULT_STATE.ui), ...(parsed.ui || {}) }
+      };
+    } catch (error) {
+      console.warn("Nie udało się odczytać danych demo", error);
+      return deepClone(DEFAULT_STATE);
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn("Nie udało się zapisać danych demo", error);
+    }
+  }
+
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function uid(prefix) {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  function dateObject(dateString) {
+    return new Date(`${dateString}T12:00:00`);
+  }
+
+  function formatDate(dateString, options = { day: "numeric", month: "long", year: "numeric" }) {
+    return new Intl.DateTimeFormat("pl-PL", options).format(dateObject(dateString));
+  }
+
+  function monthShort(dateString) {
+    return new Intl.DateTimeFormat("pl-PL", { month: "short" }).format(dateObject(dateString)).replace(".", "");
+  }
+
+  function weekday(dateString) {
+    return new Intl.DateTimeFormat("pl-PL", { weekday: "long" }).format(dateObject(dateString));
+  }
+
+  function dayNumber(dateString) {
+    return dateObject(dateString).getDate();
+  }
+
+  function isUpcoming(walk) {
+    return walk.date >= TODAY && walk.status !== "cancelled" && walk.status !== "completed";
+  }
+
+  function sortWalks(walks) {
+    return [...walks].sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+  }
+
+  function getDog(id) {
+    return state.dogs.find((dog) => dog.id === id);
+  }
+
+  function getGuardian(id) {
+    return state.guardians.find((guardian) => guardian.id === id);
+  }
+
+  function getWalk(id) {
+    return state.walks.find((walk) => walk.id === id);
+  }
+
+  function getPackage(id) {
+    return state.packages.find((item) => item.id === id);
+  }
+
+  function activeDog() {
+    return getDog(state.activeDogId) || state.dogs[0];
+  }
+
+  function acceptedApplications(walk) {
+    return walk.applications.filter((app) => app.status === "accepted");
+  }
+
+  function pendingApplications(walk) {
+    return walk.applications.filter((app) => app.status === "pending");
+  }
+
+  function waitlistApplications(walk) {
+    return walk.applications.filter((app) => app.status === "waitlist");
+  }
+
+  function applicationForDog(walk, dogId) {
+    return walk.applications.find((app) => app.dogId === dogId && !["rejected", "cancelled"].includes(app.status));
+  }
+
+  function availableCredits(packageItem) {
+    return Math.max(0, packageItem.total - packageItem.used - packageItem.reserved);
+  }
+
+  function activePackagesForDog(dogId) {
+    return state.packages.filter((item) => item.dogId === dogId && item.status === "active" && availableCredits(item) > 0);
+  }
+
+  function packageBalanceForDog(dogId) {
+    return activePackagesForDog(dogId).reduce((sum, item) => sum + availableCredits(item), 0);
+  }
+
+  function relationBetween(dogA, dogB) {
+    return state.relations.find((relation) =>
+      (relation.dogA === dogA && relation.dogB === dogB) ||
+      (relation.dogA === dogB && relation.dogB === dogA)
+    );
+  }
+
+  function conflictsForCandidate(walk, dogId) {
+    const accepted = acceptedApplications(walk).filter((app) => app.dogId !== dogId);
+    return accepted
+      .map((app) => {
+        const relation = relationBetween(dogId, app.dogId);
+        if (!relation || relation.level === "good") return null;
+        return { relation, otherDog: getDog(app.dogId) };
+      })
+      .filter(Boolean);
+  }
+
+  function allWalkConflicts(walk) {
+    const apps = acceptedApplications(walk);
+    const results = [];
+    for (let i = 0; i < apps.length; i += 1) {
+      for (let j = i + 1; j < apps.length; j += 1) {
+        const relation = relationBetween(apps[i].dogId, apps[j].dogId);
+        if (relation && relation.level !== "good") {
+          results.push({ relation, dogA: getDog(apps[i].dogId), dogB: getDog(apps[j].dogId) });
+        }
+      }
+    }
+    return results;
+  }
+
+  function roleName() {
+    return state.role === "admin" ? "Panel Joanny" : "Panel opiekuna";
+  }
+
+  function roleSubtitle() {
+    return state.role === "admin" ? "Behawiorysta" : `${activeDog().name} i opiekun`;
+  }
+
+  function dogStatus(status) {
+    const map = {
+      approved: { label: "zatwierdzony", className: "green" },
+      "approved-conditional": { label: "warunkowo", className: "amber" },
+      "needs-review": { label: "wymaga oceny", className: "red" },
+      paused: { label: "wstrzymany", className: "red" }
+    };
+    return map[status] || { label: status, className: "" };
+  }
+
+  function bookingStatus(status) {
+    const map = {
+      pending: { label: "czeka na decyzję", className: "amber" },
+      accepted: { label: "zaakceptowany", className: "green" },
+      waitlist: { label: "lista rezerwowa", className: "blue" },
+      rejected: { label: "odrzucony", className: "red" },
+      cancelled: { label: "odwołany", className: "" }
+    };
+    return map[status] || { label: status, className: "" };
+  }
+
+  function paymentStatus(status) {
+    const map = {
+      "package-reserved": { label: "wejście zarezerwowane", className: "amber" },
+      "package-used": { label: "rozliczone pakietem", className: "green" },
+      paid: { label: "opłacone", className: "green" },
+      due: { label: "do zapłaty", className: "red" },
+      none: { label: "nierozliczone", className: "" }
+    };
+    return map[status] || { label: status, className: "" };
+  }
+
+  function walkMode(mode) {
+    const map = {
+      approval: "zgłoszenie do akceptacji",
+      invite: "tylko na zaproszenie",
+      auto: "zapis automatyczny"
+    };
+    return map[mode] || mode;
+  }
+
+  function dogArt(dog, compact = false) {
+    if (!dog) return "";
+    if (dog.photo) {
+      return `<img src="${esc(dog.photo)}" alt="${esc(dog.name)}" />`;
+    }
+
+    const a = dog.art || { bg: "#dce8dd", coat: "#cab48e", ear: "#9d7856", muzzle: "#eadbc0", accent: "#fff", ears: "floppy", curls: false };
+    const pointyEars = a.ears === "pointy";
+    const earShapes = pointyEars
+      ? `<path d="M101 91 82 29c-2-8 7-14 14-8l45 40Z" fill="${a.ear}"/><path d="m259 91 19-62c2-8-7-14-14-8l-45 40Z" fill="${a.ear}"/>`
+      : `<path d="M112 72C81 50 57 61 61 93c4 32 22 57 50 49Z" fill="${a.ear}"/><path d="M248 72c31-22 55-11 51 21-4 32-22 57-50 49Z" fill="${a.ear}"/>`;
+    const curlPattern = a.curls
+      ? `<g fill="none" stroke="${a.accent}" stroke-width="5" opacity=".55">
+          <path d="M127 91c-8-15 12-25 19-10 8-15 27-5 19 10"/>
+          <path d="M173 75c-8-15 12-25 19-10 8-15 27-5 19 10"/>
+          <path d="M213 101c-8-15 12-25 19-10 8-15 27-5 19 10"/>
+          <path d="M151 124c-8-15 12-25 19-10 8-15 27-5 19 10"/>
+        </g>`
+      : `<path d="M145 70c18 12 52 12 70 0" fill="none" stroke="${a.accent}" stroke-width="18" stroke-linecap="round" opacity=".65"/>`;
+
+    return `<svg viewBox="0 0 360 260" role="img" aria-label="Ilustracja psa ${esc(dog.name)}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="360" height="260" rx="24" fill="${a.bg}"/>
+      <circle cx="42" cy="42" r="80" fill="#fff" opacity=".18"/>
+      <circle cx="330" cy="238" r="98" fill="#fff" opacity=".16"/>
+      <path d="M73 260c5-62 47-99 107-99s102 37 107 99Z" fill="${a.coat}" opacity=".94"/>
+      ${earShapes}
+      <ellipse cx="180" cy="117" rx="92" ry="83" fill="${a.coat}"/>
+      ${curlPattern}
+      <ellipse cx="180" cy="148" rx="55" ry="42" fill="${a.muzzle}"/>
+      <ellipse cx="180" cy="137" rx="18" ry="13" fill="#2c302e"/>
+      <path d="M180 150v8" stroke="#2c302e" stroke-width="4" stroke-linecap="round"/>
+      <path d="M180 158c-9 10-19 10-27 3M180 158c9 10 19 10 27 3" fill="none" stroke="#2c302e" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="144" cy="117" rx="7" ry="9" fill="#252927"/>
+      <ellipse cx="216" cy="117" rx="7" ry="9" fill="#252927"/>
+      <circle cx="142" cy="114" r="2" fill="#fff"/>
+      <circle cx="214" cy="114" r="2" fill="#fff"/>
+      <path d="M145 181c20 10 50 10 70 0" fill="none" stroke="${a.accent}" stroke-width="7" stroke-linecap="round" opacity=".65"/>
+      ${compact ? "" : `<text x="22" y="238" font-family="system-ui, sans-serif" font-size="17" font-weight="800" fill="#1e2a25" opacity=".72">${esc(dog.name)}</text>`}
+    </svg>`;
+  }
+
+  function miniAvatar(dog) {
+    return `<span class="mini-avatar" title="${esc(dog.name)}">${dogArt(dog, true)}</span>`;
+  }
+
+  function badge(label, className = "") {
+    return `<span class="badge ${className}">${esc(label)}</span>`;
+  }
+
+  function tags(items = []) {
+    return `<div class="tag-row">${items.map((item) => `<span class="tag">${esc(item)}</span>`).join("")}</div>`;
+  }
+
+  function navItems() {
+    if (state.role === "admin") {
+      return [
+        { view: "admin-dashboard", icon: "dashboard", label: "Dzisiaj" },
+        { view: "admin-walks", icon: "calendar", label: "Spacery", count: state.walks.reduce((sum, walk) => sum + pendingApplications(walk).length, 0) || null },
+        { view: "admin-dogs", icon: "dogs", label: "Psy" },
+        { view: "admin-finance", icon: "wallet", label: "Pakiety i płatności" },
+        { view: "admin-community", icon: "community", label: "Psiutki" }
+      ];
+    }
+    return [
+      { view: "client-home", icon: "home", label: "Start" },
+      { view: "client-walks", icon: "calendar", label: "Spacery" },
+      { view: "client-dog", icon: "dogs", label: "Profil psa" },
+      { view: "client-community", icon: "community", label: "Psiutki" }
+    ];
+  }
+
+  function currentPageMeta() {
+    if (state.view === "admin-walks") {
+      const filterMeta = {
+        pending: ["Zgłoszenia do decyzji", "Tylko terminy z psami czekającymi na akceptację"],
+        today: ["Dzisiejsze spacery", "Skład i najważniejsze informacje na dziś"],
+        "next-six": ["Najbliższe 6 terminów", "Szybki podgląd dostępnych miejsc"]
+      };
+      if (filterMeta[state.ui.walkFilter]) return filterMeta[state.ui.walkFilter];
+    }
+    if (state.view === "admin-finance" && state.ui.financeFocus === "due") {
+      return ["Zaległe płatności", "Zaakceptowane spacery, które czekają na rozliczenie"];
+    }
+    const map = {
+      "admin-dashboard": ["Dzisiaj", "Najważniejsze sprawy bez przekopywania arkusza"],
+      "admin-walks": ["Spacery", "Terminy, zgłoszenia i skład grup"],
+      "admin-walk-detail": ["Szczegóły spaceru", "Skład, bezpieczeństwo i rozliczenia"],
+      "admin-dogs": ["Psy", "Prywatne profile i historia pracy"],
+      "admin-dog-detail": ["Profil psa", "Dane prywatne i profil społecznościowy"],
+      "admin-finance": ["Pakiety i płatności", "Wejścia, wpłaty i rozliczenia"],
+      "admin-community": ["Psiutki", "Humorystyczne profile i bezpieczne dopasowania"],
+      "client-home": [`Cześć, ${activeDog().name}`, "Twój najbliższy spacer i saldo pakietu"],
+      "client-walks": ["Dostępne spacery", "Zgłoś psa na wybrany termin"],
+      "client-dog": [`Profil ${activeDog().name}`, "Dane prywatne i karta w Psiutkach"],
+      "client-community": ["Psiutki", "Poznaj psy ze społeczności"]
+    };
+    return map[state.view] || ["Psi Pawer", "Panel spacerów socjalizacyjnych"];
+  }
+
+  function isNavActive(view) {
+    if (state.view === view) return true;
+    if (view === "admin-walks" && state.view === "admin-walk-detail") return true;
+    if (view === "admin-dogs" && state.view === "admin-dog-detail") return true;
+    return false;
+  }
+
+  function renderSidebar() {
+    const items = navItems();
+    return `
+      <aside class="sidebar ${state.ui.sidebarOpen ? "open" : ""}">
+        <div class="brand">
+          <div class="brand-mark">${icon("paw")}</div>
+          <div class="brand-copy">
+            <strong>Psi Pawer</strong>
+            <span>zamieniam problemy w wyzwania</span>
+          </div>
+        </div>
+
+        <div class="role-pill">
+          <div class="role-avatar">${state.role === "admin" ? "JK" : esc(activeDog().name.slice(0, 1))}</div>
+          <div class="role-copy">
+            <strong>${esc(roleName())}</strong>
+            <span>${esc(roleSubtitle())}</span>
+          </div>
+        </div>
+
+        <div class="nav-label">Panel</div>
+        <nav class="sidebar-nav" aria-label="Główna nawigacja">
+          ${items.map((item) => `
+            <button class="nav-item ${isNavActive(item.view) ? "active" : ""}" data-action="navigate" data-view="${item.view}">
+              ${icon(item.icon)}
+              <span>${esc(item.label)}</span>
+              ${item.count ? `<b class="nav-count">${item.count}</b>` : ""}
+            </button>
+          `).join("")}
+        </nav>
+
+        <div class="sidebar-footer">
+          <label class="nav-label" for="role-switch">Widok demonstracyjny</label>
+          <select class="role-switcher" id="role-switch" data-action="switch-role">
+            <option value="admin" ${state.role === "admin" ? "selected" : ""}>Behawiorysta</option>
+            <option value="client" ${state.role === "client" ? "selected" : ""}>Opiekun Kluski</option>
+          </select>
+          <div class="sidebar-foot-row">
+            <button class="sidebar-mini-button" data-action="reset-demo">${icon("refresh")} Reset danych</button>
+            <button class="sidebar-mini-button" data-action="show-about">${icon("info")} O MVP</button>
+          </div>
+        </div>
+      </aside>
+      ${state.ui.sidebarOpen ? `<button class="drawer-backdrop" data-action="close-sidebar" aria-label="Zamknij menu"></button>` : ""}
+    `;
+  }
+
+  function renderTopbar() {
+    const [title, subtitle] = currentPageMeta();
+    const primary = state.role === "admin"
+      ? `<button class="primary-button" data-action="open-modal" data-modal="new-walk">${icon("plus")}<span>Nowy spacer</span></button>`
+      : state.view === "client-dog"
+        ? `<button class="primary-button" data-action="open-modal" data-modal="edit-public-profile">${icon("edit")}<span>Edytuj profil</span></button>`
+        : `<button class="primary-button" data-action="navigate" data-view="client-walks">${icon("calendar")}<span>Znajdź spacer</span></button>`;
+
+    return `
+      <header class="topbar">
+        <button class="mobile-menu-button" data-action="open-sidebar" aria-label="Otwórz menu">${icon("menu")}</button>
+        <div class="page-heading">
+          <h1>${esc(title)}</h1>
+          <p>${esc(subtitle)}</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button" data-action="show-notifications" aria-label="Powiadomienia">
+            ${icon("bell")}
+            <span class="notification-dot"></span>
+          </button>
+          ${primary}
+        </div>
+      </header>
+    `;
+  }
+
+  function renderMobileNav() {
+    const items = navItems().slice(0, 4);
+    return `<nav class="mobile-nav" aria-label="Nawigacja mobilna">
+      ${items.map((item) => `
+        <button class="${isNavActive(item.view) ? "active" : ""}" data-action="navigate" data-view="${item.view}">
+          ${icon(item.icon)}
+          <span>${esc(item.label)}</span>
+        </button>
+      `).join("")}
+    </nav>`;
+  }
+
+  function renderApp() {
+    document.getElementById("app").innerHTML = `
+      <div class="app-shell">
+        ${renderSidebar()}
+        <main class="main">
+          ${renderTopbar()}
+          <section class="page-content">${renderView()}</section>
+        </main>
+        ${renderMobileNav()}
+      </div>
+    `;
+    renderModal();
+    saveState();
+  }
+
+  function renderView() {
+    switch (state.view) {
+      case "admin-dashboard": return renderAdminDashboard();
+      case "admin-walks": return renderAdminWalks();
+      case "admin-walk-detail": return renderAdminWalkDetail();
+      case "admin-dogs": return renderAdminDogs();
+      case "admin-dog-detail": return renderAdminDogDetail();
+      case "admin-finance": return renderAdminFinance();
+      case "admin-community": return renderAdminCommunity();
+      case "client-home": return renderClientHome();
+      case "client-walks": return renderClientWalks();
+      case "client-dog": return renderClientDog();
+      case "client-community": return renderClientCommunity();
+      default: return renderAdminDashboard();
+    }
+  }
+
+  function kpiCard(label, value, note, iconName, accent, jumpTarget = "") {
+    const content = `
+      <div class="kpi-top">
+        <span class="kpi-label">${esc(label)}</span>
+        <span class="kpi-icon">${icon(iconName)}</span>
+      </div>
+      <div class="kpi-value">${esc(value)}</div>
+      <div class="kpi-note">${esc(note)}</div>
+      ${jumpTarget ? `<span class="kpi-link"><span>Otwórz</span>${icon("chevronRight")}</span>` : ""}`;
+
+    if (jumpTarget) {
+      return `<button type="button" class="kpi-card kpi-card--clickable" style="--kpi-accent:${accent}" data-action="dashboard-jump" data-target="${esc(jumpTarget)}" aria-label="Otwórz: ${esc(label)}">${content}</button>`;
+    }
+
+    return `<article class="kpi-card" style="--kpi-accent:${accent}">${content}</article>`;
+  }
+
+  function renderAdminDashboard() {
+    const upcoming = sortWalks(state.walks.filter(isUpcoming));
+    const pending = upcoming.flatMap((walk) => pendingApplications(walk).map((app) => ({ walk, app })));
+    const duePayments = upcoming.flatMap((walk) => walk.applications.filter((app) => app.status === "accepted" && app.paymentStatus === "due").map((app) => ({ walk, app })));
+    const todayWalks = upcoming.filter((walk) => walk.date === TODAY);
+    const nextWalk = upcoming[0];
+    const capacitySum = upcoming.slice(0, 6).reduce((sum, walk) => sum + walk.capacity, 0);
+    const acceptedSum = upcoming.slice(0, 6).reduce((sum, walk) => sum + acceptedApplications(walk).length, 0);
+    const fillRate = capacitySum ? Math.round((acceptedSum / capacitySum) * 100) : 0;
+
+    return `<div class="stack">
+      <div class="grid-4">
+        ${kpiCard("Zgłoszenia do decyzji", pending.length, pending.length ? "Najstarsze czeka od 1 dnia" : "Wszystko rozpatrzone", "hourglass", "#faecd4", "pending")}
+        ${kpiCard("Dzisiejsze spacery", todayWalks.length, `${todayWalks.reduce((sum, walk) => sum + acceptedApplications(walk).length, 0)} zaakceptowanych psów`, "walk", "#dce8dd", "today")}
+        ${kpiCard("Zaległe płatności", duePayments.length, duePayments.length ? "Wymagają przypomnienia" : "Brak zaległości", "credit", "#f3d8d1", "due-payments")}
+        ${kpiCard("Wypełnienie najbliższych", `${fillRate}%`, "6 kolejnych terminów", "activity", "#deedf2", "next-six")}
+      </div>
+
+      ${nextWalk ? `
+        <article class="card hero-card">
+          <div class="hero-content">
+            <span class="hero-eyebrow">${icon("calendar")} Najbliższy spacer</span>
+            <h2>${formatDate(nextWalk.date, { weekday: "long", day: "numeric", month: "long" })}, ${esc(nextWalk.time)}</h2>
+            <p>${esc(nextWalk.location)}. ${esc(nextWalk.type)}. ${acceptedApplications(nextWalk).length} z ${nextWalk.capacity} miejsc jest już potwierdzonych.</p>
+            <div class="hero-actions">
+              <button class="primary-button" data-action="open-walk" data-id="${nextWalk.id}">${icon("users")} Otwórz skład</button>
+              <button class="secondary-button" data-action="open-map" data-url="${esc(nextWalk.mapUrl)}">${icon("map")} Dokładna lokalizacja</button>
+            </div>
+          </div>
+        </article>
+      ` : ""}
+
+      <div class="dashboard-grid">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>Najbliższe terminy</h2>
+              <p>Jedna lista zamiast osobnych zakładek miesięcznych</p>
+            </div>
+            <button class="ghost-button" data-action="navigate" data-view="admin-walks">Wszystkie ${icon("chevronRight")}</button>
+          </div>
+          <div class="card-body">
+            <div class="list">
+              ${upcoming.slice(0, 5).map((walk) => renderDashboardWalkRow(walk)).join("")}
+            </div>
+          </div>
+        </article>
+
+        <div class="stack">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3>Wymaga uwagi</h3>
+                <p>Zgłoszenia i profile do sprawdzenia</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="list">
+                ${pending.slice(0, 4).map(({ walk, app }) => {
+                  const dog = getDog(app.dogId);
+                  return `<div class="list-row">
+                    <div class="avatar">${dogArt(dog, true)}</div>
+                    <div class="list-main">
+                      <strong>${esc(dog.name)} na ${dayNumber(walk.date)} ${monthShort(walk.date)}</strong>
+                      <span>${esc(dog.privateProfile.flags.slice(0, 2).join(" · "))}</span>
+                    </div>
+                    <button class="small-button" data-action="open-walk" data-id="${walk.id}">Sprawdź</button>
+                  </div>`;
+                }).join("") || `<div class="alert green">${icon("checkCircle")} Brak zgłoszeń oczekujących na decyzję.</div>`}
+              </div>
+            </div>
+          </article>
+
+          <article class="card pad">
+            <div class="section-title">
+              <div>
+                <h3>Szybki podgląd pakietów</h3>
+                <p>Niewykorzystane wejścia klientów</p>
+              </div>
+              <button class="ghost-button" data-action="navigate" data-view="admin-finance">Otwórz</button>
+            </div>
+            <div class="alert blue">${icon("package")} ${state.packages.filter((item) => item.status === "active").reduce((sum, item) => sum + availableCredits(item), 0)} wejść pozostaje do wykorzystania w aktywnych pakietach.</div>
+          </article>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderDashboardWalkRow(walk) {
+    const accepted = acceptedApplications(walk);
+    const pending = pendingApplications(walk);
+    return `<div class="list-row">
+      <div class="date-tile"><b>${dayNumber(walk.date)}</b><span>${monthShort(walk.date)}</span></div>
+      <div class="list-main">
+        <strong>${esc(walk.time)} · ${esc(walk.location)}</strong>
+        <span>${esc(walk.type)}${pending.length ? ` · ${pending.length} do decyzji` : ""}</span>
+      </div>
+      <div class="avatars">${accepted.slice(0, 3).map((app) => miniAvatar(getDog(app.dogId))).join("")}</div>
+      <button class="small-button" data-action="open-walk" data-id="${walk.id}">${accepted.length}/${walk.capacity}</button>
+    </div>`;
+  }
+
+  function renderAdminWalks() {
+    const query = state.ui.search.trim().toLowerCase();
+    let walks = sortWalks(state.walks);
+    if (state.ui.walkFilter === "upcoming") walks = walks.filter(isUpcoming);
+    if (state.ui.walkFilter === "pending") walks = walks.filter((walk) => isUpcoming(walk) && pendingApplications(walk).length > 0);
+    if (state.ui.walkFilter === "today") walks = walks.filter((walk) => walk.date === TODAY);
+    if (state.ui.walkFilter === "next-six") walks = walks.filter(isUpcoming).slice(0, 6);
+    if (state.ui.walkFilter === "completed") walks = walks.filter((walk) => walk.status === "completed" || walk.date < TODAY);
+    if (query) {
+      walks = walks.filter((walk) => [walk.location, walk.type, walk.info, ...walk.tags].join(" ").toLowerCase().includes(query));
+    }
+
+    return `<div class="stack">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">${icon("search")}<input type="search" data-input="search" placeholder="Szukaj miejsca lub rodzaju" value="${esc(state.ui.search)}" /></div>
+          <select class="filter-select" data-input="walk-filter">
+            <option value="upcoming" ${state.ui.walkFilter === "upcoming" ? "selected" : ""}>Nadchodzące</option>
+            <option value="pending" ${state.ui.walkFilter === "pending" ? "selected" : ""}>Zgłoszenia do decyzji</option>
+            <option value="today" ${state.ui.walkFilter === "today" ? "selected" : ""}>Dzisiejsze</option>
+            <option value="next-six" ${state.ui.walkFilter === "next-six" ? "selected" : ""}>Najbliższe 6</option>
+            <option value="completed" ${state.ui.walkFilter === "completed" ? "selected" : ""}>Zakończone</option>
+            <option value="all" ${state.ui.walkFilter === "all" ? "selected" : ""}>Wszystkie</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button class="secondary-button" data-action="open-modal" data-modal="new-walk">${icon("plus")} Dodaj termin</button>
+        </div>
+      </div>
+
+      <div class="walk-list">
+        ${walks.map((walk) => renderAdminWalkRow(walk)).join("") || renderEmpty("calendar", "Brak pasujących spacerów", "Zmień filtr albo dodaj nowy termin.", "Dodaj spacer", "new-walk")}
+      </div>
+    </div>`;
+  }
+
+  function renderAdminWalkRow(walk) {
+    const accepted = acceptedApplications(walk);
+    const pending = pendingApplications(walk);
+    const percent = Math.min(100, Math.round((accepted.length / walk.capacity) * 100));
+    const full = accepted.length >= walk.capacity;
+    return `<article class="walk-row" data-action="open-walk" data-id="${walk.id}">
+      <div class="walk-date">
+        <b>${dayNumber(walk.date)}</b>
+        <span>${monthShort(walk.date)}</span>
+        <small>${esc(walk.time)}</small>
+      </div>
+      <div class="walk-info">
+        <strong>${esc(walk.location)}</strong>
+        <span>${esc(walk.type)}</span>
+        <div class="tag-row" style="margin-top:8px">${walk.tags.slice(0, 2).map((tag) => `<span class="tag">${esc(tag)}</span>`).join("")}</div>
+      </div>
+      <div class="walk-meta">
+        <strong>${esc(walkMode(walk.mode))}</strong>
+        <span>${pending.length ? `${pending.length} zgłoszeń czeka` : "Brak oczekujących zgłoszeń"}</span>
+      </div>
+      <div class="capacity">
+        <div class="capacity-top"><span>Miejsca</span><span>${accepted.length}/${walk.capacity}</span></div>
+        <div class="capacity-track"><div class="capacity-fill ${full ? "full" : ""}" style="width:${percent}%"></div></div>
+      </div>
+      <div class="walk-actions">
+        ${pending.length ? badge(`${pending.length} do decyzji`, "amber") : badge(full ? "pełny" : "otwarty", full ? "clay" : "green")}
+        <div class="avatars">${accepted.slice(0, 3).map((app) => miniAvatar(getDog(app.dogId))).join("")}</div>
+        <button class="icon-button" data-action="open-walk" data-id="${walk.id}" aria-label="Otwórz spacer">${icon("chevronRight")}</button>
+      </div>
+    </article>`;
+  }
+
+  function renderAdminWalkDetail() {
+    const walk = getWalk(state.ui.selectedWalkId) || sortWalks(state.walks.filter(isUpcoming))[0];
+    if (!walk) return renderEmpty("calendar", "Nie znaleziono spaceru", "Wróć do listy terminów.", null, null);
+    state.ui.selectedWalkId = walk.id;
+    const accepted = acceptedApplications(walk);
+    const pending = pendingApplications(walk);
+    const waitlist = waitlistApplications(walk);
+    const conflicts = allWalkConflicts(walk);
+    const tabs = [
+      { id: "applications", label: `Zgłoszenia ${pending.length ? `(${pending.length})` : ""}` },
+      { id: "participants", label: `Biorą udział (${accepted.length})` },
+      { id: "waitlist", label: `Rezerwowa (${waitlist.length})` }
+    ];
+
+    return `<div class="stack">
+      <div class="detail-header">
+        <div class="detail-title">
+          <button class="back-button" data-action="navigate" data-view="admin-walks">${icon("chevronLeft")} Wróć do spacerów</button>
+          <h2>${formatDate(walk.date, { weekday: "long", day: "numeric", month: "long" })}, ${esc(walk.time)}</h2>
+          <p>${esc(walk.location)} · ${esc(walk.type)}</p>
+        </div>
+        <div class="detail-actions">
+          <button class="secondary-button" data-action="duplicate-walk" data-id="${walk.id}">${icon("copy")} Kopiuj</button>
+          <button class="primary-button" data-action="open-map" data-url="${esc(walk.mapUrl)}">${icon("map")} Mapa</button>
+        </div>
+      </div>
+
+      <article class="card pad">
+        <div class="info-grid">
+          <div class="info-box"><span>Miejsce zbiórki</span><strong>${esc(walk.locationDetails)}</strong></div>
+          <div class="info-box"><span>Skład</span><strong>${accepted.length} z ${walk.capacity} psów</strong></div>
+          <div class="info-box"><span>Zasada zapisu</span><strong>${esc(walkMode(walk.mode))}</strong></div>
+          <div class="info-box"><span>Cena</span><strong>${walk.price} zł za psa</strong></div>
+        </div>
+        <div style="margin-top:14px">${tags(walk.tags)}</div>
+        <p style="margin:14px 0 0;color:var(--ink-soft);font-size:12px;line-height:1.55">${esc(walk.info)}</p>
+      </article>
+
+      ${conflicts.length ? `<div class="alert red">${icon("alert")} <div><strong>Konflikt w zatwierdzonym składzie.</strong><br>${conflicts.map((item) => `${esc(item.dogA.name)} + ${esc(item.dogB.name)}: ${esc(item.relation.note)}`).join(" ")}</div></div>` : accepted.filter((app) => getDog(app.dogId).status === "needs-review").length ? `<div class="alert amber">${icon("alert")} W składzie jest pies wymagający wcześniejszej oceny.</div>` : `<div class="alert green">${icon("checkCircle")} Brak zapisanych konfliktów w zatwierdzonym składzie.</div>`}
+
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>Zarządzanie składem</h2>
+            <p>Jedno zgłoszenie zmienia status. Nie kopiujesz imienia między kolumnami.</p>
+          </div>
+          <div class="tabs">
+            ${tabs.map((tab) => `<button class="tab-button ${state.ui.walkTab === tab.id ? "active" : ""}" data-action="set-walk-tab" data-tab="${tab.id}">${esc(tab.label)}</button>`).join("")}
+          </div>
+        </div>
+        <div class="card-body">
+          ${renderWalkTab(walk)}
+        </div>
+      </article>
+    </div>`;
+  }
+
+  function renderWalkTab(walk) {
+    if (state.ui.walkTab === "participants") {
+      const apps = acceptedApplications(walk);
+      return apps.length ? `<div class="application-list">${apps.map((app) => renderParticipantCard(walk, app)).join("")}</div>` : renderInlineEmpty("users", "Nie ma jeszcze zaakceptowanych psów.");
+    }
+    if (state.ui.walkTab === "waitlist") {
+      const apps = waitlistApplications(walk);
+      return apps.length ? `<div class="application-list">${apps.map((app) => renderWaitlistCard(walk, app)).join("")}</div>` : renderInlineEmpty("hourglass", "Lista rezerwowa jest pusta.");
+    }
+    const apps = pendingApplications(walk);
+    return apps.length ? `<div class="application-list">${apps.map((app) => renderApplicationCard(walk, app)).join("")}</div>` : renderInlineEmpty("checkCircle", "Wszystkie zgłoszenia zostały rozpatrzone.");
+  }
+
+  function renderApplicationCard(walk, app) {
+    const dog = getDog(app.dogId);
+    const guardian = getGuardian(dog.guardianId);
+    const status = dogStatus(dog.status);
+    const conflicts = conflictsForCandidate(walk, dog.id);
+    return `<article class="application-card">
+      <div class="avatar">${dogArt(dog, true)}</div>
+      <div class="application-main">
+        <div class="application-name">
+          <strong>${esc(dog.name)}</strong>
+          ${badge(status.label, status.className)}
+          ${dog.firstWalk ? badge("pierwszy spacer", "blue") : ""}
+        </div>
+        <p>${esc(dog.breed)} · ${esc(guardian.name)} · ${esc(dog.privateProfile.comfortDistance)}</p>
+        <div class="tag-row" style="margin-top:8px">${dog.privateProfile.flags.slice(0, 3).map((flag) => `<span class="tag">${esc(flag)}</span>`).join("")}</div>
+        ${conflicts.length ? `<div class="alert ${conflicts.some((item) => item.relation.level === "block") ? "red" : "amber"}" style="margin-top:10px">${icon("alert")} ${conflicts.map((item) => `${esc(item.otherDog.name)}: ${esc(item.relation.note)}`).join(" ")}</div>` : ""}
+      </div>
+      <div class="application-actions">
+        <button class="small-button" data-action="open-dog" data-id="${dog.id}">Profil</button>
+        <button class="small-button warn" data-action="waitlist-application" data-walk="${walk.id}" data-app="${app.id}">Rezerwowa</button>
+        <button class="small-button danger" data-action="reject-application" data-walk="${walk.id}" data-app="${app.id}">Odrzuć</button>
+        <button class="small-button primary" data-action="approve-application" data-walk="${walk.id}" data-app="${app.id}">${icon("check")} Akceptuj</button>
+      </div>
+    </article>`;
+  }
+
+  function renderParticipantCard(walk, app) {
+    const dog = getDog(app.dogId);
+    const payment = paymentStatus(app.paymentStatus);
+    const attendanceLabels = {
+      pending: null,
+      present: badge("obecny", "green"),
+      "no-show": badge("nieobecny", "red"),
+      "late-cancel": badge("późne odwołanie", "clay")
+    };
+    return `<article class="application-card accepted">
+      <div class="avatar">${dogArt(dog, true)}</div>
+      <div class="application-main">
+        <div class="application-name">
+          <strong>${esc(dog.name)}</strong>
+          ${badge(payment.label, payment.className)}
+          ${attendanceLabels[app.attendance] || ""}
+        </div>
+        <p>${esc(dog.privateProfile.comfortDistance)} · ${esc(dog.privateProfile.triggers)}</p>
+        <div class="tag-row" style="margin-top:8px">${dog.privateProfile.flags.slice(0, 3).map((flag) => `<span class="tag">${esc(flag)}</span>`).join("")}</div>
+      </div>
+      <div class="application-actions">
+        <button class="small-button" data-action="open-dog" data-id="${dog.id}">Profil</button>
+        ${app.attendance === "pending" ? `
+          <button class="small-button soft" data-action="mark-attendance" data-outcome="present" data-walk="${walk.id}" data-app="${app.id}">Obecny</button>
+          <button class="small-button warn" data-action="mark-attendance" data-outcome="late-cancel" data-walk="${walk.id}" data-app="${app.id}">Późne odwołanie</button>
+          <button class="small-button danger" data-action="mark-attendance" data-outcome="no-show" data-walk="${walk.id}" data-app="${app.id}">Nieobecny</button>
+          <button class="small-button" data-action="cancel-booking" data-walk="${walk.id}" data-app="${app.id}">Odwołaj w terminie</button>
+        ` : `<button class="small-button" data-action="undo-attendance" data-walk="${walk.id}" data-app="${app.id}">Cofnij</button>`}
+      </div>
+    </article>`;
+  }
+
+  function renderWaitlistCard(walk, app) {
+    const dog = getDog(app.dogId);
+    return `<article class="application-card waitlist">
+      <div class="avatar">${dogArt(dog, true)}</div>
+      <div class="application-main">
+        <div class="application-name"><strong>${esc(dog.name)}</strong>${badge("lista rezerwowa", "blue")}</div>
+        <p>${esc(dog.privateProfile.comfortDistance)} · ${esc(dog.privateProfile.flags.slice(0, 2).join(" · "))}</p>
+      </div>
+      <div class="application-actions">
+        <button class="small-button" data-action="restore-pending" data-walk="${walk.id}" data-app="${app.id}">Do decyzji</button>
+        <button class="small-button primary" data-action="approve-application" data-walk="${walk.id}" data-app="${app.id}">Przenieś do składu</button>
+      </div>
+    </article>`;
+  }
+
+  function renderAdminDogs() {
+    const query = state.ui.search.trim().toLowerCase();
+    let dogs = [...state.dogs];
+    if (state.ui.dogFilter !== "all") dogs = dogs.filter((dog) => dog.status === state.ui.dogFilter);
+    if (query) dogs = dogs.filter((dog) => [dog.name, dog.breed, dog.publicProfile.headline, dog.privateProfile.triggers, ...dog.privateProfile.flags].join(" ").toLowerCase().includes(query));
+
+    return `<div class="stack">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">${icon("search")}<input type="search" data-input="search" placeholder="Szukaj psa, rasy lub wyzwania" value="${esc(state.ui.search)}" /></div>
+          <select class="filter-select" data-input="dog-filter">
+            <option value="all" ${state.ui.dogFilter === "all" ? "selected" : ""}>Wszystkie statusy</option>
+            <option value="approved" ${state.ui.dogFilter === "approved" ? "selected" : ""}>Zatwierdzone</option>
+            <option value="approved-conditional" ${state.ui.dogFilter === "approved-conditional" ? "selected" : ""}>Warunkowo</option>
+            <option value="needs-review" ${state.ui.dogFilter === "needs-review" ? "selected" : ""}>Wymagają oceny</option>
+          </select>
+        </div>
+        <div class="toolbar-right">${badge(`${dogs.length} profili`, "green")}</div>
+      </div>
+
+      <div class="dog-grid">
+        ${dogs.map((dog) => renderDogAdminCard(dog)).join("") || renderEmpty("dogs", "Nie znaleziono psa", "Zmień filtr lub wyszukiwane hasło.", null, null)}
+      </div>
+    </div>`;
+  }
+
+  function renderDogAdminCard(dog) {
+    const guardian = getGuardian(dog.guardianId);
+    const status = dogStatus(dog.status);
+    const packageBalance = packageBalanceForDog(dog.id);
+    const lastHistory = [...dog.history].sort((a, b) => b.date.localeCompare(a.date))[0];
+    return `<article class="dog-admin-card" data-action="open-dog" data-id="${dog.id}">
+      <div class="dog-admin-head">
+        <div class="avatar">${dogArt(dog, true)}</div>
+        <div class="dog-admin-copy">
+          <strong>${esc(dog.name)}</strong>
+          <span>${esc(dog.breed)} · ${esc(dog.age)}</span>
+        </div>
+        ${badge(status.label, status.className)}
+      </div>
+      <div class="tag-row">${dog.privateProfile.flags.slice(0, 3).map((flag) => `<span class="tag">${esc(flag)}</span>`).join("")}</div>
+      <div class="dog-admin-footer">
+        <span>${esc(guardian.name)}</span>
+        <span>${packageBalance} wolnych wejść</span>
+        <span>${lastHistory ? formatDate(lastHistory.date, { day: "numeric", month: "short" }) : "brak historii"}</span>
+      </div>
+    </article>`;
+  }
+
+  function renderAdminDogDetail() {
+    const dog = getDog(state.ui.selectedDogId) || state.dogs[0];
+    state.ui.selectedDogId = dog.id;
+    const guardian = getGuardian(dog.guardianId);
+    const status = dogStatus(dog.status);
+    const packages = state.packages.filter((item) => item.dogId === dog.id);
+    const relations = state.relations.filter((item) => item.dogA === dog.id || item.dogB === dog.id);
+
+    return `<div class="stack">
+      <div class="detail-header">
+        <div class="detail-title">
+          <button class="back-button" data-action="navigate" data-view="admin-dogs">${icon("chevronLeft")} Wróć do psów</button>
+          <h2>${esc(dog.name)}</h2>
+          <p>${esc(dog.breed)} · ${esc(dog.age)} · ${esc(guardian.name)}</p>
+        </div>
+        <div class="detail-actions">
+          <button class="secondary-button" data-action="open-modal" data-modal="add-note" data-dog="${dog.id}">${icon("note")} Dodaj notatkę</button>
+          <button class="primary-button" data-action="open-modal" data-modal="edit-dog-status" data-dog="${dog.id}">${icon("edit")} Zmień status</button>
+        </div>
+      </div>
+
+      <div class="profile-layout">
+        <aside class="card profile-summary">
+          <div class="profile-visual">
+            ${dogArt(dog)}
+            <div class="profile-visual-overlay">
+              <h2>${esc(dog.name)}</h2>
+              <p>${esc(dog.publicProfile.area)} · ${esc(dog.sex)}</p>
+            </div>
+          </div>
+          <div class="profile-summary-content">
+            <div style="margin-bottom:12px">${badge(status.label, status.className)} ${dog.publicProfile.published ? badge("widoczny w Psiutkach", "blue") : badge("profil ukryty", "")}</div>
+            <p class="profile-quote">${esc(dog.publicProfile.headline)} ${esc(dog.publicProfile.seeking)}</p>
+            <div class="profile-actions">
+              <button class="secondary-button" data-action="call-guardian" data-phone="${esc(guardian.phone)}">${icon("phone")} Telefon</button>
+              <button class="secondary-button" data-action="mail-guardian" data-email="${esc(guardian.email)}">${icon("mail")} Email</button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="stack">
+          <article class="card">
+            <div class="card-head"><div><h2>Profil prywatny</h2><p>Tylko dla behawiorysty i opiekuna</p></div>${icon("lock")}</div>
+            <div class="card-body">
+              <dl class="definition-list">
+                ${definition("Status kwalifikacji", status.label)}
+                ${definition("Komfortowy dystans", dog.privateProfile.comfortDistance)}
+                ${definition("Reakcje na psy", dog.privateProfile.reactions)}
+                ${definition("Wyzwalacze", dog.privateProfile.triggers)}
+                ${definition("Co pomaga", dog.privateProfile.helps)}
+                ${definition("Zdrowie", dog.privateProfile.health)}
+                ${definition("Kaganiec", dog.privateProfile.muzzle)}
+                ${definition("Historia pogryzień", dog.privateProfile.biteHistory)}
+                ${definition("Notatka prowadzącej", dog.privateProfile.notes)}
+              </dl>
+              <div style="margin-top:14px">${tags(dog.privateProfile.flags)}</div>
+            </div>
+          </article>
+
+          <div class="grid-2">
+            <article class="card">
+              <div class="card-head"><div><h3>Pakiety</h3><p>Saldo wynika z historii operacji</p></div><button class="ghost-button" data-action="open-modal" data-modal="add-package" data-dog="${dog.id}">Dodaj</button></div>
+              <div class="card-body">
+                ${packages.length ? packages.map((item) => renderPackageMini(item)).join("") : `<div class="alert blue">${icon("package")} Brak pakietów.</div>`}
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-head"><div><h3>Relacje z psami</h3><p>Ostrzeżenia przy układaniu grupy</p></div></div>
+              <div class="card-body">
+                <div class="list">
+                  ${relations.map((relation) => {
+                    const otherId = relation.dogA === dog.id ? relation.dogB : relation.dogA;
+                    const other = getDog(otherId);
+                    const klass = relation.level === "block" ? "red" : relation.level === "caution" ? "amber" : "green";
+                    return `<div class="list-row">
+                      <div class="avatar">${dogArt(other, true)}</div>
+                      <div class="list-main"><strong>${esc(other.name)}</strong><span>${esc(relation.note)}</span></div>
+                      ${badge(relation.level === "block" ? "nie łączyć" : relation.level === "caution" ? "uwaga" : "dobre", klass)}
+                    </div>`;
+                  }).join("") || `<div class="alert blue">${icon("info")} Brak zapisanych relacji.</div>`}
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-head"><div><h2>Historia</h2><p>Spacery, zmiany profilu i prywatne notatki</p></div></div>
+            <div class="card-body">
+              <div class="timeline">
+                ${[...dog.history].sort((a, b) => b.date.localeCompare(a.date)).map((item) => `
+                  <div class="timeline-item">
+                    <div class="timeline-dot">${icon(item.type === "walk" ? "walk" : "note")}</div>
+                    <div class="timeline-copy"><strong>${esc(item.title)}</strong><span>${formatDate(item.date)} · ${esc(item.note)}</span></div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function definition(term, value) {
+    return `<div class="definition-row"><dt>${esc(term)}</dt><dd>${esc(value)}</dd></div>`;
+  }
+
+  function renderPackageMini(item) {
+    const dog = getDog(item.dogId);
+    return `<div class="list-row">
+      <div class="avatar">${dogArt(dog, true)}</div>
+      <div class="list-main"><strong>${esc(item.name)}</strong><span>${availableCredits(item)} wolne · ${item.reserved} zarezerwowane · ${item.used} wykorzystane</span></div>
+      ${badge(item.status === "active" ? "aktywny" : "zakończony", item.status === "active" ? "green" : "")}
+    </div>`;
+  }
+
+  function renderAdminFinance() {
+    const paidTotal = state.payments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const unusedCredits = state.packages.filter((item) => item.status === "active").reduce((sum, item) => sum + availableCredits(item), 0);
+    const reservedCredits = state.packages.reduce((sum, item) => sum + item.reserved, 0);
+    const dueApps = state.walks.flatMap((walk) => walk.applications.filter((app) => app.status === "accepted" && app.paymentStatus === "due").map((app) => ({ walk, app })));
+    const activePackages = state.packages.filter((item) => item.status === "active");
+
+    return `<div class="stack">
+      <div class="grid-4">
+        ${kpiCard("Wpłaty w demo", `${paidTotal} zł`, "Zarejestrowane ręcznie", "wallet", "#dce8dd")}
+        ${kpiCard("Wolne wejścia", unusedCredits, "W aktywnych pakietach", "package", "#deedf2")}
+        ${kpiCard("Zarezerwowane", reservedCredits, "Na zaakceptowane terminy", "hourglass", "#faecd4")}
+        ${kpiCard("Do zapłaty", dueApps.length, "Za pojedyncze spacery", "credit", "#f3d8d1")}
+      </div>
+
+      <article class="card jump-target ${state.ui.financeFocus === "due" ? "jump-highlight" : ""}" id="finance-due">
+        <div class="card-head">
+          <div><h2>Do zapłaty</h2><p>Zaakceptowane spacery bez rozliczenia</p></div>
+          ${badge(`${dueApps.length} ${dueApps.length === 1 ? "płatność" : "płatności"}`, dueApps.length ? "red" : "green")}
+        </div>
+        <div class="card-body">
+          ${dueApps.length ? `<div class="finance-list">
+            ${dueApps.map(({ walk, app }) => {
+              const dog = getDog(app.dogId);
+              const guardian = getGuardian(dog.guardianId);
+              return `<div class="finance-row">
+                <div><strong>${esc(dog.name)} · ${esc(guardian.name)}</strong><span>${esc(walk.location)}</span></div>
+                <div><strong>${formatDate(walk.date, { day: "numeric", month: "long" })} · ${esc(walk.time)}</strong><span>${esc(walk.type)}</span></div>
+                <div class="money">${walk.price} zł</div>
+                <div>${badge("do zapłaty", "red")}</div>
+                <button class="small-button" data-action="open-walk" data-id="${walk.id}">Otwórz</button>
+              </div>`;
+            }).join("")}
+          </div>` : `<div class="alert green">${icon("checkCircle")} Brak zaległych płatności.</div>`}
+        </div>
+      </article>
+
+      <div class="section-title">
+        <div><h2>Aktywne pakiety</h2><p>Zielone wejście jest wolne, żółte zarezerwowane, różowe wykorzystane</p></div>
+        <button class="primary-button" data-action="open-modal" data-modal="add-package">${icon("plus")} Dodaj pakiet</button>
+      </div>
+      <div class="grid-3">
+        ${activePackages.map((item) => renderPackageCard(item)).join("")}
+      </div>
+
+      <article class="card">
+        <div class="card-head">
+          <div><h2>Wpłaty</h2><p>Na MVP przelew, BLIK i gotówka są oznaczane ręcznie</p></div>
+          <button class="secondary-button" data-action="open-modal" data-modal="add-payment">${icon("plus")} Dodaj wpłatę</button>
+        </div>
+        <div class="card-body">
+          <div class="finance-list">
+            ${[...state.payments].sort((a, b) => b.date.localeCompare(a.date)).map((payment) => {
+              const dog = getDog(payment.dogId);
+              const guardian = getGuardian(payment.guardianId);
+              return `<div class="finance-row">
+                <div><strong>${esc(dog.name)} · ${esc(guardian.name)}</strong><span>${esc(payment.description)}</span></div>
+                <div><strong>${formatDate(payment.date, { day: "numeric", month: "long" })}</strong><span>${esc(payment.method)}</span></div>
+                <div class="money">${payment.amount} zł</div>
+                <div>${badge("opłacone", "green")}</div>
+                <button class="small-button" data-action="delete-payment" data-id="${payment.id}">${icon("trash")}</button>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>
+      </article>
+    </div>`;
+  }
+
+  function renderPackageCard(item) {
+    const dog = getDog(item.dogId);
+    const cells = [];
+    for (let i = 0; i < item.total; i += 1) {
+      let klass = "available";
+      if (i < item.used) klass = "used";
+      else if (i < item.used + item.reserved) klass = "reserved";
+      cells.push(`<span class="package-dot ${klass}"></span>`);
+    }
+    return `<article class="package-card">
+      <div class="package-head">
+        <div class="avatar">${dogArt(dog, true)}</div>
+        <div class="package-copy"><strong>${esc(dog.name)}</strong><span>${esc(item.name)} · ważny do ${formatDate(item.expiresAt, { day: "numeric", month: "short" })}</span></div>
+        ${badge("aktywny", "green")}
+      </div>
+      <div class="package-balance"><b>${availableCredits(item)}</b><span>wolne wejścia</span></div>
+      <div class="package-dots">${cells.join("")}</div>
+    </article>`;
+  }
+
+  function renderAdminCommunity() {
+    const published = state.dogs.filter((dog) => dog.publicProfile.published);
+    const matches = findMatches();
+    const incoming = state.interests.filter((item) => item.status === "open");
+    return `<div class="stack">
+      <div class="grid-3">
+        ${kpiCard("Widoczne profile", published.length, `${state.dogs.length - published.length} ukrytych`, "eye", "#dce8dd")}
+        ${kpiCard("Wzajemne zainteresowania", matches.length, "Do sprawdzenia przez behawiorystę", "heart", "#f3d8d1")}
+        ${kpiCard("Jednostronne zgłoszenia", incoming.length, "Bez ujawniania danych kontaktowych", "community", "#deedf2")}
+      </div>
+
+      ${matches.length ? `<article class="card">
+        <div class="card-head"><div><h2>Proponowane dopasowania</h2><p>Kontakt nie jest przekazywany automatycznie</p></div></div>
+        <div class="card-body">
+          <div class="list">
+            ${matches.map((match) => {
+              const dogA = getDog(match[0]);
+              const dogB = getDog(match[1]);
+              const relation = relationBetween(dogA.id, dogB.id);
+              return `<div class="list-row">
+                <div class="avatars">${miniAvatar(dogA)}${miniAvatar(dogB)}</div>
+                <div class="list-main"><strong>${esc(dogA.name)} i ${esc(dogB.name)}</strong><span>${relation ? esc(relation.note) : "Brak wspólnej historii. Potrzebna decyzja prowadzącej."}</span></div>
+                ${relation?.level === "block" ? badge("nie łączyć", "red") : relation?.level === "good" ? badge("dobry duet", "green") : badge("do oceny", "amber")}
+                <button class="small-button primary" data-action="create-duet" data-a="${dogA.id}" data-b="${dogB.id}">Zaproponuj duet</button>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>
+      </article>` : ""}
+
+      <div class="section-title"><div><h2>Profile Psiutków</h2><p>Humorystyczna warstwa publiczna, oddzielona od danych prywatnych</p></div></div>
+      <div class="psinder-grid">
+        ${state.dogs.map((dog) => renderPsinderCard(dog, true)).join("")}
+      </div>
+    </div>`;
+  }
+
+  function findMatches() {
+    const pairs = new Set();
+    const matches = [];
+    state.interests.forEach((interest) => {
+      const reverse = state.interests.find((item) => item.fromDogId === interest.toDogId && item.toDogId === interest.fromDogId);
+      if (!reverse) return;
+      const key = [interest.fromDogId, interest.toDogId].sort().join("|");
+      if (!pairs.has(key)) {
+        pairs.add(key);
+        matches.push(key.split("|"));
+      }
+    });
+    return matches;
+  }
+
+  function renderClientHome() {
+    const dog = activeDog();
+    const upcoming = sortWalks(state.walks.filter(isUpcoming));
+    const ownBookings = upcoming.flatMap((walk) => {
+      const app = applicationForDog(walk, dog.id);
+      return app ? [{ walk, app }] : [];
+    });
+    const acceptedNext = ownBookings.find((item) => item.app.status === "accepted") || ownBookings[0];
+    const packages = state.packages.filter((item) => item.dogId === dog.id && item.status === "active");
+    const recommended = upcoming.filter((walk) => !applicationForDog(walk, dog.id) && walk.mode !== "invite").slice(0, 2);
+    const incoming = state.interests.filter((interest) => interest.toDogId === dog.id && !state.interests.some((item) => item.fromDogId === dog.id && item.toDogId === interest.fromDogId));
+
+    return `<div class="stack">
+      <article class="card hero-card">
+        <div class="hero-content">
+          <span class="hero-eyebrow">${icon("spark")} Profil tygodnia</span>
+          <h2>${esc(dog.name)}, ${esc(dog.age)}</h2>
+          <p>${esc(dog.publicProfile.headline)} ${esc(dog.publicProfile.seeking)}</p>
+          <div class="hero-actions">
+            <button class="primary-button" data-action="navigate" data-view="client-dog">${icon("dogs")} Otwórz profil</button>
+            <button class="secondary-button" data-action="navigate" data-view="client-community">${icon("community")} Zobacz Psiutki</button>
+          </div>
+        </div>
+      </article>
+
+      <div class="client-grid">
+        <div class="stack">
+          <article class="card">
+            <div class="card-head"><div><h2>Najbliższy zapis</h2><p>Status i szczegóły organizacyjne</p></div></div>
+            <div class="card-body">
+              ${acceptedNext ? renderClientNextWalk(acceptedNext.walk, acceptedNext.app) : renderInlineEmpty("calendar", "Nie masz jeszcze zgłoszeń na spacer.")}
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div><h2>Spacery dla ${esc(dog.name)}</h2><p>Każde zgłoszenie sprawdza behawiorysta</p></div><button class="ghost-button" data-action="navigate" data-view="client-walks">Wszystkie ${icon("chevronRight")}</button></div>
+            <div class="card-body">
+              <div class="walk-card-grid">${recommended.map((walk) => renderClientWalkCard(walk)).join("") || renderInlineEmpty("checkCircle", "Brak nowych terminów bez zgłoszenia.")}</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="stack">
+          <article class="card pad">
+            <div class="section-title"><div><h3>Twój pakiet</h3><p>Saldo jest aktualizowane po każdej decyzji</p></div></div>
+            ${packages.length ? packages.map((item) => renderClientPackage(item)).join("") : `<div class="alert blue">${icon("package")} Brak aktywnego pakietu.</div>`}
+          </article>
+
+          ${incoming.length ? `<article class="card pad">
+            <div class="section-title"><div><h3>Ktoś chce Was poznać</h3><p>Dane opiekuna pozostają ukryte</p></div></div>
+            ${incoming.slice(0, 1).map((interest) => {
+              const other = getDog(interest.fromDogId);
+              return `<div class="list-row">
+                <div class="avatar">${dogArt(other, true)}</div>
+                <div class="list-main"><strong>${esc(other.name)}</strong><span>${esc(other.publicProfile.headline)}</span></div>
+                <button class="small-button primary" data-action="interest" data-dog="${other.id}">Też chcemy</button>
+              </div>`;
+            }).join("")}
+          </article>` : ""}
+
+          <article class="card pad">
+            <div class="alert green">${icon("lock")} Dane behawioralne ${esc(dog.name)} nie są widoczne w Psiutkach.</div>
+          </article>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderClientNextWalk(walk, app) {
+    const status = bookingStatus(app.status);
+    const payment = paymentStatus(app.paymentStatus);
+    const exactVisible = app.status === "accepted";
+    return `<div class="client-next-walk">
+      <div class="client-next-date"><b>${dayNumber(walk.date)}</b><span>${monthShort(walk.date)}</span></div>
+      <div class="client-next-copy">
+        <h3>${esc(walk.time)} · ${esc(walk.location)}</h3>
+        <p>${esc(walk.type)} · ${esc(walk.info)}</p>
+        <div class="tag-row" style="margin-top:9px">${badge(status.label, status.className)} ${app.status === "accepted" ? badge(payment.label, payment.className) : ""}</div>
+        ${exactVisible ? `<p style="margin-top:9px"><strong>Dokładne miejsce:</strong> ${esc(walk.locationDetails)}</p>` : `<p style="margin-top:9px">Dokładna lokalizacja pojawi się po akceptacji.</p>`}
+      </div>
+      ${exactVisible ? `<button class="secondary-button" data-action="open-map" data-url="${esc(walk.mapUrl)}">${icon("map")} Mapa</button>` : `<button class="secondary-button" data-action="navigate" data-view="client-walks">Szczegóły</button>`}
+    </div>`;
+  }
+
+  function renderClientPackage(item) {
+    const cells = [];
+    for (let i = 0; i < item.total; i += 1) {
+      let klass = "available";
+      if (i < item.used) klass = "used";
+      else if (i < item.used + item.reserved) klass = "reserved";
+      cells.push(`<span class="package-dot ${klass}"></span>`);
+    }
+    return `<div>
+      <div class="package-balance"><b>${availableCredits(item)}</b><span>wolne z ${item.total}</span></div>
+      <div class="package-dots">${cells.join("")}</div>
+      <p style="margin:10px 0 0;color:var(--ink-soft);font-size:10px">${item.reserved} wejście zarezerwowane · ważny do ${formatDate(item.expiresAt, { day: "numeric", month: "long" })}</p>
+    </div>`;
+  }
+
+  function renderClientWalks() {
+    const dog = activeDog();
+    const query = state.ui.search.trim().toLowerCase();
+    let walks = sortWalks(state.walks.filter(isUpcoming));
+    if (query) walks = walks.filter((walk) => [walk.location, walk.type, walk.info, ...walk.tags].join(" ").toLowerCase().includes(query));
+
+    return `<div class="stack">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">${icon("search")}<input type="search" data-input="search" placeholder="Szukaj miejsca lub rodzaju" value="${esc(state.ui.search)}" /></div>
+        </div>
+        <div class="toolbar-right">${badge(`${packageBalanceForDog(dog.id)} wolne wejścia`, "green")}</div>
+      </div>
+      <div class="walk-card-grid">
+        ${walks.map((walk) => renderClientWalkCard(walk)).join("")}
+      </div>
+    </div>`;
+  }
+
+  function renderClientWalkCard(walk) {
+    const dog = activeDog();
+    const app = applicationForDog(walk, dog.id);
+    const accepted = acceptedApplications(walk).length;
+    const spots = Math.max(0, walk.capacity - accepted);
+    const status = app ? bookingStatus(app.status) : null;
+    let button = "";
+    if (app) {
+      button = `<button class="secondary-button" disabled>${icon(app.status === "accepted" ? "checkCircle" : "hourglass")} ${esc(status.label)}</button>`;
+    } else if (walk.mode === "invite") {
+      button = `<button class="secondary-button" disabled>${icon("lock")} Na zaproszenie</button>`;
+    } else {
+      button = `<button class="primary-button" data-action="book-walk" data-id="${walk.id}">Zgłoś ${esc(dog.name)}</button>`;
+    }
+    return `<article class="client-walk-card">
+      <div class="client-walk-top">
+        <div class="client-walk-date">
+          <div class="client-walk-date-tile"><b>${dayNumber(walk.date)}</b><span>${monthShort(walk.date)}</span></div>
+          <div class="client-walk-date-copy"><strong>${esc(walk.time)} · ${esc(walk.location)}</strong><span>${esc(walk.type)}</span></div>
+        </div>
+        ${badge(spots ? `${spots} wolne` : "pełny", spots ? "green" : "clay")}
+      </div>
+      <p>${esc(walk.info)}</p>
+      ${tags(walk.tags)}
+      ${app?.status === "accepted" ? `<div class="alert green">${icon("map")} ${esc(walk.locationDetails)}</div>` : `<div class="alert blue">${icon("lock")} Dokładny punkt po akceptacji.</div>`}
+      <div class="client-walk-foot">
+        <div class="price">${walk.price} zł <span>/ pies</span></div>
+        ${button}
+      </div>
+    </article>`;
+  }
+
+  function renderClientDog() {
+    const dog = activeDog();
+    const guardian = getGuardian(dog.guardianId);
+    const status = dogStatus(dog.status);
+    return `<div class="profile-layout">
+      <aside class="card profile-summary">
+        <div class="profile-visual">
+          ${dogArt(dog)}
+          <div class="profile-visual-overlay"><h2>${esc(dog.name)}</h2><p>${esc(dog.breed)} · ${esc(dog.age)}</p></div>
+        </div>
+        <div class="profile-summary-content">
+          <div style="margin-bottom:12px">${dog.publicProfile.published ? badge("widoczny w Psiutkach", "blue") : badge("profil ukryty", "")}</div>
+          <p class="profile-quote">${esc(dog.publicProfile.headline)} ${esc(dog.publicProfile.seeking)}</p>
+          <div class="profile-actions">
+            <button class="secondary-button" data-action="open-modal" data-modal="edit-public-profile">${icon("edit")} Edytuj</button>
+            <button class="secondary-button" data-action="toggle-own-publish">${icon(dog.publicProfile.published ? "eyeOff" : "eye")} ${dog.publicProfile.published ? "Ukryj" : "Pokaż"}</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="stack">
+        <article class="card">
+          <div class="card-head"><div><h2>Dane psa</h2><p>Widoczne tylko dla Ciebie i behawiorysty</p></div>${icon("lock")}</div>
+          <div class="card-body">
+            <dl class="definition-list">
+              ${definition("Opiekun", guardian.name)}
+              ${definition("Rasa", dog.breed)}
+              ${definition("Wiek", dog.age)}
+              ${definition("Płeć", dog.sex)}
+              ${definition("Waga", dog.weight)}
+              ${definition("Status spacerów", status.label)}
+              ${definition("Komfortowy dystans", dog.privateProfile.comfortDistance)}
+              ${definition("Co pomaga", dog.privateProfile.helps)}
+              ${definition("Zdrowie", dog.privateProfile.health)}
+            </dl>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Karta w Psiutkach</h2><p>Ta część jest widoczna dla społeczności</p></div></div>
+          <div class="card-body">
+            <dl class="definition-list">
+              ${definition("Okolica", dog.publicProfile.area)}
+              ${definition("O sobie", dog.publicProfile.headline)}
+              ${definition("Kogo szuka", dog.publicProfile.seeking)}
+              ${definition("Lubi", dog.publicProfile.likes)}
+              ${definition("Nie lubi", dog.publicProfile.dislikes)}
+            </dl>
+            <div style="margin-top:14px">${tags(dog.publicProfile.traits)}</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Ostatnia historia</h2><p>Spacery i zmiany profilu</p></div></div>
+          <div class="card-body">
+            <div class="timeline">
+              ${[...dog.history].sort((a, b) => b.date.localeCompare(a.date)).map((item) => `
+                <div class="timeline-item"><div class="timeline-dot">${icon(item.type === "walk" ? "walk" : "note")}</div><div class="timeline-copy"><strong>${esc(item.title)}</strong><span>${formatDate(item.date)} · ${esc(item.note)}</span></div></div>
+              `).join("")}
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>`;
+  }
+
+  function renderClientCommunity() {
+    const dog = activeDog();
+    const visibleDogs = state.dogs.filter((item) => item.id !== dog.id && item.publicProfile.published);
+    return `<div class="stack">
+      <div class="alert blue">${icon("info")} „Chcemy się poznać” nie udostępnia numeru telefonu. Przy wzajemnym zainteresowaniu skład sprawdza Joanna.</div>
+      <div class="psinder-grid">
+        ${visibleDogs.map((item) => renderPsinderCard(item, false)).join("")}
+      </div>
+    </div>`;
+  }
+
+  function renderPsinderCard(dog, adminMode) {
+    const active = activeDog();
+    const sent = state.interests.some((interest) => interest.fromDogId === active.id && interest.toDogId === dog.id);
+    const incoming = state.interests.some((interest) => interest.fromDogId === dog.id && interest.toDogId === active.id);
+    const mutual = sent && incoming;
+    return `<article class="psinder-card">
+      <div class="dog-visual">
+        ${dogArt(dog)}
+        <div class="dog-visual-top">
+          <span class="dog-distance">${icon("location")} ${esc(dog.publicProfile.area)}${!adminMode ? ` · ${esc(dog.publicProfile.distance)}` : ""}</span>
+          ${adminMode ? badge(dog.publicProfile.published ? "widoczny" : "ukryty", dog.publicProfile.published ? "green" : "red") : ""}
+        </div>
+      </div>
+      <div class="psinder-body">
+        <div class="psinder-title">
+          <div><h3>${esc(dog.name)}</h3><span>${esc(dog.age)} · ${esc(dog.breed)}</span></div>
+          ${adminMode ? `<button class="round-action" data-action="toggle-publish" data-dog="${dog.id}" aria-label="${dog.publicProfile.published ? "Ukryj profil" : "Pokaż profil"}">${icon(dog.publicProfile.published ? "eyeOff" : "eye")}</button>` : ""}
+        </div>
+        <p class="psinder-copy">${esc(dog.publicProfile.headline)} ${esc(dog.publicProfile.seeking)}</p>
+        ${tags(dog.publicProfile.traits)}
+        ${adminMode ? `<div class="psinder-actions"><button class="round-action" data-action="open-dog" data-id="${dog.id}">${icon("edit")}</button><button class="secondary-button" data-action="open-dog" data-id="${dog.id}">Otwórz profil prywatny</button></div>` : `<div class="psinder-actions"><button class="round-action" aria-label="Zapisz profil">${icon("heart")}</button><button class="${mutual ? "primary-button" : sent ? "secondary-button" : "primary-button"}" data-action="interest" data-dog="${dog.id}" ${sent ? "disabled" : ""}>${icon(mutual ? "heartFill" : sent ? "check" : "heart")} ${mutual ? "To jest match" : sent ? "Wysłano" : "Chcemy się poznać"}</button></div>`}
+      </div>
+    </article>`;
+  }
+
+  function renderEmpty(iconName, title, copy, buttonLabel, modal) {
+    return `<div class="empty-state">
+      <div class="empty-icon">${icon(iconName)}</div>
+      <h3>${esc(title)}</h3>
+      <p>${esc(copy)}</p>
+      ${buttonLabel ? `<button class="primary-button" data-action="open-modal" data-modal="${modal}">${icon("plus")} ${esc(buttonLabel)}</button>` : ""}
+    </div>`;
+  }
+
+  function renderInlineEmpty(iconName, copy) {
+    return `<div class="alert blue">${icon(iconName)} ${esc(copy)}</div>`;
+  }
+
+  function renderModal() {
+    const root = document.getElementById("modal-root");
+    if (!state.ui.modal) {
+      root.innerHTML = "";
+      return;
+    }
+
+    let content = "";
+    switch (state.ui.modal.type) {
+      case "new-walk": content = modalNewWalk(state.ui.modal.payload || {}); break;
+      case "edit-public-profile": content = modalEditPublicProfile(); break;
+      case "add-payment": content = modalAddPayment(); break;
+      case "add-package": content = modalAddPackage(state.ui.modal.payload?.dogId); break;
+      case "add-note": content = modalAddNote(state.ui.modal.payload?.dogId); break;
+      case "edit-dog-status": content = modalEditDogStatus(state.ui.modal.payload?.dogId); break;
+      case "about": content = modalAbout(); break;
+      case "notifications": content = modalNotifications(); break;
+      default: content = "";
+    }
+    root.innerHTML = content ? `<div class="modal-backdrop" data-action="modal-backdrop">${content}</div>` : "";
+  }
+
+  function modalShell(title, subtitle, body, footer = "", wide = false) {
+    return `<section class="modal ${wide ? "wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-modal-panel>
+      <header class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div><button class="modal-close" data-action="close-modal" aria-label="Zamknij">${icon("close")}</button></header>
+      <div class="modal-body">${body}</div>
+      ${footer ? `<footer class="modal-foot">${footer}</footer>` : ""}
+    </section>`;
+  }
+
+  function modalNewWalk(payload) {
+    const source = payload.sourceWalkId ? getWalk(payload.sourceWalkId) : null;
+    const defaultDate = source ? nextWeekDate(source.date) : "2026-09-15";
+    const body = `<form id="new-walk-form" class="form-grid">
+      <div class="field"><label for="walk-date">Data</label><input id="walk-date" name="date" type="date" required value="${esc(defaultDate)}" /></div>
+      <div class="field"><label for="walk-time">Godzina</label><input id="walk-time" name="time" type="time" required value="${esc(source?.time || "18:00")}" /></div>
+      <div class="field"><label for="walk-location">Miejsce publiczne</label><input id="walk-location" name="location" required value="${esc(source?.location || "")}" placeholder="np. Park Zachodni" /></div>
+      <div class="field"><label for="walk-type">Rodzaj</label><input id="walk-type" name="type" required value="${esc(source?.type || "Spacer socjalizacyjny")}" /></div>
+      <div class="field full"><label for="walk-details">Dokładne miejsce zbiórki</label><input id="walk-details" name="locationDetails" required value="${esc(source?.locationDetails || "")}" placeholder="Widoczne dopiero po akceptacji" /></div>
+      <div class="field full"><label for="walk-map">Link Google Maps</label><input id="walk-map" name="mapUrl" type="url" value="${esc(source?.mapUrl || "https://maps.google.com/")}" /></div>
+      <div class="field"><label for="walk-price">Cena za psa</label><input id="walk-price" name="price" type="number" min="0" required value="${source?.price ?? 80}" /></div>
+      <div class="field"><label for="walk-capacity">Limit psów</label><input id="walk-capacity" name="capacity" type="number" min="1" max="12" required value="${source?.capacity ?? 4}" /></div>
+      <div class="field full"><label>Sposób zapisu</label><div class="segmented">
+        <label><input type="radio" name="mode" value="approval" ${!source || source.mode === "approval" ? "checked" : ""}/><span>Do akceptacji</span></label>
+        <label><input type="radio" name="mode" value="invite" ${source?.mode === "invite" ? "checked" : ""}/><span>Na zaproszenie</span></label>
+        <label><input type="radio" name="mode" value="auto" ${source?.mode === "auto" ? "checked" : ""}/><span>Automatycznie</span></label>
+      </div></div>
+      <div class="field full"><label for="walk-info">Informacje organizacyjne</label><textarea id="walk-info" name="info">${esc(source?.info || "")}</textarea></div>
+      <div class="field full"><label for="walk-tags">Oznaczenia</label><input id="walk-tags" name="tags" value="${esc((source?.tags || []).join(", "))}" placeholder="np. możliwe błoto, duży dystans" /><small>Oddziel przecinkami.</small></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="new-walk-form">${icon("check")} Zapisz spacer</button>`;
+    return modalShell(source ? "Skopiuj spacer" : "Nowy spacer", "Termin pojawi się od razu w panelu i harmonogramie klienta", body, footer, true);
+  }
+
+  function nextWeekDate(dateString) {
+    const date = dateObject(dateString);
+    date.setDate(date.getDate() + 7);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function modalEditPublicProfile() {
+    const dog = activeDog();
+    const body = `<form id="edit-public-profile-form" class="form-grid">
+      <div class="field"><label for="public-area">Okolica</label><input id="public-area" name="area" value="${esc(dog.publicProfile.area)}" required /></div>
+      <div class="field"><label for="public-distance">Odległość pokazywana w community</label><input id="public-distance" name="distance" value="${esc(dog.publicProfile.distance)}" /></div>
+      <div class="field full"><label for="public-headline">Zabawny opis</label><textarea id="public-headline" name="headline" required>${esc(dog.publicProfile.headline)}</textarea></div>
+      <div class="field full"><label for="public-seeking">Kogo szuka</label><textarea id="public-seeking" name="seeking" required>${esc(dog.publicProfile.seeking)}</textarea></div>
+      <div class="field full"><label for="public-traits">Cechy</label><input id="public-traits" name="traits" value="${esc(dog.publicProfile.traits.join(", "))}" /><small>Oddziel przecinkami.</small></div>
+      <div class="field"><label for="public-likes">Lubi</label><textarea id="public-likes" name="likes">${esc(dog.publicProfile.likes)}</textarea></div>
+      <div class="field"><label for="public-dislikes">Nie lubi</label><textarea id="public-dislikes" name="dislikes">${esc(dog.publicProfile.dislikes)}</textarea></div>
+      <div class="field full"><label for="dog-photo">Zdjęcie psa</label><input id="dog-photo" name="photo" type="file" accept="image/*" /><small>W demo zdjęcie zapisuje się tylko w tej przeglądarce. Bez zdjęcia zostaje ilustracja.</small></div>
+      <div class="field full"><div class="check-row"><input id="public-published" name="published" type="checkbox" ${dog.publicProfile.published ? "checked" : ""}/><label for="public-published">Profil może być widoczny w Psiutkach. Dane prywatne nie są publikowane.</label></div></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="edit-public-profile-form">${icon("check")} Zapisz profil</button>`;
+    return modalShell(`Profil ${dog.name} w Psiutkach`, "Edytujesz wyłącznie publiczną kartę psa", body, footer, true);
+  }
+
+  function modalAddPayment() {
+    const body = `<form id="add-payment-form" class="form-grid">
+      <div class="field full"><label for="payment-dog">Pies</label><select id="payment-dog" name="dogId" required>${state.dogs.map((dog) => `<option value="${dog.id}">${esc(dog.name)} · ${esc(getGuardian(dog.guardianId).name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="payment-amount">Kwota</label><input id="payment-amount" name="amount" type="number" min="0" required value="80" /></div>
+      <div class="field"><label for="payment-date">Data</label><input id="payment-date" name="date" type="date" required value="${TODAY}" /></div>
+      <div class="field"><label for="payment-method">Metoda</label><select id="payment-method" name="method"><option>BLIK</option><option>przelew</option><option>gotówka</option></select></div>
+      <div class="field"><label for="payment-description">Opis</label><input id="payment-description" name="description" value="Spacer socjalizacyjny" /></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="add-payment-form">${icon("check")} Dodaj wpłatę</button>`;
+    return modalShell("Dodaj wpłatę", "Ręczne rozliczenia wystarczą w pierwszej wersji", body, footer);
+  }
+
+  function modalAddPackage(preselectedDogId) {
+    const body = `<form id="add-package-form" class="form-grid">
+      <div class="field full"><label for="package-dog">Pies</label><select id="package-dog" name="dogId" required>${state.dogs.map((dog) => `<option value="${dog.id}" ${preselectedDogId === dog.id ? "selected" : ""}>${esc(dog.name)} · ${esc(getGuardian(dog.guardianId).name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="package-total">Liczba wejść</label><input id="package-total" name="total" type="number" min="1" max="30" value="4" required /></div>
+      <div class="field"><label for="package-price">Cena</label><input id="package-price" name="price" type="number" min="0" value="250" required /></div>
+      <div class="field"><label for="package-start">Data zakupu</label><input id="package-start" name="purchasedAt" type="date" value="${TODAY}" required /></div>
+      <div class="field"><label for="package-end">Ważny do</label><input id="package-end" name="expiresAt" type="date" value="2026-12-05" required /></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="add-package-form">${icon("check")} Dodaj pakiet</button>`;
+    return modalShell("Nowy pakiet", "Każda zmiana salda będzie wynikać z operacji", body, footer);
+  }
+
+  function modalAddNote(dogId) {
+    const dog = getDog(dogId) || activeDog();
+    const body = `<form id="add-note-form" class="form-grid"><input type="hidden" name="dogId" value="${dog.id}" />
+      <div class="field"><label for="note-date">Data</label><input id="note-date" name="date" type="date" value="${TODAY}" required /></div>
+      <div class="field"><label for="note-title">Tytuł</label><input id="note-title" name="title" value="Notatka behawiorysty" required /></div>
+      <div class="field full"><label for="note-copy">Treść</label><textarea id="note-copy" name="note" required placeholder="Co wydarzyło się na spacerze lub co zmieniło się w profilu psa"></textarea></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="add-note-form">${icon("check")} Zapisz notatkę</button>`;
+    return modalShell(`Notatka: ${dog.name}`, "Prywatna historia pracy z psem", body, footer);
+  }
+
+  function modalEditDogStatus(dogId) {
+    const dog = getDog(dogId) || activeDog();
+    const body = `<form id="edit-dog-status-form" class="form-grid"><input type="hidden" name="dogId" value="${dog.id}" />
+      <div class="field full"><label for="dog-status">Status dla spacerów socjalizacyjnych</label><select id="dog-status" name="status">
+        <option value="approved" ${dog.status === "approved" ? "selected" : ""}>Zatwierdzony</option>
+        <option value="approved-conditional" ${dog.status === "approved-conditional" ? "selected" : ""}>Zatwierdzony warunkowo</option>
+        <option value="needs-review" ${dog.status === "needs-review" ? "selected" : ""}>Wymaga oceny</option>
+        <option value="paused" ${dog.status === "paused" ? "selected" : ""}>Czasowo wstrzymany</option>
+      </select></div>
+      <div class="field full"><label for="dog-status-note">Powód zmiany</label><textarea id="dog-status-note" name="note" required placeholder="Zapisze się w historii profilu"></textarea></div>
+    </form>`;
+    const footer = `<button class="secondary-button" data-action="close-modal">Anuluj</button><button class="primary-button" type="submit" form="edit-dog-status-form">${icon("check")} Zmień status</button>`;
+    return modalShell(`Status: ${dog.name}`, "Zmiana zostanie zapisana na osi czasu", body, footer);
+  }
+
+  function modalAbout() {
+    const body = `<div class="stack-sm">
+      <div class="alert blue">${icon("info")} To działający prototyp bez serwera. Dane zapisują się lokalnie w przeglądarce.</div>
+      <dl class="definition-list">
+        ${definition("Działa", "spacery, zgłoszenia, akceptacja, lista rezerwowa, profile psów, pakiety, wpłaty, Psiutki i wzajemne zainteresowania")}
+        ${definition("Nie działa produkcyjnie", "logowanie, prawdziwe maile, płatności online, wspólna baza danych i kopie zapasowe")}
+        ${definition("Następny etap", "Supabase, konta użytkowników, import arkusza i automatyczne wiadomości")}
+      </dl>
+    </div>`;
+    return modalShell("O tym MVP", "Klikalny model procesu przed budową wersji produkcyjnej", body, `<button class="primary-button" data-action="close-modal">Rozumiem</button>`);
+  }
+
+  function modalNotifications() {
+    const pending = state.walks.flatMap((walk) => pendingApplications(walk).map((app) => ({ walk, app })));
+    const dog = activeDog();
+    const clientItems = state.interests.filter((item) => item.toDogId === dog.id && !state.interests.some((reverse) => reverse.fromDogId === dog.id && reverse.toDogId === item.fromDogId));
+    const body = state.role === "admin"
+      ? `<div class="list">${pending.slice(0, 5).map(({ walk, app }) => {
+          const itemDog = getDog(app.dogId);
+          return `<div class="list-row"><div class="avatar">${dogArt(itemDog, true)}</div><div class="list-main"><strong>Nowe zgłoszenie: ${esc(itemDog.name)}</strong><span>${formatDate(walk.date)} · ${esc(walk.location)}</span></div><button class="small-button" data-action="open-walk" data-id="${walk.id}">Otwórz</button></div>`;
+        }).join("") || `<div class="alert green">${icon("checkCircle")} Brak nowych powiadomień.</div>`}</div>`
+      : `<div class="list">${clientItems.map((item) => {
+          const other = getDog(item.fromDogId);
+          return `<div class="list-row"><div class="avatar">${dogArt(other, true)}</div><div class="list-main"><strong>${esc(other.name)} chce Was poznać</strong><span>Joanna sprawdzi skład po wzajemnym zainteresowaniu.</span></div><button class="small-button primary" data-action="interest" data-dog="${other.id}">Też chcemy</button></div>`;
+        }).join("") || `<div class="alert green">${icon("checkCircle")} Brak nowych powiadomień.</div>`}</div>`;
+    return modalShell("Powiadomienia", "Najważniejsze zmiany w systemie", body, `<button class="secondary-button" data-action="close-modal">Zamknij</button>`);
+  }
+
+  function showToast(title, copy = "", type = "") {
+    const root = document.getElementById("toast-root");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `${icon(type === "error" ? "alert" : "checkCircle")}<div><strong>${esc(title)}</strong>${copy ? `<span>${esc(copy)}</span>` : ""}</div>`;
+    root.appendChild(toast);
+    window.setTimeout(() => toast.remove(), 3600);
+  }
+
+  function navigate(view) {
+    state.view = view;
+    state.ui.sidebarOpen = false;
+    state.ui.search = "";
+    if (view === "admin-finance") state.ui.financeFocus = "all";
+    if (view !== "admin-walk-detail") state.ui.selectedWalkId = state.ui.selectedWalkId;
+    renderApp();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function dashboardJump(target) {
+    state.ui.sidebarOpen = false;
+    state.ui.modal = null;
+    state.ui.search = "";
+
+    if (target === "pending" || target === "today" || target === "next-six") {
+      state.ui.walkFilter = target;
+      state.ui.financeFocus = "all";
+      state.view = "admin-walks";
+      renderApp();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (target === "due-payments") {
+      state.ui.financeFocus = "due";
+      state.view = "admin-finance";
+      renderApp();
+      window.requestAnimationFrame(() => {
+        document.getElementById("finance-due")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }
+
+  function openWalk(id) {
+    state.ui.selectedWalkId = id;
+    state.ui.walkTab = pendingApplications(getWalk(id)).length ? "applications" : "participants";
+    state.view = "admin-walk-detail";
+    state.ui.modal = null;
+    state.ui.sidebarOpen = false;
+    renderApp();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openDog(id) {
+    state.ui.selectedDogId = id;
+    state.view = "admin-dog-detail";
+    state.ui.modal = null;
+    state.ui.sidebarOpen = false;
+    renderApp();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openModal(type, payload = {}) {
+    state.ui.modal = { type, payload };
+    renderModal();
+  }
+
+  function closeModal() {
+    state.ui.modal = null;
+    renderModal();
+  }
+
+  function findApp(walkId, appId) {
+    const walk = getWalk(walkId);
+    const app = walk?.applications.find((item) => item.id === appId);
+    return { walk, app };
+  }
+
+  function reservePackage(dogId) {
+    const packageItem = activePackagesForDog(dogId)[0];
+    if (!packageItem) return null;
+    packageItem.reserved += 1;
+    return packageItem;
+  }
+
+  function releasePackageReservation(app) {
+    if (!app.packageId) return;
+    const item = getPackage(app.packageId);
+    if (item && item.reserved > 0) item.reserved -= 1;
+    app.packageId = null;
+    if (app.paymentStatus === "package-reserved") app.paymentStatus = "none";
+  }
+
+  function consumePackageReservation(app) {
+    if (!app.packageId) return;
+    const item = getPackage(app.packageId);
+    if (item) {
+      if (item.reserved > 0) item.reserved -= 1;
+      item.used += 1;
+      if (item.used >= item.total) item.status = "completed";
+    }
+    app.paymentStatus = "package-used";
+  }
+
+  function approveApplication(walkId, appId) {
+    const { walk, app } = findApp(walkId, appId);
+    if (!walk || !app) return;
+    if (app.status !== "accepted" && acceptedApplications(walk).length >= walk.capacity) {
+      showToast("Brak miejsca", "Przenieś psa na listę rezerwową albo zwiększ limit.", "error");
+      return;
+    }
+    const conflicts = conflictsForCandidate(walk, app.dogId);
+    const blocking = conflicts.filter((item) => item.relation.level === "block");
+    if (blocking.length) {
+      const names = blocking.map((item) => item.otherDog.name).join(", ");
+      const proceed = window.confirm(`W profilu zapisano zakaz połączenia z: ${names}. Czy mimo to zatwierdzić skład?`);
+      if (!proceed) return;
+    }
+    if (app.status !== "accepted") {
+      const packageItem = reservePackage(app.dogId);
+      app.status = "accepted";
+      if (packageItem) {
+        app.packageId = packageItem.id;
+        app.paymentStatus = "package-reserved";
+      } else if (app.paymentStatus !== "paid") {
+        app.paymentStatus = "due";
+      }
+    }
+    state.ui.walkTab = "participants";
+    showToast("Pies został zaakceptowany", packageBalanceForDog(app.dogId) >= 0 ? "Klient zobaczy dokładną lokalizację." : "");
+    renderApp();
+  }
+
+  function setApplicationStatus(walkId, appId, status) {
+    const { app } = findApp(walkId, appId);
+    if (!app) return;
+    if (app.status === "accepted") releasePackageReservation(app);
+    app.status = status;
+    if (["waitlist", "rejected", "pending"].includes(status)) {
+      app.paymentStatus = "none";
+      app.packageId = null;
+    }
+    if (status === "waitlist") state.ui.walkTab = "waitlist";
+    showToast(status === "waitlist" ? "Dodano na listę rezerwową" : status === "rejected" ? "Zgłoszenie odrzucone" : "Zgłoszenie wróciło do decyzji");
+    renderApp();
+  }
+
+  function markAttendance(walkId, appId, outcome) {
+    const { walk, app } = findApp(walkId, appId);
+    if (!walk || !app || app.status !== "accepted") return;
+    if (app.attendance !== "pending") return;
+    app.attendance = outcome;
+    if (["present", "no-show", "late-cancel"].includes(outcome)) consumePackageReservation(app);
+    const dog = getDog(app.dogId);
+    dog.history.push({
+      date: walk.date,
+      type: "walk",
+      title: outcome === "present" ? walk.type : outcome === "late-cancel" ? "Późne odwołanie" : "Nieobecność",
+      note: outcome === "present" ? `${walk.location}. Udział oznaczony przez prowadzącą.` : "Wejście rozliczone zgodnie z zasadami anulowania."
+    });
+    showToast(outcome === "present" ? "Obecność zapisana" : "Nieobecność rozliczona", outcome === "present" ? "Wejście zostało wykorzystane." : "Wejście zostało pobrane z pakietu.");
+    renderApp();
+  }
+
+  function undoAttendance(walkId, appId) {
+    const { walk, app } = findApp(walkId, appId);
+    if (!walk || !app || app.attendance === "pending") return;
+    if (app.packageId) {
+      const item = getPackage(app.packageId);
+      if (item && item.used > 0) {
+        item.used -= 1;
+        item.reserved += 1;
+        item.status = "active";
+      }
+      app.paymentStatus = "package-reserved";
+    }
+    const dog = getDog(app.dogId);
+    const historyIndex = dog.history.findIndex((item) => item.date === walk.date && [walk.type, "Późne odwołanie", "Nieobecność"].includes(item.title));
+    if (historyIndex >= 0) dog.history.splice(historyIndex, 1);
+    app.attendance = "pending";
+    showToast("Cofnięto rozliczenie");
+    renderApp();
+  }
+
+  function cancelBooking(walkId, appId) {
+    const { app } = findApp(walkId, appId);
+    if (!app) return;
+    releasePackageReservation(app);
+    app.status = "cancelled";
+    app.attendance = "pending";
+    showToast("Rezerwacja odwołana", "Wejście wróciło do pakietu.");
+    renderApp();
+  }
+
+  function bookWalk(walkId) {
+    const walk = getWalk(walkId);
+    const dog = activeDog();
+    if (!walk || applicationForDog(walk, dog.id)) {
+      showToast("Zgłoszenie już istnieje", "Status zobaczysz na karcie spaceru.", "warn");
+      return;
+    }
+    walk.applications.push({
+      id: uid("app"),
+      dogId: dog.id,
+      status: "pending",
+      paymentStatus: "none",
+      packageId: null,
+      attendance: "pending",
+      createdAt: TODAY
+    });
+    showToast("Zgłoszenie wysłane", "Joanna sprawdzi profil psa i skład grupy.");
+    renderApp();
+  }
+
+  function expressInterest(targetDogId) {
+    const fromDog = activeDog();
+    if (fromDog.id === targetDogId) return;
+    const exists = state.interests.some((item) => item.fromDogId === fromDog.id && item.toDogId === targetDogId);
+    if (exists) return;
+    state.interests.push({ id: uid("interest"), fromDogId: fromDog.id, toDogId: targetDogId, createdAt: TODAY, status: "open" });
+    const reverse = state.interests.some((item) => item.fromDogId === targetDogId && item.toDogId === fromDog.id);
+    if (reverse) {
+      state.interests.filter((item) =>
+        (item.fromDogId === fromDog.id && item.toDogId === targetDogId) ||
+        (item.fromDogId === targetDogId && item.toDogId === fromDog.id)
+      ).forEach((item) => { item.status = "matched"; });
+      showToast("To jest match", "Joanna sprawdzi, czy wspólny spacer będzie dobrym pomysłem.");
+    } else {
+      showToast("Zainteresowanie zapisane", "Drugi opiekun nie dostał Twoich danych kontaktowych.");
+    }
+    closeModal();
+    renderApp();
+  }
+
+  function createDuet(dogAId, dogBId) {
+    const dogA = getDog(dogAId);
+    const dogB = getDog(dogBId);
+    const relation = relationBetween(dogAId, dogBId);
+    if (relation?.level === "block") {
+      showToast("Tego duetu nie należy tworzyć", relation.note, "error");
+      return;
+    }
+    const newWalk = {
+      id: uid("walk"),
+      date: "2026-09-17",
+      time: "09:15",
+      location: "Park Zachodni, okolice Orbity",
+      locationDetails: "Przy wejściu od Wejherowskiej, obok stojaków rowerowych",
+      mapUrl: "https://maps.google.com/?q=Park+Zachodni+Orbita+Wroclaw",
+      type: "Duet socjalizacyjny",
+      price: 90,
+      capacity: 2,
+      mode: "invite",
+      info: `Duet przygotowany dla ${dogA.name} i ${dogB.name}.`,
+      tags: ["duet", "na zaproszenie"],
+      status: "open",
+      leader: "Joanna",
+      applications: [dogAId, dogBId].map((dogId) => ({ id: uid("app"), dogId, status: "pending", paymentStatus: "none", packageId: null, attendance: "pending", createdAt: TODAY }))
+    };
+    state.walks.push(newWalk);
+    showToast("Utworzono propozycję duetu", "Termin jest szkicem do dalszej edycji.");
+    openWalk(newWalk.id);
+  }
+
+  function duplicateWalk(id) {
+    const source = getWalk(id);
+    if (!source) return;
+    openModal("new-walk", { sourceWalkId: id });
+  }
+
+  function togglePublish(dogId) {
+    const dog = getDog(dogId);
+    if (!dog) return;
+    dog.publicProfile.published = !dog.publicProfile.published;
+    showToast(dog.publicProfile.published ? "Profil został opublikowany" : "Profil został ukryty");
+    renderApp();
+  }
+
+  function resetDemo() {
+    const confirmed = window.confirm("Przywrócić wszystkie przykładowe dane i usunąć zmiany z tej przeglądarki?");
+    if (!confirmed) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = deepClone(DEFAULT_STATE);
+    showToast("Dane demonstracyjne przywrócone");
+    renderApp();
+  }
+
+  function openExternal(url) {
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function handleClick(event) {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+    const action = target.dataset.action;
+
+    if (action === "navigate") navigate(target.dataset.view);
+    if (action === "dashboard-jump") dashboardJump(target.dataset.target);
+    if (action === "open-walk") openWalk(target.dataset.id);
+    if (action === "open-dog") openDog(target.dataset.id);
+    if (action === "open-modal") openModal(target.dataset.modal, { dogId: target.dataset.dog });
+    if (action === "close-modal") closeModal();
+    if (action === "modal-backdrop" && event.target === target) closeModal();
+    if (action === "open-sidebar") { state.ui.sidebarOpen = true; renderApp(); }
+    if (action === "close-sidebar") { state.ui.sidebarOpen = false; renderApp(); }
+    if (action === "show-about") openModal("about");
+    if (action === "show-notifications") openModal("notifications");
+    if (action === "reset-demo") resetDemo();
+    if (action === "open-map") openExternal(target.dataset.url);
+    if (action === "call-guardian") showToast("Dane demonstracyjne", "Telefon jest fikcyjny.");
+    if (action === "mail-guardian") showToast("Dane demonstracyjne", "Adres email jest fikcyjny.");
+    if (action === "duplicate-walk") duplicateWalk(target.dataset.id);
+    if (action === "set-walk-tab") { state.ui.walkTab = target.dataset.tab; renderApp(); }
+    if (action === "approve-application") approveApplication(target.dataset.walk, target.dataset.app);
+    if (action === "waitlist-application") setApplicationStatus(target.dataset.walk, target.dataset.app, "waitlist");
+    if (action === "reject-application") setApplicationStatus(target.dataset.walk, target.dataset.app, "rejected");
+    if (action === "restore-pending") setApplicationStatus(target.dataset.walk, target.dataset.app, "pending");
+    if (action === "mark-attendance") markAttendance(target.dataset.walk, target.dataset.app, target.dataset.outcome);
+    if (action === "undo-attendance") undoAttendance(target.dataset.walk, target.dataset.app);
+    if (action === "cancel-booking") cancelBooking(target.dataset.walk, target.dataset.app);
+    if (action === "book-walk") bookWalk(target.dataset.id);
+    if (action === "interest") expressInterest(target.dataset.dog);
+    if (action === "toggle-publish") togglePublish(target.dataset.dog);
+    if (action === "toggle-own-publish") togglePublish(activeDog().id);
+    if (action === "create-duet") createDuet(target.dataset.a, target.dataset.b);
+    if (action === "delete-payment") {
+      state.payments = state.payments.filter((payment) => payment.id !== target.dataset.id);
+      showToast("Wpłata usunięta");
+      renderApp();
+    }
+  }
+
+  function handleChange(event) {
+    const target = event.target;
+    if (target.matches('[data-action="switch-role"]')) {
+      state.role = target.value;
+      state.view = state.role === "admin" ? "admin-dashboard" : "client-home";
+      state.ui.search = "";
+      state.ui.modal = null;
+      renderApp();
+      return;
+    }
+    if (target.dataset.input === "walk-filter") {
+      state.ui.walkFilter = target.value;
+      renderApp();
+    }
+    if (target.dataset.input === "dog-filter") {
+      state.ui.dogFilter = target.value;
+      renderApp();
+    }
+  }
+
+  let searchTimer = null;
+  function handleInput(event) {
+    const target = event.target;
+    if (target.dataset.input !== "search") return;
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+      state.ui.search = target.value;
+      renderApp();
+      const newInput = document.querySelector('[data-input="search"]');
+      if (newInput) {
+        newInput.focus();
+        newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+      }
+    }, 180);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const data = new FormData(form);
+
+    if (form.id === "new-walk-form") {
+      const walk = {
+        id: uid("walk"),
+        date: data.get("date"),
+        time: data.get("time"),
+        location: data.get("location").trim(),
+        locationDetails: data.get("locationDetails").trim(),
+        mapUrl: data.get("mapUrl").trim(),
+        type: data.get("type").trim(),
+        price: Number(data.get("price")),
+        capacity: Number(data.get("capacity")),
+        mode: data.get("mode"),
+        info: data.get("info").trim(),
+        tags: data.get("tags").split(",").map((item) => item.trim()).filter(Boolean),
+        status: "open",
+        leader: "Joanna",
+        applications: []
+      };
+      state.walks.push(walk);
+      closeModal();
+      showToast("Spacer został dodany", `${formatDate(walk.date)} o ${walk.time}`);
+      openWalk(walk.id);
+      return;
+    }
+
+    if (form.id === "edit-public-profile-form") {
+      const dog = activeDog();
+      dog.publicProfile.area = data.get("area").trim();
+      dog.publicProfile.distance = data.get("distance").trim();
+      dog.publicProfile.headline = data.get("headline").trim();
+      dog.publicProfile.seeking = data.get("seeking").trim();
+      dog.publicProfile.traits = data.get("traits").split(",").map((item) => item.trim()).filter(Boolean);
+      dog.publicProfile.likes = data.get("likes").trim();
+      dog.publicProfile.dislikes = data.get("dislikes").trim();
+      dog.publicProfile.published = data.get("published") === "on";
+      const file = form.querySelector('[name="photo"]').files?.[0];
+      if (file) {
+        if (file.size > 1_500_000) {
+          showToast("Zdjęcie jest za duże", "W demo użyj pliku do 1,5 MB.", "error");
+          return;
+        }
+        dog.photo = await fileToDataUrl(file);
+      }
+      dog.history.push({ date: TODAY, type: "note", title: "Zmiana profilu Psiutków", note: "Opiekun zaktualizował publiczny opis psa." });
+      closeModal();
+      showToast("Profil został zapisany");
+      renderApp();
+      return;
+    }
+
+    if (form.id === "add-payment-form") {
+      const dog = getDog(data.get("dogId"));
+      state.payments.push({
+        id: uid("payment"),
+        date: data.get("date"),
+        guardianId: dog.guardianId,
+        dogId: dog.id,
+        amount: Number(data.get("amount")),
+        method: data.get("method"),
+        status: "paid",
+        description: data.get("description").trim()
+      });
+      closeModal();
+      showToast("Wpłata została dodana");
+      renderApp();
+      return;
+    }
+
+    if (form.id === "add-package-form") {
+      const total = Number(data.get("total"));
+      const dogId = data.get("dogId");
+      state.packages.push({
+        id: uid("package"),
+        dogId,
+        name: `Pakiet ${total} spacerów`,
+        total,
+        used: 0,
+        reserved: 0,
+        price: Number(data.get("price")),
+        purchasedAt: data.get("purchasedAt"),
+        expiresAt: data.get("expiresAt"),
+        status: "active"
+      });
+      closeModal();
+      showToast("Pakiet został dodany", `${getDog(dogId).name} ma ${total} nowych wejść.`);
+      renderApp();
+      return;
+    }
+
+    if (form.id === "add-note-form") {
+      const dog = getDog(data.get("dogId"));
+      dog.history.push({ date: data.get("date"), type: "note", title: data.get("title").trim(), note: data.get("note").trim() });
+      closeModal();
+      showToast("Notatka została zapisana");
+      renderApp();
+      return;
+    }
+
+    if (form.id === "edit-dog-status-form") {
+      const dog = getDog(data.get("dogId"));
+      dog.status = data.get("status");
+      dog.history.push({ date: TODAY, type: "note", title: "Zmiana statusu", note: data.get("note").trim() });
+      closeModal();
+      showToast("Status psa został zmieniony");
+      renderApp();
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.addEventListener("click", handleClick);
+  document.addEventListener("change", handleChange);
+  document.addEventListener("input", handleInput);
+  document.addEventListener("submit", handleSubmit);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.ui.modal) closeModal();
+  });
+
+  renderApp();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('dog-avatars','dog-avatars',false,1500000,array['image/jpeg','image/png','image/webp']);
+create policy dog_avatars_read on storage.objects for select to authenticated using(bucket_id='dog-avatars' and (public.is_admin() or (storage.foldername(name))[1]=auth.uid()::text));
+create policy dog_avatars_create on storage.objects for insert to authenticated with check(bucket_id='dog-avatars' and (public.is_admin() or ((storage.foldername(name))[1]=auth.uid()::text and exists(select 1 from public.dogs d where d.id::text=(storage.foldername(name))[2] and d.guardian_id=auth.uid()))));
+create policy dog_avatars_delete on storage.objects for delete to authenticated using(bucket_id='dog-avatars' and (public.is_admin() or (storage.foldername(name))[1]=auth.uid()::text));

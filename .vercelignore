@@ -1,0 +1,7 @@
+.env*
+!.env.example
+supabase/.temp/
+.pnpm-store/
+test-results/
+playwright-report/
+coverage/

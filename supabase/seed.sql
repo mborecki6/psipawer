@@ -1,0 +1,2 @@
+-- Deliberately no auth.users inserts here. Use scripts/seed-demo.mjs on a local/test project.
+-- This keeps migration/reset separate from identity provisioning and real customer data.
