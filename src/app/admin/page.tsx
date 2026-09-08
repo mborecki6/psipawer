@@ -2,11 +2,17 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { Hourglass, CalendarDays, Wallet, Activity } from "lucide-react";
 import { getSnapshot } from "@/lib/data/queries";
+import { getFinanceData } from "@/lib/data/finance-queries";
 import { Kpi, WalkRow, Empty } from "@/components/ui";
 import { kpiUrl, warsawDate, dateLabel } from "@/lib/domain";
+import { getQualificationWarnings } from "@/lib/qualification";
+import { QualificationAlerts } from "@/components/qualification-alert";
 export default async function Page() {
   await requireSession("admin");
-  const { walks, registrations, dogs } = await getSnapshot();
+  const [{ walks, registrations, dogs }, finance] = await Promise.all([
+    getSnapshot(),
+    getFinanceData(),
+  ]);
   const upcoming = walks.filter(
     (w) =>
       new Date(w.starts_at) >= new Date() &&
@@ -31,9 +37,12 @@ export default async function Page() {
         (next.reduce((n, w) => n + accepted(w.id), 0) / capacity) * 100,
       )
     : 0;
-  const due = registrations.filter((r) => r.payment_status === "due");
   return (
     <div className="stack">
+      <QualificationAlerts
+        warnings={getQualificationWarnings({ dogs, walks, registrations })}
+        role="admin"
+      />
       <div className="grid-4">
         <Kpi
           label="Zgłoszenia do decyzji"
@@ -52,9 +61,9 @@ export default async function Page() {
           icon={<CalendarDays />}
         />
         <Kpi
-          label="Zaległe płatności"
-          value={due.length}
-          copy="Zgłoszenia do rozliczenia"
+          label="Do rozliczenia"
+          value={finance.charges.length}
+          copy="Spacery i pakiety do opłacenia"
           href={kpiUrl("due-payments")}
           icon={<Wallet />}
         />
@@ -168,8 +177,9 @@ export default async function Page() {
           <article className="card pad">
             <h3>Pakiety i płatności</h3>
             <p className="muted">
-              Rozliczenia zgłoszeń znajdziesz w jednym widoku. Obsługa pakietów
-              pojawi się w kolejnym etapie.
+              {finance.totals.availableEntries} wolnych wejść w pakietach.
+              Wpłaty, rezerwacje i historię rozliczeń znajdziesz w jednym
+              miejscu.
             </p>
             <Link className="ghost-button" href="/admin/finance">
               Otwórz rozliczenia →

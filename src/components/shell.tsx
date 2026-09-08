@@ -41,15 +41,11 @@ export function Shell({
       label: role === "admin" ? "Psy i opiekunowie" : "Moje psy",
       icon: Dog,
     },
-    ...(role === "admin"
-      ? [
-          {
-            href: `${base}/finance`,
-            label: "Pakiety i płatności",
-            icon: Wallet,
-          },
-        ]
-      : []),
+    {
+      href: `${base}/finance`,
+      label: role === "admin" ? "Pakiety i płatności" : "Moje rozliczenia",
+      icon: Wallet,
+    },
     { href: `${base}/community`, label: "Psiutki", icon: Heart },
   ];
   useEffect(() => {
@@ -76,7 +72,7 @@ export function Shell({
             properties: {
               view: {
                 type: "string",
-                enum: ["dashboard", "walks", "dogs", "community"],
+                enum: ["dashboard", "walks", "dogs", "finance", "community"],
               },
             },
             required: ["view"],
@@ -87,7 +83,9 @@ export function Shell({
             const view = (input as { view?: string })?.view;
             if (
               !view ||
-              !["dashboard", "walks", "dogs", "community"].includes(view)
+              !["dashboard", "walks", "dogs", "finance", "community"].includes(
+                view,
+              )
             )
               throw new Error("Nieprawidłowy widok");
             const href = view === "dashboard" ? base : `${base}/${view}`;
@@ -185,9 +183,10 @@ export function Shell({
             <Link
               className="primary-button"
               href={role === "admin" ? "/admin/walks/new" : "/app/walks"}
+              aria-label={role === "admin" ? "Nowy spacer" : "Znajdź spacer"}
             >
               {role === "admin" ? <Plus /> : <CalendarDays />}
-              {role === "admin" ? "Nowy spacer" : "Znajdź spacer"}
+              <span>{role === "admin" ? "Nowy spacer" : "Znajdź spacer"}</span>
             </Link>
           </div>
         </header>

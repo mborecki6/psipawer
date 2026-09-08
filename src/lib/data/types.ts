@@ -36,6 +36,7 @@ export type Registration = {
   dog_id: string;
   status: RegistrationStatus;
   payment_status: string;
+  package_id?: string | null;
   attendance: string;
   decision_note: string | null;
   cancellation_free_until: string | null;

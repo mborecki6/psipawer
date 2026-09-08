@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getSnapshot } from "@/lib/data/queries";
 import { Badge, Empty, WalkRow } from "@/components/ui";
+import { getQualificationWarnings } from "@/lib/qualification";
+import { QualificationAlerts } from "@/components/qualification-alert";
 export default async function Page() {
   const { walks, dogs, registrations } = await getSnapshot();
   const accepted = new Set(
@@ -20,6 +22,10 @@ export default async function Page() {
   );
   return (
     <div className="stack">
+      <QualificationAlerts
+        warnings={getQualificationWarnings({ dogs, walks, registrations })}
+        role="client"
+      />
       {cancelled.map((w) => (
         <div className="alert red" key={w.id} role="status">
           <strong>Organizator odwołał spacer: {w.public_location}</strong>

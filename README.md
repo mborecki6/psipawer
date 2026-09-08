@@ -4,7 +4,7 @@ Pierwszy etap aplikacji do spacerów socjalizacyjnych, oparty na Next.js 16.3.4 
 
 ## Stan projektu
 
-Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków i podgląd należności.
+Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków, rozliczenia i pakiety z historią operacji.
 
 **Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano migracje podstawy oraz aktualizacje obsługi spacerów; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Konto administratora jest utworzone, a publiczny callback zweryfikowano 8 września. Do ukończenia pozostają konfiguracja SMTP i weryfikacja pełnego przepływu użytkownika. Potwierdzanie e-maili pozostaje włączone.
 
@@ -12,7 +12,7 @@ Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atr
 
 `/demo` to **dostarczony prototyp referencyjny**, osadzony oddzielnie od aplikacji. Ma fikcyjne dane i lokalny zapis w przeglądarce. Nie jest panelem połączonym z bazą ani mechanizmem obejścia logowania. Prawdziwe panele `/admin` i `/app` nigdy nie przechodzą na dane demo. Nie wpisuj prawdziwych danych klientów w demo.
 
-Finanse (wpłaty, automatyczne księgowanie, pakiety), edycja/moderacja Psiutków, zainteresowania i zarządzanie relacjami mają przygotowany schemat pod kolejny etap. Ostrzeżenia o istniejących relacjach są widoczne dla admina. Lista rezerwowa nie awansuje automatycznie. Nie ma czatu, AI, automatycznych płatności ani wielofirmowości.
+Edycja/moderacja Psiutków, zainteresowania i zarządzanie relacjami mają przygotowany schemat pod kolejny etap. Ostrzeżenia o istniejących relacjach są widoczne dla admina. Lista rezerwowa nie awansuje automatycznie. Nie ma czatu, AI, automatycznych płatności ani wielofirmowości.
 
 ## Wersja internetowa do testów
 
@@ -90,7 +90,7 @@ Uruchamiaj go tylko w osobnym projekcie testowym. Skrypt używa `SUPABASE_SECRET
 - Zapisy i decyzje wykonują transakcyjne funkcje SQL. Blokada rekordu spaceru, unikalność `(walk_id, dog_id)` i trigger pojemności zabezpieczają limit także poza UI. Zakwalifikuj psa przed akceptacją. Automatyczny tryb przyjmuje wyłącznie zakwalifikowane psy.
 - Autor, czas i historia decyzji są przechowywane. Obecność jest niezależna od statusu zgłoszenia. Kwoty to całkowite grosze, terminy to `timestamptz`, a czas biznesowy to `Europe/Warsaw`.
 - Zdjęcia trafiają do prywatnego bucketu `dog-avatars`, z ograniczeniami typu, rozmiaru i własności; dostęp przez krótkotrwały podpisany URL. Publiczne Psiutki nie korzystają z prywatnego bucketu ani danych kontaktowych.
-- Moduły finansowe na etapie pierwszym są tylko do odczytu; księgowanie pakietów wymaga przyszłych audytowanych funkcji, a saldo będzie liczone z `package_transactions`.
+- Finanse można zmieniać wyłącznie przez audytowane funkcje administratora. Saldo pakietu wynika z `package_transactions`; zapis wpłaty ma klucz idempotencji i blokadę należności zapobiegającą nadpłacie. Klient odczytuje wyłącznie swoje rozliczenia.
 
 ## Sprawdzenie projektu
 
@@ -122,7 +122,7 @@ Wersja internetowa działa na Vercel. Sites wymaga formatu Cloudflare Worker lub
 
 Wzorem jest dostarczony `PSI_PAWER_CODEX_HANDOFF.md`; prototyp w `public/reference/prototype.html` został odseparowany od aplikacji i ma zneutralizowane dane kontaktowe. Lockup marki jest zgodny z wariantem zastępczym z dokumentu; docelowy oryginalny asset logo można podmienić po jego dostarczeniu. Dokumentacja: [Next.js Proxy](https://nextjs.org/docs/app/getting-started/proxy), [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nextjs).
 
-Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: wpłaty i pakiety, moderacja i zainteresowania Psiutków, edycja relacji, zarządzanie statusem całego terminu oraz paginacja danych przy większej skali.
+Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: moderacja i zainteresowania Psiutków, edycja relacji, zarządzanie statusem całego terminu oraz paginacja danych przy większej skali.
 
 ## Aktualizacja 8 września — odwołanie terminu
 
@@ -136,4 +136,29 @@ Decyzji o zgłoszeniu nie można zmieniać po rozpoczęciu spaceru; obecność n
 
 Ekran logowania ma układ dopasowany do telefonu i komputera. Nieudany zapis formularza zachowuje tekst, wybory i wybrany plik; błędy otrzymują fokus. Nie promujemy fikcyjnego demo na skonfigurowanej stronie logowania. Kontrola: 48 testów jednostkowych/SQL, lint i build przeszły. Zachowanie formularzy sprawdzono dodatkowo w izolowanym teście prawdziwej przeglądarki. Widok logowania obejrzano przy szerokości 390 px i na komputerze. Nie jest to jeszcze potwierdzenie pełnego procesu logowania przez e-mail ani wszystkich ekranów na rzeczywistych kontach.
 
-Do pełnego pilotażu pozostają: konfiguracja poczty i próba od logowania po rezerwację, wpłaty/pakiety, edycja relacji psów, moderacja Psiutków, ponowne zgłoszenia po rezygnacji, komunikowanie zmian kwalifikacji psów już przyjętych do składu oraz przegląd rzeczywistych paneli z behawiorystą. Te punkty nie są oznaczone jako ukończone przez same testy podstawy.
+Do pełnego pilotażu pozostają: konfiguracja poczty i próba od logowania po rezerwację, edycja relacji psów, moderacja Psiutków oraz przegląd rzeczywistych paneli z behawiorystą. Przywracanie zgłoszeń w kontrolowanej ścieżce administratora i ostrzeżenia kwalifikacji opisano niżej. Te punkty nie są oznaczone jako ukończone przez same testy podstawy.
+
+
+## Rozliczenia i pakiety
+
+`/admin/finance` pozwala przydzielać pakiety, odnotowywać wpłaty częściowe i pełne oraz rezerwować wejście dla zaakceptowanego przyszłego zgłoszenia tego samego psa. `/app/finance` pokazuje opiekunowi jego należności, salda i historię. Cena pakietu jest osobną należnością — przydzielenie pakietu nie oznacza otrzymania pieniędzy. Aplikacja prowadzi ewidencję środków otrzymanych poza nią; nie wykonuje przelewów i nie jest systemem fakturowania.
+
+- Rezerwacja przenosi jedno wejście z dostępnych do zarezerwowanych. Obecność i płatna nieobecność je zużywają. Usprawiedliwiona nieobecność zwalnia wejście i niezapłaconą należność.
+- Odwołanie w terminie zwraca wejście; późne odwołanie je zużywa. Odwołanie całego spaceru przez organizatora zwraca również wejście zużyte wskutek wcześniejszej późnej rezygnacji.
+- Korekta obecności przelicza tylko różnicę; ponowienie tej samej operacji nie pobiera kolejnego wejścia. Przy braku wejścia cofnięcie usprawiedliwienia jest atomowo odrzucane.
+- Ważność pakietu jest sprawdzana przy nowym przydziale. Wejście zarezerwowane przed wygaśnięciem można później rozliczyć.
+- Błędnie przypisane wejście można odłączyć przed spacerem z obowiązkowym powodem, przywracając pojedynczą należność. Niewykorzystany i niezarezerwowany pakiet można anulować z wpisem do historii.
+- Korekta lub zwrot wpłaty wymaga powodu, zachowuje oryginalną kwotę, metodę i datę oraz przelicza należność. Operacja dotyczy całego wpisu; korektę kwoty wykonuje się przez odwrócenie błędnego wpisu i zapis właściwego. Pieniądze zwraca się poza aplikacją. Otrzymane wpłaty za odwołane zdarzenia są oznaczone do sprawdzenia.
+
+Notatki wpłat, powody zwrotów oraz historia wejść są widoczne opiekunowi. Wewnętrzne notatki przyznania/przypisania pakietu trafiają do audytu administratora. Dane finansowe są pobierane stronicami, aby uniknąć cichego obcięcia historii przez domyślny limit API.
+
+## Odzyskiwanie zgłoszeń i widoczne ostrzeżenia
+
+Po wycofaniu lub rezygnacji w terminie behawiorysta może przywrócić zgłoszenie do decyzji, podając powód. Nie akceptuje to psa automatycznie: kwalifikacja i pojemność są sprawdzane ponownie przy akceptacji. Wpłaty i historia pozostają powiązane z tym samym zgłoszeniem; poprzedni pakiet trzeba ponownie wybrać w rozliczeniach. Późne rezygnacje nie mają tej opcji ze względu na istniejące rozliczenie.
+
+Zmiana kwalifikacji psa już przyjętego na przyszły spacer wyświetla ostrzeżenie w pulpitach i szczegółach obu ról. Prowadząca otrzymuje linki do profilu i zgłoszenia, a klient prośbę o kontakt bez prywatnych notatek. Ostrzeżenie nie odwołuje samodzielnie rezerwacji i nie zmienia pieniędzy — decyzja pozostaje u behawiorysty.
+
+
+Kontrola aktualizacji rozliczeń: 89 testów jednostkowych/SQL przeszło, podobnie lint i kompilacja produkcyjna. Migracje `202609080004` i `202609080005` zastosowano w podłączonej bazie 8 września. Dodatkowy test na rzeczywistym Supabase potwierdził zakup pakietu, idempotentną częściową wpłatę, rezerwację, rezygnację, przywrócenie, odpięcie pakietu, anulowanie, korektę wpłaty i izolację dwóch opiekunów. Cała transakcja wraz z fikcyjnymi kontami została wycofana. To test operacji bazy, nie pełnego logowania przez e-mail ani wielu równoległych sesji.
+
+Widoki finansów oraz ostrzeżenia/formularz przywrócenia sprawdzono w izolowanej przeglądarce z rzeczywistymi komponentami i fikcyjnymi danymi przy szerokościach 1440, 390 i 320 px, również z długim imieniem psa. Brak poziomego przewijania; klient nie otrzymuje formularzy administratora. W tej kontroli wizualnej akcje były atrapami — ich działanie sprawdzają oddzielne testy bazy. Błąd pobrania panelu zachowuje jego nawigację, a ponowienie faktycznie pobiera dane ponownie.

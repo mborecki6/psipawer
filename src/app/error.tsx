@@ -1,5 +1,5 @@
 "use client";
-export default function Error({ reset }: { error: Error; reset: () => void }) {
+export default function Error({ retry }: { error: Error; retry: () => void }) {
   return (
     <section className="card pad">
       <h2>Nie udało się wczytać danych</h2>
@@ -7,7 +7,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
         Spróbuj ponownie. Jeśli problem się powtarza, skontaktuj się z
         prowadzącą.
       </p>
-      <button className="primary-button" onClick={reset}>
+      <button className="primary-button" onClick={retry}>
         Spróbuj ponownie
       </button>
     </section>

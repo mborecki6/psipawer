@@ -7,12 +7,11 @@ export default async function Page({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  await requireSession("admin");
-  const data = await getFinanceData();
+  await requireSession("client");
   return (
     <FinanceView
-      data={data}
-      admin
+      data={await getFinanceData()}
+      admin={false}
       dueOnly={(await searchParams).filter === "due"}
     />
   );

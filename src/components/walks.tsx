@@ -19,6 +19,9 @@ import {
 } from "@/lib/data/actions";
 import { dateLabel, money, labels, transitions } from "@/lib/domain";
 import { uuid } from "@/lib/validation/schemas";
+import { getQualificationWarnings } from "@/lib/qualification";
+import { QualificationAlerts } from "./qualification-alert";
+import { ReopenRegistration } from "./reopen-registration";
 export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
   const { walks, registrations, role } = await getSnapshot();
   const base = role === "admin" ? "/admin" : "/app";
@@ -174,6 +177,14 @@ export async function WalkDetail({ id }: { id: string }) {
           )}
         </div>
       )}
+      <QualificationAlerts
+        warnings={getQualificationWarnings({
+          dogs: snapshot.dogs,
+          walks: [walk],
+          registrations: regs,
+        })}
+        role={role}
+      />
       <article className="card hero-card">
         <div className="hero-content">
           <span className="hero-eyebrow">{walk.type}</span>
@@ -354,7 +365,11 @@ export async function WalkDetail({ id }: { id: string }) {
               regs
                 .filter((r) => r.status === status)
                 .map((r) => (
-                  <section className="registration-card" key={r.id}>
+                  <section
+                    className="registration-card"
+                    id={`registration-${r.id}`}
+                    key={r.id}
+                  >
                     <div className="section-title">
                       <Link href={`${base}/dogs/${r.dog_id}`}>
                         <strong>
@@ -366,7 +381,9 @@ export async function WalkDetail({ id }: { id: string }) {
                       <Badge status={r.status} />
                     </div>
                     <p className="muted">
-                      Płatność: {labels[r.payment_status]}
+                      {r.package_id
+                        ? "Rozliczenie: pakiet"
+                        : `Płatność: ${labels[r.payment_status]}`}
                       {r.status === "accepted"
                         ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
                         : ""}
@@ -388,6 +405,14 @@ export async function WalkDetail({ id }: { id: string }) {
                     {r.decision_note && (
                       <p className="preserve-lines">{r.decision_note}</p>
                     )}
+                    {["withdrawn", "cancelled_on_time"].includes(r.status) &&
+                      ["open", "full"].includes(walk.status) &&
+                      Date.parse(walk.starts_at) > Date.now() && (
+                        <ReopenRegistration
+                          id={r.id}
+                          admin={role === "admin"}
+                        />
+                      )}
                     {role === "admin" &&
                       !["cancelled", "completed"].includes(walk.status) &&
                       new Date(walk.starts_at) > new Date() &&
