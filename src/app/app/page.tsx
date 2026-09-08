@@ -12,8 +12,23 @@ export default async function Page() {
       new Date(w.starts_at) > new Date() &&
       w.status !== "cancelled",
   );
+  const cancelled = walks.filter(
+    (w) =>
+      w.status === "cancelled" &&
+      new Date(w.starts_at) > new Date() &&
+      registrations.some((r) => r.walk_id === w.id),
+  );
   return (
     <div className="stack">
+      {cancelled.map((w) => (
+        <div className="alert red" key={w.id} role="status">
+          <strong>Organizator odwołał spacer: {w.public_location}</strong>
+          <p className="preserve-lines">{w.cancellation_reason}</p>
+          <Link className="ghost-button" href={`/app/walks/${w.id}`}>
+            Sprawdź szczegóły →
+          </Link>
+        </div>
+      ))}
       <article className="card">
         <div className="card-head">
           <div>
@@ -53,7 +68,14 @@ export default async function Page() {
                       {walks.find((w) => w.id === r.walk_id)?.public_location}
                     </span>
                   </div>
-                  <Badge status={r.status} />
+                  <Badge
+                    status={
+                      walks.find((w) => w.id === r.walk_id)?.status ===
+                      "cancelled"
+                        ? "cancelled"
+                        : r.status
+                    }
+                  />
                 </Link>
               ))}
             </div>

@@ -1,3 +1,4 @@
+import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSnapshot } from "@/lib/data/queries";
@@ -13,39 +14,12 @@ import {
   createWalk,
   inviteDog,
 } from "@/lib/data/actions";
-import {
-  dateLabel,
-  money,
-  labels,
-  warsawDate,
-  transitions,
-} from "@/lib/domain";
+import { dateLabel, money, labels, transitions } from "@/lib/domain";
 import { uuid } from "@/lib/validation/schemas";
 export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
   const { walks, registrations, role } = await getSnapshot();
   const base = role === "admin" ? "/admin" : "/app";
-  const now = new Date();
-  const upcoming = walks.filter(
-    (w) =>
-      new Date(w.starts_at) > now &&
-      ["open", "full", "closed"].includes(w.status),
-  );
-  let selected = upcoming;
-  if (filter === "pending")
-    selected = upcoming.filter((w) =>
-      registrations.some((r) => r.walk_id === w.id && r.status === "pending"),
-    );
-  if (filter === "today")
-    selected = walks.filter(
-      (w) =>
-        warsawDate(w.starts_at) === warsawDate(now) &&
-        !["cancelled", "draft"].includes(w.status),
-    );
-  if (filter === "next-six") selected = upcoming.slice(0, 6);
-  if (filter === "completed")
-    selected = walks.filter(
-      (w) => w.status === "completed" || new Date(w.starts_at) <= now,
-    );
+  const selected = filterWalks(walks, registrations, filter);
   return (
     <div className="stack">
       <nav className="filter-tabs" aria-label="Filtry spacerów">
@@ -59,6 +33,7 @@ export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
               ]
             : []),
           ["completed", "Zakończone"],
+          ["cancelled", "Odwołane"],
         ].map(([key, label]) => (
           <Link
             className={`filter-tab ${filter === key ? "active" : ""}`}
