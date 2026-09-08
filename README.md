@@ -12,6 +12,8 @@ Podstawową metodą logowania jest e-mail i hasło. Pierwszy dostęp można nada
 
 Listy psów, spacerów i zgłoszeń pobierają wszystkie strony wyników, także po przekroczeniu limitu pojedynczej odpowiedzi API. Ostrzeżenia o relacjach uwzględniają aktywne zgłoszenia. Komunikaty zmiany i odwołania spaceru sprawdzono również na telefonie przy szerokości 320 i 390 px.
 
+Poprawki układu obejmują osobne wiersze liczb i opisów KPI, zawijanie nagłówków i długich nazw, przewijanie menu przy małej wysokości, kwadratowe zdjęcia oraz formularze przechodzące do jednej kolumny zależnie od dostępnej szerokości. Siedem głównych widoków sprawdzono na rzeczywistych komponentach i fikcyjnych danych przy 320, 390, 768, 1024, 1280 i 1440 px: brak nakładania KPI, przyciętych kontrolek i przewijania całej strony w poziomie. Dodatkowe sprawdzenie objęło długie imiona, proporcje zdjęć, wyrównanie pól, dostęp do wylogowania przy 640 × 360 px oraz rozliczenia i Psiutki.
+
 Dostęp behawiorystki przygotowano jako prywatny jednorazowy link; właścicielka konta ustawia własne hasło i uzupełnia profil. Na opublikowanej aplikacji sprawdzono rzeczywistą aktywację (GET nie zużywa linku, POST tworzy sesję), ustawienie hasła, uzupełnienie profilu, wylogowanie i ponowne logowanie. Tymczasowa sesja potwierdziła odczyt ośmiu stron administratora, moderację i powrót do uprawnień klienta. Upload do obu prywatnych zasobów Storage przeszedł z własną sesją; zapis do cudzego katalogu został odrzucony. Wszystkie 10 etapów testu oraz usunięcie tymczasowego konta, psa, wizytówki i plików zakończyły się poprawnie. Test nie wysyłał wiadomości e-mail. SMTP i dołączenie klientów pozostają poza bieżącym pilotem.
 
 ## Moduły aplikacji

@@ -55,10 +55,12 @@ export function Kpi({
         <span className="kpi-icon">{icon}</span>
       </div>
       <strong className="kpi-value">{value}</strong>
-      <span className="kpi-note">{copy}</span>
-      <span className="kpi-link">
-        Otwórz <ArrowUpRight size={16} />
-      </span>
+      <div className="kpi-footer">
+        <span className="kpi-note">{copy}</span>
+        <span className="kpi-link">
+          Otwórz <ArrowUpRight size={16} />
+        </span>
+      </div>
     </Link>
   );
 }
@@ -75,7 +77,7 @@ export function WalkRow({
 }) {
   const date = new Date(walk.starts_at);
   return (
-    <Link className="list-row" href={`${base}/walks/${walk.id}`}>
+    <Link className="list-row walk-list-row" href={`${base}/walks/${walk.id}`}>
       <div className="date-tile">
         <b>
           {new Intl.DateTimeFormat("pl-PL", {

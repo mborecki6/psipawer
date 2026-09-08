@@ -104,6 +104,8 @@ textarea:focus-visible {
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 40;
   width: var(--sidebar);
   display: flex;
@@ -206,6 +208,7 @@ textarea:focus-visible {
 
 .sidebar-nav {
   display: grid;
+  flex-shrink: 0;
   gap: 4px;
 }
 
@@ -366,6 +369,7 @@ textarea:focus-visible {
 
 .topbar-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
 }
@@ -440,6 +444,7 @@ textarea:focus-visible {
 .small-button svg {
   width: 17px;
   height: 17px;
+  flex-shrink: 0;
 }
 
 .secondary-button {
@@ -567,6 +572,7 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   padding: 20px 22px 0;
 }
@@ -605,12 +611,16 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 18px;
   margin-bottom: 14px;
 }
 
 .kpi-card {
-  min-height: 126px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 172px;
   position: relative;
   padding: 18px;
   border: 1px solid rgba(201, 194, 183, 0.72);
@@ -636,12 +646,16 @@ textarea:focus-visible {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  min-height: 40px;
 }
 
 .kpi-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
   color: var(--ink-soft);
   font-size: 12px;
   font-weight: 700;
@@ -650,6 +664,7 @@ textarea:focus-visible {
 .kpi-icon {
   width: 34px;
   height: 34px;
+  flex: 0 0 34px;
   display: grid;
   place-items: center;
   border-radius: 11px;
@@ -663,19 +678,25 @@ textarea:focus-visible {
 }
 
 .kpi-value {
+  display: block;
   position: relative;
   z-index: 1;
   margin-top: 10px;
   font-size: 30px;
-  line-height: 1;
+  line-height: 1.1;
   font-weight: 900;
   letter-spacing: -0.05em;
 }
 
 .kpi-note {
+  display: block;
+  flex: 1 1 100px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
   position: relative;
   z-index: 1;
-  margin-top: 7px;
+  margin: 0;
   color: var(--ink-soft);
   font-size: 11px;
 }
@@ -705,20 +726,27 @@ textarea:focus-visible {
   transform: translateY(0);
 }
 
-.kpi-card--clickable .kpi-note {
-  padding-right: 58px;
+.kpi-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 .kpi-link {
-  position: absolute;
-  right: 16px;
-  bottom: 14px;
+  position: relative;
   z-index: 2;
   display: inline-flex;
+  flex: 0 0 auto;
+  margin-left: auto;
   align-items: center;
   gap: 3px;
   color: var(--ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
 }
 
@@ -872,6 +900,16 @@ textarea:focus-visible {
   line-height: 1.4;
 }
 
+.walk-list-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.walk-list-row > .small-button {
+  white-space: nowrap;
+}
+
 .date-tile {
   width: 48px;
   height: 52px;
@@ -914,6 +952,7 @@ textarea:focus-visible {
   content: "";
   width: 6px;
   height: 6px;
+  flex: 0 0 6px;
   border-radius: 50%;
   background: currentColor;
   opacity: 0.75;
@@ -2401,10 +2440,6 @@ textarea:focus-visible {
 }
 
 @media (max-width: 760px) {
-  body {
-    padding-bottom: 76px;
-  }
-
   .app-shell {
     display: block;
   }
@@ -2477,11 +2512,14 @@ textarea:focus-visible {
 
   .grid-2,
   .grid-3,
-  .grid-4,
   .dog-grid,
   .psinder-grid,
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .kpi-card {
@@ -2714,16 +2752,6 @@ textarea:focus-visible {
 
   .walk-info span {
     font-size: 10px;
-  }
-}
-
-@media (max-width: 460px) {
-  .kpi-link span {
-    display: none;
-  }
-
-  .kpi-card--clickable .kpi-note {
-    padding-right: 22px;
   }
 }
 
@@ -2972,11 +3000,21 @@ a {
   display: grid;
   gap: 16px;
   margin-top: 20px;
+  min-width: 0;
+  container-type: inline-size;
 }
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+.form-grid > .field > :is(input, select, textarea) {
+  margin-top: auto;
+}
+@container (max-width: 480px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .field {
   display: flex;
@@ -2993,6 +3031,8 @@ a {
 .field select,
 .field textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 11px 13px;
   background: var(--paper-2);
@@ -3059,6 +3099,7 @@ a {
 }
 .preserve-lines {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .note-row {
   border-bottom: 1px solid var(--line);
@@ -3092,13 +3133,48 @@ a {
   height: 40px;
 }
 .dog-avatar-photo {
+  display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 20px;
 }
 .native-dog-card {
   transition: transform 0.15s;
+}
+
+.native-dog-card h2,
+.native-dog-card p,
+.profile-summary h2,
+.profile-summary p,
+.note-row p,
+.hero-content,
+.registration-card .section-title > a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.registration-card .section-title > a {
+  flex: 1 1 160px;
+}
+
+.registration-card .section-title > .badge {
+  flex-shrink: 0;
+}
+
+.card-head > :first-child {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.card-head > .ghost-button {
+  flex: 0 0 auto;
+}
+
+.form-stack > h3,
+.form-stack > p {
+  margin: 0;
 }
 .native-dog-card:hover {
   transform: translateY(-3px);
@@ -3151,8 +3227,12 @@ a {
 .list-main {
   overflow-wrap: anywhere;
 }
-.hero-card h2 {
+.card.hero-card h2 {
   font-size: clamp(24px, 3vw, 36px);
+}
+
+.hero-card .walk-meta > span:not(.badge) {
+  color: rgba(255, 250, 244, 0.82);
 }
 .form-stack .alert ul {
   padding-left: 20px;
@@ -3208,6 +3288,11 @@ a {
   .page-heading p {
     font-size: 12px;
   }
+  .page-heading h1 {
+    font-size: clamp(22px, 6vw, 28px);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
   .registration-card {
     padding: 14px;
   }
@@ -3215,7 +3300,7 @@ a {
     padding: 22px;
   }
   .kpi-card {
-    padding: 18px;
+    padding: 16px;
   }
   .grid-4 {
     gap: 12px;
@@ -3228,6 +3313,19 @@ a {
   }
   .kpi-icon {
     display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .grid-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kpi-top {
+    min-height: 0;
+  }
+  .walk-list-row > .small-button {
+    grid-column: 2;
+    justify-self: start;
   }
 }
 @media (prefers-reduced-motion: reduce) {
