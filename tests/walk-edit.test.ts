@@ -67,6 +67,70 @@ async function fixture() {
   ).rows[0].version;
   return { data, id, version };
 }
+it("rejects reuse of a walk version in one transaction without overwriting data or adding a partial audit", async () => {
+  await asUser(admin, async () => {
+    const data = payload();
+    const id = (
+      await db.query<{ id: string }>("select public.create_walk($1) as id", [
+        data,
+      ])
+    ).rows[0].id;
+    const originalVersion = (
+      await db.query<{ version: string }>(
+        "select updated_at::text as version from public.walks where id=$1",
+        [id],
+      )
+    ).rows[0].version;
+    await db.query("select public.update_walk($1,$2,$3,$4)", [
+      id,
+      originalVersion,
+      {
+        ...data,
+        public_location: "Pierwsza aktualna lokalizacja",
+        exact_location: "Pierwsza aktualna zbiórka",
+      },
+      "Pierwsza aktualna zmiana",
+    ]);
+    await db.exec("savepoint stale_walk_edit");
+    await expect(
+      db.query("select public.update_walk($1,$2,$3,$4)", [
+        id,
+        originalVersion,
+        {
+          ...data,
+          public_location: "Nadpisanie ze starej karty",
+          exact_location: "NIE ZAPISUJ STAREJ ZBIÓRKI",
+        },
+        "NIE ZAPISUJ STAREJ ZMIANY",
+      ]),
+    ).rejects.toThrow("Spacer zmienił się w międzyczasie");
+    await db.exec("rollback to savepoint stale_walk_edit");
+    expect(
+      (
+        await db.query(
+          "select w.public_location,w.change_note,p.exact_location,w.updated_at > $2::timestamptz as advanced from public.walks w join public.walk_private_details p on p.walk_id=w.id where w.id=$1",
+          [id, originalVersion],
+        )
+      ).rows,
+    ).toEqual([
+      {
+        public_location: "Pierwsza aktualna lokalizacja",
+        change_note: "Pierwsza aktualna zmiana",
+        exact_location: "Pierwsza aktualna zbiórka",
+        advanced: true,
+      },
+    ]);
+    expect(
+      (
+        await db.query(
+          "select details->>'note' as note from public.audit_events where entity_id=$1 and event='walk_updated'",
+          [id],
+        )
+      ).rows,
+    ).toEqual([{ note: "Pierwsza aktualna zmiana" }]);
+  });
+});
+
 it("only admin can update, and versioning prevents silently overwriting another editor", async () => {
   const f = await fixture();
   await expect(

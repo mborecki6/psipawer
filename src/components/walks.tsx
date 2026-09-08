@@ -3,7 +3,11 @@ import type { Walk } from "@/lib/data/types";
 import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSnapshot } from "@/lib/data/queries";
+import { getSnapshot, allRows } from "@/lib/data/queries";
+import {
+  getWalkRelationWarnings,
+  type WalkRelation,
+} from "@/lib/walk-relations";
 import { requireSession } from "@/lib/auth/session";
 import { Badge, WalkRow, Empty } from "./ui";
 import { ActionForm, Field } from "./action-form";
@@ -125,25 +129,24 @@ export async function WalkDetail({ id }: { id: string }) {
         d.status,
       ),
   );
-  const relationResult =
-    role === "admin"
-      ? await db
-          .from("dog_relations")
-          .select("*")
-          .in("level", ["caution", "block"])
-      : { data: [], error: null };
-  if (relationResult.error)
-    throw new Error("Nie udało się odczytać relacji psów.");
+  const registeredDogIds = [...new Set(regs.map((r) => r.dog_id))];
+  const relations =
+    role === "admin" && registeredDogIds.length > 1
+      ? await allRows<WalkRelation>((from, to) =>
+          db
+            .from("dog_relations")
+            .select("id,dog_a,dog_b,level,note")
+            .in("level", ["caution", "block"])
+            .in("dog_a", registeredDogIds)
+            .in("dog_b", registeredDogIds)
+            .order("id")
+            .range(from, to),
+        )
+      : [];
   const acceptedIds = new Set(
     regs.filter((r) => r.status === "accepted").map((r) => r.dog_id),
   );
-  const conflicts =
-    relationResult.data?.filter(
-      (r) =>
-        regs.some((a) => a.dog_id === r.dog_a) &&
-        regs.some((a) => a.dog_id === r.dog_b) &&
-        (acceptedIds.has(r.dog_a) || acceptedIds.has(r.dog_b)),
-    ) || [];
+  const conflicts = getWalkRelationWarnings(relations, regs);
   return (
     <div className="stack">
       <Link className="ghost-button" href={`${base}/walks`}>
@@ -167,14 +170,16 @@ export async function WalkDetail({ id }: { id: string }) {
       )}
       {walk.change_note && walk.status !== "cancelled" && (
         <div className="alert" role="status">
-          <strong>Aktualizacja terminu</strong>
-          <p className="preserve-lines">{walk.change_note}</p>
-          {role === "admin" && (
-            <p>
-              Poinformuj zgłoszonych opiekunów o zmianie — wysyłka
-              automatycznych powiadomień nie jest jeszcze podłączona.
-            </p>
-          )}
+          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            <strong>Aktualizacja terminu</strong>
+            <p className="preserve-lines">{walk.change_note}</p>
+            {role === "admin" && (
+              <p>
+                Poinformuj zgłoszonych opiekunów o zmianie — wysyłka
+                automatycznych powiadomień nie jest jeszcze podłączona.
+              </p>
+            )}
+          </div>
         </div>
       )}
       <QualificationAlerts
@@ -206,12 +211,14 @@ export async function WalkDetail({ id }: { id: string }) {
       </article>
       {walk.status === "cancelled" && (
         <div className="alert red" role="status">
-          <strong>Spacer został odwołany przez organizatora.</strong>
-          <p className="preserve-lines">{walk.cancellation_reason}</p>
-          <p>
-            Jeśli spacer był już opłacony, skontaktuj się z prowadzącą w sprawie
-            rozliczenia.
-          </p>
+          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            <strong>Spacer został odwołany przez organizatora.</strong>
+            <p className="preserve-lines">{walk.cancellation_reason}</p>
+            <p>
+              Jeśli spacer był już opłacony, skontaktuj się z prowadzącą w
+              sprawie rozliczenia.
+            </p>
+          </div>
         </div>
       )}
       {role === "admin" &&
@@ -280,12 +287,14 @@ export async function WalkDetail({ id }: { id: string }) {
               <h3>Uwaga na skład</h3>
               {conflicts.map((r) => (
                 <div className="alert red" key={r.id}>
-                  <strong>
-                    {snapshot.dogs.find((d) => d.id === r.dog_a)?.name} +{" "}
-                    {snapshot.dogs.find((d) => d.id === r.dog_b)?.name}:{" "}
-                    {r.level === "block" ? "nie łączyć" : "ostrożnie"}
-                  </strong>
-                  <p>{r.note}</p>
+                  <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                    <strong>
+                      {snapshot.dogs.find((d) => d.id === r.dog_a)?.name} +{" "}
+                      {snapshot.dogs.find((d) => d.id === r.dog_b)?.name}:{" "}
+                      {r.level === "block" ? "nie łączyć" : "ostrożnie"}
+                    </strong>
+                    <p>{r.note}</p>
+                  </div>
                 </div>
               ))}
             </article>
@@ -390,7 +399,7 @@ export async function WalkDetail({ id }: { id: string }) {
                     </p>
                     {r.status === "accepted" && r.cancellation_free_until && (
                       <p className="alert">
-                        Po zmianie terminu możesz odwołać bez opłaty do{" "}
+                        Termin bezpłatnego odwołania po zmianie spaceru:{" "}
                         {dateLabel(
                           new Date(
                             Math.min(

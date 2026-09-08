@@ -8,7 +8,9 @@ Obecny pilot jest przeznaczony dla administratora i behawiorystki. Oboje korzyst
 
 Podstawową metodą logowania jest e-mail i hasło. Pierwszy dostęp można nadać przez jednorazowy link aktywacyjny, bez wysyłania poczty z aplikacji. Nie ma publicznej rejestracji administratorów ani formularza zmiany ról.
 
-**Aktualizacja z 8 września 2026 jest opublikowana pod [psipawer.vercel.app](https://psipawer.vercel.app/login).** Migracje do `202609080008` zastosowano w docelowej bazie. Kompilacja produkcyjna, ESLint i 133 testy zakończyły się poprawnie. Transakcyjny test rzeczywistego Supabase potwierdził zgody, moderację, wzajemność propozycji, prywatność i audyt relacji; dane testowe wycofano. Publiczne logowanie odpowiada, a chronione strony przekierowują niezalogowane osoby do formularza.
+**Wersja pilota działa pod [psipawer.vercel.app](https://psipawer.vercel.app/login).** Migracje do `202609080009` zastosowano w docelowej bazie. Kompilacja produkcyjna, ESLint i 145 testów zakończyły się poprawnie. Transakcyjne testy rzeczywistego Supabase potwierdziły zgody, moderację, wzajemność propozycji, prywatność, audyt relacji i odrzucanie nieaktualnych zmian spaceru; dane testowe wycofano. Publiczne logowanie odpowiada, a chronione strony przekierowują niezalogowane osoby do formularza.
+
+Listy psów, spacerów i zgłoszeń pobierają wszystkie strony wyników, także po przekroczeniu limitu pojedynczej odpowiedzi API. Ostrzeżenia o relacjach uwzględniają aktywne zgłoszenia. Komunikaty zmiany i odwołania spaceru sprawdzono również na telefonie przy szerokości 320 i 390 px.
 
 Nadal pozostają przygotowanie dostępu behawiorystki i pełne sprawdzenie aktywacji, ustawienia hasła oraz prawdziwego uploadu zdjęć z sesji testowej. Nie są one oznaczone jako ukończone przez testy z atrapami. SMTP i klienci pozostają poza bieżącym pilotem.
 
@@ -113,6 +115,7 @@ Nie wklejaj danych uwierzytelniających CLI do repozytorium. Alternatywą jest k
 | `202609080006` | Zgody i moderacja Psiutków, zainteresowania oraz osobne zdjęcia społecznościowe. |
 | `202609080007` | Audytowany zapis prywatnych relacji psów i ochrona przed nadpisaniem oceny. |
 | `202609080008` | Rosnące wersje wizytówek i zainteresowań także przy kolejnych zapisach w jednej transakcji. |
+| `202609080009` | Rosnące wersje profili, psów, spacerów i kwestionariuszy; odrzucenie nieaktualnej edycji również w tej samej transakcji. |
 
 Migracja `202609080006` wycofuje publikację wcześniejszych wizytówek bez udokumentowanej zgody i odłącza stare ścieżki zdjęć. Wymagana jest ponowna deklaracja właściciela i moderacja. To celowa zmiana, którą należy uwzględnić przed aktualizacją istniejących danych.
 
