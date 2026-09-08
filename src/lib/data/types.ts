@@ -26,6 +26,7 @@ export type Walk = {
   info: string;
   tags: string[];
   cancellation_deadline_hours: number;
+  cancellation_reason: string | null;
 };
 export type Registration = {
   id: string;

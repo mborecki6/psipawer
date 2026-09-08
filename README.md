@@ -6,7 +6,7 @@ Pierwszy etap aplikacji do spacerów socjalizacyjnych, oparty na Next.js 16.3.4 
 
 Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków i podgląd należności.
 
-**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano wszystkie cztery migracje; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Do ukończenia pozostają konfiguracja adresu powrotu po logowaniu, pierwsze konto administratora i weryfikacja wysyłki maili oraz pełnego przepływu użytkownika. Ustawienia uwierzytelniania w chmurze nie zostały zmienione.
+**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano wszystkie cztery migracje; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Konto administratora jest utworzone, a publiczny callback zweryfikowano 8 września. Do ukończenia pozostają konfiguracja SMTP i weryfikacja pełnego przepływu użytkownika. Potwierdzanie e-maili pozostaje włączone.
 
 Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atrapami schematów Auth/Storage; nie zastępują integracji z usługą ani równoległego testu wielosesyjnego.
 
@@ -18,7 +18,7 @@ Finanse (wpłaty, automatyczne księgowanie, pakiety), edycja/moderacja Psiutkó
 
 Adres: https://psipawer.vercel.app — opublikowano na Vercel 5 września 2026. Publiczny formularz logowania odpowiada poprawnie; wejście do panelu administratora bez sesji przekierowuje na logowanie. Supabase URL i klucz publishable są zapisane w konfiguracji hostingu, bez klucza administratora.
 
-Pełne logowanie testerów wymaga własnej wysyłki SMTP: domyślna poczta Supabase obsługuje tylko adresy członków organizacji. Publiczny callback `https://psipawer.vercel.app/auth/callback` musi być zapisany w Supabase Auth; jego zapis jest obecnie w toku. Nie potwierdzono jeszcze pełnego logowania przez pocztę.
+Pełne logowanie testerów wymaga własnej wysyłki SMTP: domyślna poczta Supabase obsługuje tylko adresy członków organizacji. Publiczny callback `https://psipawer.vercel.app/auth/callback` jest zapisany w Supabase Auth. Nie potwierdzono jeszcze pełnego logowania przez pocztę.
 
 ## Uruchomienie bez Supabase
 
@@ -45,7 +45,7 @@ Otwórz `http://localhost:3000/demo`. Na `/login` zobaczysz informację o braku 
 
    Aplikacja nie wymaga secret/service_role. `SUPABASE_SECRET_KEY` jest potrzebny wyłącznie opcjonalnemu skryptowi seed/testom lokalnym. Nigdy nie umieszczaj go w kodzie przeglądarki ani w repo.
 
-3. Zastosuj po kolei **wszystkie cztery migracje** z `supabase/migrations/` w SQL Editorze. Alternatywnie użyj Supabase CLI: `supabase link --project-ref TWOJ_REF`, potem `supabase db push`. Używaj nowego projektu dedykowanego tej aplikacji.
+3. Zastosuj po kolei **wszystkie migracje** z `supabase/migrations/` w SQL Editorze. Alternatywnie użyj Supabase CLI: `supabase link --project-ref TWOJ_REF`, potem `supabase db push`. Używaj nowego projektu dedykowanego tej aplikacji.
 4. W Authentication → URL Configuration ustaw Site URL identyczny z `NEXT_PUBLIC_APP_URL` i dodaj Redirect URL `http://localhost:3000/auth/callback`. Po wdrożeniu użyj docelowej domeny HTTPS. Nie mieszaj `localhost` i `127.0.0.1`: logowanie i callback muszą korzystać z tego samego hosta, ponieważ PKCE używa cookies.
 
    `supabase/config.toml` służy do lokalnego środowiska deweloperskiego. Nie publikuj całego pliku do chmury przez `supabase config push`: zawiera lokalne ustawienia potwierdzania e-maili. Adresy powrotu ustaw oddzielnie, zachowując ustawienia bezpieczeństwa projektu.
@@ -116,10 +116,14 @@ Bez lokalnego Supabase test jest oznaczany jako pominięty. Wysyłka poczty i Au
 
 To pełna aplikacja Next.js z serwerem, nie eksport statyczny. Wdróż ją na hostingu obsługującym Next.js/Node (np. standardowy runtime Node lub Vercel). Ustaw publiczne zmienne środowiskowe **przed buildem**, a potem popraw URL aplikacji i callback w Supabase. Nie używaj static export ani publicznego hostingu katalogu `.next`. Przy własnym serwerze Node uruchom `pnpm build`, a następnie `pnpm start`; zachowaj katalogi `public`, `.next` i zależności produkcyjne.
 
-Nie opublikowano wdrożenia produkcyjnego. Sites wymaga formatu Cloudflare Worker lub statycznego eksportu; ten projekt zachowuje wymagany Next.js z jego serwerem. Dostosowanie hostingu nie powinno zastępować aplikacji samym prototypem.
+Wersja internetowa działa na Vercel. Sites wymaga formatu Cloudflare Worker lub statycznego eksportu; ten projekt zachowuje wymagany Next.js z jego serwerem. Dostosowanie hostingu nie powinno zastępować aplikacji samym prototypem.
 
 ## Źródła i dalsze prace
 
 Wzorem jest dostarczony `PSI_PAWER_CODEX_HANDOFF.md`; prototyp w `public/reference/prototype.html` został odseparowany od aplikacji i ma zneutralizowane dane kontaktowe. Lockup marki jest zgodny z wariantem zastępczym z dokumentu; docelowy oryginalny asset logo można podmienić po jego dostarczeniu. Dokumentacja: [Next.js Proxy](https://nextjs.org/docs/app/getting-started/proxy), [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nextjs).
 
 Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: wpłaty i pakiety, moderacja i zainteresowania Psiutków, edycja relacji, zmiana/odwołanie całego terminu oraz paginacja danych przy większej skali.
+
+## Aktualizacja 8 września — odwołanie terminu
+
+Behawiorysta może odwołać przyszły spacer z jego szczegółów. Powód i potwierdzenie są obowiązkowe. Baza atomowo zamyka aktywne zgłoszenia, usuwa niezapłacone należności tych zgłoszeń i zwraca zarezerwowane wejścia z pakietów. Wpłaty pozostają w historii — odwołanie nie oznacza wykonania zwrotu pieniędzy. Powód jest widoczny w szczegółach odwołanego spaceru; uczestników należy powiadomić osobno. Odwołanie rozpoczętego terminu jest blokowane. Testy: 35 zakończonych poprawnie, lint i build poprawne.

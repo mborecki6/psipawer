@@ -30,6 +30,7 @@ beforeAll(async () => {
     "202609050002_operations.sql",
     "202609050003_future_modules.sql",
     "202609050004_storage.sql",
+    "202609080001_cancel_walk.sql",
   ])
     await db.exec(readFileSync(`supabase/migrations/${f}`, "utf8"));
   await db.exec(
@@ -276,5 +277,115 @@ describe.sequential("PostgreSQL migrations and actual RLS", () => {
       "select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity",
     );
     expect(r.rows).toEqual([]);
+  });
+  it("organizer cancellation is authorized, atomic and idempotent and releases reserved entries", async () => {
+    const { rows: ws } = await db.query<{ id: string }>(
+      "insert into public.walks(starts_at,public_location,type,price_cents,capacity) values(now()+interval '1 hour','Park','Test',6000,5) returning id",
+    );
+    const wid = ws[0].id;
+    const { rows: rs } = await db.query<{ id: string }>(
+      "insert into public.walk_registrations(walk_id,dog_id,status,payment_status) values($1,$2,'accepted','due') returning id",
+      [wid, dog],
+    );
+    await db.query(
+      "insert into public.walk_private_details(walk_id,exact_location) values($1,'PRIVATE')",
+      [wid],
+    );
+    await db.query(
+      "insert into public.walk_registrations(walk_id,dog_id,status) values($1,$2,'waitlisted')",
+      [wid, otherDog],
+    );
+    const { rows: ps } = await db.query<{ id: string }>(
+      "insert into public.packages(dog_id,name,price_cents) values($1,'Test',6000) returning id",
+      [dog],
+    );
+    await db.query(
+      "insert into public.package_transactions(package_id,registration_id,reserved_delta,reason,author_id) values($1,$2,1,'Rezerwacja',$3)",
+      [ps[0].id, rs[0].id, admin],
+    );
+    await expect(
+      asUser(owner, () =>
+        db.query("select public.cancel_walk($1,'Deszcz')", [wid]),
+      ),
+    ).rejects.toThrow("Brak uprawnień");
+    await expect(
+      asUser(admin, () => db.query("select public.cancel_walk($1,'')", [wid])),
+    ).rejects.toThrow("Podaj powód");
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "select status from public.walks where id=$1",
+          [wid],
+        )
+      ).rows[0].status,
+    ).toBe("open");
+    await asUser(admin, () =>
+      db.query("select public.cancel_walk($1,'Burza w parku')", [wid]),
+    );
+    await asUser(admin, () =>
+      db.query("select public.cancel_walk($1,'Burza w parku')", [wid]),
+    );
+    expect(
+      (
+        await db.query(
+          "select status,cancellation_reason from public.walks where id=$1",
+          [wid],
+        )
+      ).rows,
+    ).toEqual([{ status: "cancelled", cancellation_reason: "Burza w parku" }]);
+    expect(
+      (
+        await db.query(
+          "select status,payment_status from public.walk_registrations where walk_id=$1",
+          [wid],
+        )
+      ).rows,
+    ).toEqual([
+      { status: "cancelled_on_time", payment_status: "none" },
+      { status: "cancelled_on_time", payment_status: "none" },
+    ]);
+    expect(
+      (
+        await asUser(owner, () =>
+          db.query(
+            "select * from public.walk_private_details where walk_id=$1",
+            [wid],
+          ),
+        )
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
+        await db.query(
+          "select sum(available_delta)::int as available,sum(reserved_delta)::int as reserved from public.package_transactions where package_id=$1",
+          [ps[0].id],
+        )
+      ).rows,
+    ).toEqual([{ available: 1, reserved: 0 }]);
+    expect(
+      (
+        await db.query(
+          "select id from public.audit_events where entity_id=$1 and event='walk_cancelled'",
+          [wid],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await expect(
+      asUser(admin, () =>
+        db.query("select public.decide_registration($1,'accepted','')", [
+          rs[0].id,
+        ]),
+      ),
+    ).rejects.toThrow();
+  });
+  it("does not cancel a started walk", async () => {
+    const { rows } = await db.query<{ id: string }>(
+      "insert into public.walks(starts_at,public_location,type,price_cents,capacity) values(now()-interval '1 hour','Park','Test',6000,5) returning id",
+    );
+    await expect(
+      asUser(admin, () =>
+        db.query("select public.cancel_walk($1,'Burza')", [rows[0].id]),
+      ),
+    ).rejects.toThrow("rozpoczętego");
   });
 });

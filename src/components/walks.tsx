@@ -8,6 +8,7 @@ import {
   registerDog,
   decideRegistration,
   cancelRegistration,
+  cancelWalk,
   markAttendance,
   createWalk,
   inviteDog,
@@ -186,6 +187,41 @@ export async function WalkDetail({ id }: { id: string }) {
           </div>
         </div>
       </article>
+      {walk.status === "cancelled" && (
+        <div className="alert red" role="status">
+          <strong>Spacer został odwołany przez organizatora.</strong>
+          <p className="preserve-lines">{walk.cancellation_reason}</p>
+          <p>
+            Jeśli spacer był już opłacony, skontaktuj się z prowadzącą w sprawie
+            rozliczenia.
+          </p>
+        </div>
+      )}
+      {role === "admin" &&
+        !["cancelled", "completed"].includes(walk.status) &&
+        new Date(walk.starts_at) > new Date() && (
+          <details className="card pad">
+            <summary>Odwołaj cały spacer</summary>
+            <p>
+              Wszystkie aktywne zgłoszenia zostaną odwołane bez opłaty za późną
+              rezygnację. Powód będzie widoczny dla opiekunów. Poinformuj
+              uczestników osobiście — automatyczna wysyłka powiadomień nie jest
+              jeszcze podłączona.
+            </p>
+            <ActionForm action={cancelWalk} label="Potwierdź odwołanie spaceru">
+              <input type="hidden" name="walk_id" value={walk.id} />
+              <Field
+                name="reason"
+                label="Powód odwołania dla uczestników"
+                required
+              />
+              <label>
+                <input type="checkbox" name="confirmed" value="yes" required />{" "}
+                Potwierdzam odwołanie wszystkich aktywnych zgłoszeń.
+              </label>
+            </ActionForm>
+          </details>
+        )}
       <div className="dashboard-grid">
         <div className="stack">
           <article className="card pad">

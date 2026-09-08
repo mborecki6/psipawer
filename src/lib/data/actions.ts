@@ -22,6 +22,7 @@ function issue(message: string): ActionState {
 function dbError(message: string): ActionState {
   const allowed = [
     "Brak wolnych miejsc.",
+    "Nie można odwołać rozpoczętego spaceru.",
     "Zgłoszenie już istnieje.",
     "Spacer tylko na zaproszenie.",
     "Zapisy są zamknięte.",
@@ -292,12 +293,10 @@ export async function uploadAvatar(
   const ext = jpeg ? "jpg" : png ? "png" : webp ? "webp" : null;
   if (!ext) return issue("Plik nie jest obsługiwanym zdjęciem.");
   const path = `${dog.guardian_id}/${id.data}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await db.storage
-    .from("dog-avatars")
-    .upload(path, bytes, {
-      contentType: ext === "jpg" ? "image/jpeg" : `image/${ext}`,
-      upsert: false,
-    });
+  const { error } = await db.storage.from("dog-avatars").upload(path, bytes, {
+    contentType: ext === "jpg" ? "image/jpeg" : `image/${ext}`,
+    upsert: false,
+  });
   if (error) return dbError(error.message);
   const result = await db
     .from("dogs")
@@ -328,5 +327,31 @@ export async function inviteDog(
   return {
     success:
       "Pies dodany do zgłoszeń. Możesz teraz podjąć decyzję o przyjęciu do składu.",
+  };
+}
+
+export async function cancelWalk(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const { db } = await requireSession("admin");
+  const result = z
+    .object({
+      walk_id: uuid,
+      reason: z.string().trim().min(3).max(2000),
+      confirmed: z.literal("yes"),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!result.success)
+    return issue("Podaj powód i potwierdź odwołanie spaceru.");
+  const { error } = await db.rpc("cancel_walk", {
+    p_walk: result.data.walk_id,
+    p_reason: result.data.reason,
+  });
+  if (error) return dbError(error.message);
+  refresh();
+  return {
+    success:
+      "Spacer odwołany. Powód jest widoczny dla opiekunów. Poinformuj uczestników o zmianie.",
   };
 }
