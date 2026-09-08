@@ -20,3 +20,17 @@ export function warsawLocalToISO(value: string) {
   }
   throw new Error("Invalid Warsaw wall-clock date");
 }
+
+export function warsawDateTimeInput(value: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Warsaw",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(new Date(value))
+    .replace(" ", "T");
+}

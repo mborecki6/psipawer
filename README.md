@@ -6,7 +6,7 @@ Pierwszy etap aplikacji do spacerów socjalizacyjnych, oparty na Next.js 16.3.4 
 
 Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków i podgląd należności.
 
-**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano wszystkie cztery migracje; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Konto administratora jest utworzone, a publiczny callback zweryfikowano 8 września. Do ukończenia pozostają konfiguracja SMTP i weryfikacja pełnego przepływu użytkownika. Potwierdzanie e-maili pozostaje włączone.
+**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano migracje podstawy oraz aktualizacje obsługi spacerów; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Konto administratora jest utworzone, a publiczny callback zweryfikowano 8 września. Do ukończenia pozostają konfiguracja SMTP i weryfikacja pełnego przepływu użytkownika. Potwierdzanie e-maili pozostaje włączone.
 
 Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atrapami schematów Auth/Storage; nie zastępują integracji z usługą ani równoległego testu wielosesyjnego.
 
@@ -122,8 +122,18 @@ Wersja internetowa działa na Vercel. Sites wymaga formatu Cloudflare Worker lub
 
 Wzorem jest dostarczony `PSI_PAWER_CODEX_HANDOFF.md`; prototyp w `public/reference/prototype.html` został odseparowany od aplikacji i ma zneutralizowane dane kontaktowe. Lockup marki jest zgodny z wariantem zastępczym z dokumentu; docelowy oryginalny asset logo można podmienić po jego dostarczeniu. Dokumentacja: [Next.js Proxy](https://nextjs.org/docs/app/getting-started/proxy), [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nextjs).
 
-Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: wpłaty i pakiety, moderacja i zainteresowania Psiutków, edycja relacji, zmiana/odwołanie całego terminu oraz paginacja danych przy większej skali.
+Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: wpłaty i pakiety, moderacja i zainteresowania Psiutków, edycja relacji, zarządzanie statusem całego terminu oraz paginacja danych przy większej skali.
 
 ## Aktualizacja 8 września — odwołanie terminu
 
 Behawiorysta może odwołać przyszły spacer z jego szczegółów. Powód i potwierdzenie są obowiązkowe. Baza atomowo zamyka aktywne zgłoszenia, usuwa niezapłacone należności tych zgłoszeń i zwraca zarezerwowane wejścia z pakietów. Wpłaty pozostają w historii — odwołanie nie oznacza wykonania zwrotu pieniędzy. Powód jest widoczny w szczegółach odwołanego spaceru; uczestników należy powiadomić osobno. Odwołanie rozpoczętego terminu jest blokowane. Testy: 35 zakończonych poprawnie, lint i build poprawne.
+
+## Edycja terminów i jakość formularzy
+
+Behawiorysta może edytować przyszły spacer lub utworzyć kolejny na podstawie wcześniejszego. Kopia wymaga nowej daty i nie przenosi uczestników ani rozliczeń. Edycja zapisuje opis zmiany dla klientów; zapis z nieaktualnej karty jest odrzucany, a limit nie może spaść poniżej zaakceptowanego składu. Po pierwszym zgłoszeniu cena, tryb zapisów i liczba godzin bezpłatnego odwołania pozostają zablokowane. Przy przesunięciu terminu istniejące zaakceptowane zgłoszenia zachowują korzystniejszy termin bezpłatnej rezygnacji (przed faktycznym rozpoczęciem spaceru). Opiekun widzi ten termin w swoim zgłoszeniu.
+
+Decyzji o zgłoszeniu nie można zmieniać po rozpoczęciu spaceru; obecność nadal można skorygować. Odwołanie przez organizatora usuwa także niezapłacone opłaty za wcześniejszą późną rezygnację. Zapisane wpłaty i zwroty pozostają w historii. Wysyłka wiadomości do uczestników nadal wymaga konfiguracji zewnętrznego dostawcy.
+
+Ekran logowania ma układ dopasowany do telefonu i komputera. Nieudany zapis formularza zachowuje tekst, wybory i wybrany plik; błędy otrzymują fokus. Nie promujemy fikcyjnego demo na skonfigurowanej stronie logowania. Kontrola: 48 testów jednostkowych/SQL, lint i build przeszły. Zachowanie formularzy sprawdzono dodatkowo w izolowanym teście prawdziwej przeglądarki. Widok logowania obejrzano przy szerokości 390 px i na komputerze. Nie jest to jeszcze potwierdzenie pełnego procesu logowania przez e-mail ani wszystkich ekranów na rzeczywistych kontach.
+
+Do pełnego pilotażu pozostają: konfiguracja poczty i próba od logowania po rezerwację, wpłaty/pakiety, edycja relacji psów, moderacja Psiutków, ponowne zgłoszenia po rezygnacji, komunikowanie zmian kwalifikacji psów już przyjętych do składu oraz przegląd rzeczywistych paneli z behawiorystą. Te punkty nie są oznaczone jako ukończone przez same testy podstawy.

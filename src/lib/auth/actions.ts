@@ -21,8 +21,25 @@ export async function signIn(
     email: result.data.email,
     options: { emailRedirectTo: `${origin}/auth/callback` },
   });
-  if (error)
-    return { error: "Nie udało się wysłać linku. Spróbuj ponownie za chwilę." };
+  if (error) {
+    if (
+      error.code === "email_address_not_authorized" ||
+      error.code === "email_provider_disabled"
+    )
+      return {
+        error:
+          "Wysyłka linków logowania nie jest jeszcze dostępna dla klientów. Skontaktuj się z prowadzącą — ponowne wysłanie formularza nie rozwiąże tego problemu.",
+      };
+    if (error.status === 429 || error.code === "over_email_send_rate_limit")
+      return {
+        error:
+          "Limit wysyłki został chwilowo wyczerpany. Sprawdź ostatnią wiadomość i folder spam. Jeśli link nie dotarł, spróbuj później.",
+      };
+    return {
+      error:
+        "Nie udało się wysłać linku. Spróbuj ponownie za chwilę. Jeśli problem się powtarza, skontaktuj się z prowadzącą.",
+    };
+  }
   return {
     success:
       "Sprawdź skrzynkę i folder spam. Jeśli adres jest prawidłowy, otrzymasz link do logowania.",

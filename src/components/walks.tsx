@@ -1,3 +1,5 @@
+import { warsawDateTimeInput } from "@/lib/time";
+import type { Walk } from "@/lib/data/types";
 import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,6 +14,7 @@ import {
   cancelWalk,
   markAttendance,
   createWalk,
+  updateWalk,
   inviteDog,
 } from "@/lib/data/actions";
 import { dateLabel, money, labels, transitions } from "@/lib/domain";
@@ -143,6 +146,34 @@ export async function WalkDetail({ id }: { id: string }) {
       <Link className="ghost-button" href={`${base}/walks`}>
         ← Wszystkie spacery
       </Link>
+      {role === "admin" && (
+        <div className="walk-meta">
+          {!["cancelled", "completed"].includes(walk.status) &&
+            new Date(walk.starts_at) > new Date() && (
+              <Link
+                className="secondary-button"
+                href={`/admin/walks/${id}/edit`}
+              >
+                Edytuj spacer
+              </Link>
+            )}
+          <Link className="ghost-button" href={`/admin/walks/new?copy=${id}`}>
+            Utwórz podobny termin →
+          </Link>
+        </div>
+      )}
+      {walk.change_note && walk.status !== "cancelled" && (
+        <div className="alert" role="status">
+          <strong>Aktualizacja terminu</strong>
+          <p className="preserve-lines">{walk.change_note}</p>
+          {role === "admin" && (
+            <p>
+              Poinformuj zgłoszonych opiekunów o zmianie — wysyłka
+              automatycznych powiadomień nie jest jeszcze podłączona.
+            </p>
+          )}
+        </div>
+      )}
       <article className="card hero-card">
         <div className="hero-content">
           <span className="hero-eyebrow">{walk.type}</span>
@@ -340,10 +371,26 @@ export async function WalkDetail({ id }: { id: string }) {
                         ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
                         : ""}
                     </p>
+                    {r.status === "accepted" && r.cancellation_free_until && (
+                      <p className="alert">
+                        Po zmianie terminu możesz odwołać bez opłaty do{" "}
+                        {dateLabel(
+                          new Date(
+                            Math.min(
+                              Date.parse(r.cancellation_free_until),
+                              Date.parse(walk.starts_at),
+                            ),
+                          ).toISOString(),
+                        )}
+                        .
+                      </p>
+                    )}
                     {r.decision_note && (
                       <p className="preserve-lines">{r.decision_note}</p>
                     )}
                     {role === "admin" &&
+                      !["cancelled", "completed"].includes(walk.status) &&
+                      new Date(walk.starts_at) > new Date() &&
                       transitions[r.status].filter((s) => s !== "withdrawn")
                         .length > 0 && (
                         <ActionForm
@@ -406,7 +453,11 @@ export async function WalkDetail({ id }: { id: string }) {
                         <ActionForm
                           action={cancelRegistration}
                           label="Odwołaj zgłoszenie"
-                          confirm={`Odwołać zgłoszenie? Jeśli do spaceru zostało mniej niż ${walk.cancellation_deadline_hours} godz., zaakceptowane miejsce będzie podlegać opłacie.`}
+                          confirm={
+                            r.cancellation_free_until
+                              ? "Odwołać zgłoszenie? Przy rozliczeniu uwzględnimy Twój termin bezpłatnej rezygnacji po zmianie spaceru."
+                              : `Odwołać zgłoszenie? Jeśli do spaceru zostało mniej niż ${walk.cancellation_deadline_hours} godz., zaakceptowane miejsce będzie podlegać opłacie.`
+                          }
                         >
                           <input type="hidden" name="id" value={r.id} />
                         </ActionForm>
@@ -421,18 +472,50 @@ export async function WalkDetail({ id }: { id: string }) {
     </div>
   );
 }
-export function NewWalk() {
+export type WalkFormValues = Partial<Walk> & {
+  exact_location?: string;
+  map_url?: string;
+  instructions?: string;
+};
+export function NewWalk({
+  initial = {},
+  editing = false,
+  hasRegistrations = false,
+}: {
+  initial?: WalkFormValues;
+  editing?: boolean;
+  hasRegistrations?: boolean;
+}) {
   return (
     <article className="card pad form-card">
-      <h2>Nowy spacer</h2>
+      <h2>{editing ? "Edytuj spacer" : "Nowy spacer"}</h2>
       <p className="muted">
         Godzinę podaj według czasu polskiego (Europe/Warsaw).
       </p>
-      <ActionForm action={createWalk} label="Utwórz spacer">
+      {hasRegistrations && (
+        <div className="alert">
+          Są już zgłoszenia. Cena, tryb zapisów i liczba godzin na bezpłatne
+          odwołanie są zachowane. Limit miejsc nie może być mniejszy od
+          zaakceptowanego składu.
+        </div>
+      )}
+      <ActionForm
+        action={editing ? updateWalk : createWalk}
+        label={editing ? "Zapisz zmiany spaceru" : "Utwórz spacer"}
+      >
+        {editing && (
+          <>
+            <input type="hidden" name="id" value={initial.id} />
+            <input type="hidden" name="updated_at" value={initial.updated_at} />
+          </>
+        )}
         <div className="form-grid">
           <Field
             label="Termin (czas polski)"
             name="local_start"
+            value={
+              initial.starts_at ? warsawDateTimeInput(initial.starts_at) : ""
+            }
             type="datetime-local"
             required
           />
@@ -440,33 +523,50 @@ export function NewWalk() {
             label="Czas trwania w minutach"
             name="duration_minutes"
             type="number"
-            value={60}
+            value={initial.duration_minutes ?? 60}
             required
           />
-          <Field label="Ogólna lokalizacja" name="public_location" required />
+          <Field
+            label="Ogólna lokalizacja"
+            name="public_location"
+            value={initial.public_location}
+            required
+          />
           <Field
             label="Rodzaj spaceru"
             name="type"
-            value="Spacer socjalizacyjny"
+            value={initial.type ?? "Spacer socjalizacyjny"}
             required
           />
           <Field
             label="Cena za psa (zł)"
             name="price"
+            readOnly={hasRegistrations}
             type="number"
-            value={60}
+            value={initial.price_cents ? initial.price_cents / 100 : 60}
             required
           />
           <Field
             label="Liczba miejsc"
             name="capacity"
             type="number"
-            value={4}
+            value={initial.capacity ?? 4}
             required
           />
           <label className="field">
             <span>Tryb zapisów</span>
-            <select name="booking_mode" defaultValue="approval">
+            {hasRegistrations && (
+              <input
+                type="hidden"
+                name="booking_mode"
+                value={initial.booking_mode}
+              />
+            )}
+            <select
+              disabled={hasRegistrations}
+              name="booking_mode"
+              defaultValue={initial.booking_mode ?? "approval"}
+            >
               <option value="approval">Po akceptacji</option>
               <option value="automatic">
                 Automatyczne — zakwalifikowane psy
@@ -477,14 +577,15 @@ export function NewWalk() {
           <Field
             label="Termin odwołania — godzin przed spacerem"
             name="cancellation_deadline_hours"
+            readOnly={hasRegistrations}
             type="number"
-            value={24}
+            value={initial.cancellation_deadline_hours ?? 24}
             required
           />
         </div>
         <label className="field">
           <span>Informacje dla opiekunów</span>
-          <textarea name="info" maxLength={4000} />
+          <textarea name="info" defaultValue={initial.info} maxLength={4000} />
         </label>
         <h3>Prywatne szczegóły spotkania</h3>
         <p className="muted">
@@ -493,13 +594,31 @@ export function NewWalk() {
         <Field
           label="Dokładne miejsce zbiórki"
           name="exact_location"
+          value={initial.exact_location}
           required
         />
-        <Field label="Link do mapy (https://)" name="map_url" type="url" />
+        <Field
+          label="Link do mapy (https://)"
+          name="map_url"
+          type="url"
+          value={initial.map_url}
+        />
         <label className="field">
           <span>Wskazówki dotarcia</span>
-          <textarea name="instructions" maxLength={2000} />
+          <textarea
+            name="instructions"
+            maxLength={2000}
+            defaultValue={initial.instructions}
+          />
         </label>
+        {editing && (
+          <Field
+            name="change_note"
+            label="Co się zmienia? Informacja dla opiekunów"
+            maxLength={2000}
+            required
+          />
+        )}
       </ActionForm>
     </article>
   );

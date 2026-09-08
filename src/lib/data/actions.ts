@@ -22,6 +22,11 @@ function issue(message: string): ActionState {
 function dbError(message: string): ActionState {
   const allowed = [
     "Brak wolnych miejsc.",
+    "Spacer zmienił się w międzyczasie. Odśwież formularz przed zapisem.",
+    "Nie można edytować rozpoczętego lub odwołanego spaceru.",
+    "Po pierwszym zgłoszeniu cena, tryb zapisów i zasady odwołania pozostają bez zmian.",
+    "Limit nie może być mniejszy od zaakceptowanego składu.",
+    "Nie można zmieniać zgłoszeń po rozpoczęciu lub odwołaniu spaceru.",
     "Nie można odwołać rozpoczętego spaceru.",
     "Zgłoszenie już istnieje.",
     "Spacer tylko na zaproszenie.",
@@ -354,4 +359,48 @@ export async function cancelWalk(
     success:
       "Spacer odwołany. Powód jest widoczny dla opiekunów. Poinformuj uczestników o zmianie.",
   };
+}
+
+export async function updateWalk(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const { db } = await requireSession("admin");
+  const meta = z
+    .object({
+      id: uuid,
+      updated_at: z.iso.datetime({ offset: true }),
+      change_note: z.string().trim().min(3).max(2000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!meta.success)
+    return issue(
+      "Podaj opis zmiany. Jeśli formularz jest nieaktualny, odśwież stronę.",
+    );
+  const raw = Object.fromEntries(form);
+  let starts_at: string;
+  try {
+    starts_at = warsawLocalToISO(String(raw.local_start));
+  } catch {
+    return issue("Podaj poprawną datę i godzinę w strefie Europe/Warsaw.");
+  }
+  const result = walkSchema.safeParse({
+    ...raw,
+    starts_at,
+    price_cents: Math.round(Number(raw.price) * 100),
+  });
+  if (!result.success)
+    return {
+      error: "Sprawdź dane spaceru.",
+      fields: result.error.flatten().fieldErrors,
+    };
+  const { error } = await db.rpc("update_walk", {
+    p_walk: meta.data.id,
+    p_expected_updated_at: meta.data.updated_at,
+    payload: result.data,
+    p_note: meta.data.change_note,
+  });
+  if (error) return dbError(error.message);
+  refresh();
+  redirect(`/admin/walks/${meta.data.id}?saved=1`);
 }

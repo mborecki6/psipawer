@@ -27,6 +27,8 @@ export type Walk = {
   tags: string[];
   cancellation_deadline_hours: number;
   cancellation_reason: string | null;
+  change_note: string | null;
+  updated_at: string;
 };
 export type Registration = {
   id: string;
@@ -36,6 +38,7 @@ export type Registration = {
   payment_status: string;
   attendance: string;
   decision_note: string | null;
+  cancellation_free_until: string | null;
   created_at: string;
 };
 export type Snapshot = {
