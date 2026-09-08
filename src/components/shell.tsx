@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Plus,
+  Network,
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import type { Role } from "@/lib/auth/session";
@@ -41,6 +42,9 @@ export function Shell({
       label: role === "admin" ? "Psy i opiekunowie" : "Moje psy",
       icon: Dog,
     },
+    ...(role === "admin"
+      ? [{ href: "/admin/relations", label: "Relacje psów", icon: Network }]
+      : []),
     {
       href: `${base}/finance`,
       label: role === "admin" ? "Pakiety i płatności" : "Moje rozliczenia",
@@ -49,6 +53,14 @@ export function Shell({
     { href: `${base}/community`, label: "Psiutki", icon: Heart },
   ];
   useEffect(() => {
+    const views = [
+      "dashboard",
+      "walks",
+      "dogs",
+      "finance",
+      "community",
+      ...(role === "admin" ? ["relations"] : []),
+    ];
     const context = (
       document as Document & {
         modelContext?: {
@@ -72,7 +84,7 @@ export function Shell({
             properties: {
               view: {
                 type: "string",
-                enum: ["dashboard", "walks", "dogs", "finance", "community"],
+                enum: views,
               },
             },
             required: ["view"],
@@ -81,12 +93,7 @@ export function Shell({
           annotations: { readOnlyHint: true },
           execute(input: unknown) {
             const view = (input as { view?: string })?.view;
-            if (
-              !view ||
-              !["dashboard", "walks", "dogs", "finance", "community"].includes(
-                view,
-              )
-            )
+            if (!view || !views.includes(view))
               throw new Error("Nieprawidłowy widok");
             const href = view === "dashboard" ? base : `${base}/${view}`;
             router.push(href);
@@ -97,7 +104,7 @@ export function Shell({
       ),
     ).catch(() => {});
     return () => lifecycle.abort();
-  }, [base, router]);
+  }, [base, router, role]);
   return (
     <div className="app-shell">
       <a className="skip-link" href="#content">
@@ -139,6 +146,9 @@ export function Shell({
         <div className="sidebar-footer">
           <Link className="nav-item" href="/complete-profile">
             Moje dane
+          </Link>
+          <Link className="nav-item" href="/account/security">
+            Hasło do konta
           </Link>
           <form action={signOut}>
             <button className="nav-item">

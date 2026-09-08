@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CalendarDays, HeartHandshake, Mail, PawPrint } from "lucide-react";
 import { isConfigured } from "@/lib/supabase/config";
 import { ActionForm, Field } from "@/components/action-form";
-import { signIn } from "@/lib/auth/actions";
+import { signInWithPassword } from "@/lib/auth/access-actions";
 
 export const metadata: Metadata = {
   title: "Zaloguj się — Psi Pawer",
@@ -90,23 +90,43 @@ export default async function Login({
               </div>
             )}
             {configured ? (
-              <ActionForm
-                action={signIn}
-                label="Wyślij link do logowania"
-                pendingLabel="Wysyłam link…"
-                className="login-form"
-              >
-                <Field
-                  name="email"
-                  label="Twój e-mail"
-                  type="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  placeholder="np. imie@email.pl"
-                  hint="Bez zapamiętywania hasła. Wyślemy Ci jednorazowy link do logowania."
-                  required
-                />
-              </ActionForm>
+              <>
+                <ActionForm
+                  action={signInWithPassword}
+                  label="Zaloguj się"
+                  pendingLabel="Loguję…"
+                  className="login-form"
+                >
+                  <Field
+                    name="email"
+                    label="Twój e-mail"
+                    type="email"
+                    autoComplete="username"
+                    inputMode="email"
+                    placeholder="np. imie@email.pl"
+                    required
+                  />
+                  <Field
+                    name="password"
+                    label="Hasło"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    maxLength={128}
+                  />
+                </ActionForm>
+                <details className="login-help">
+                  <summary className="ghost-button">
+                    Potrzebujesz linku dostępu?
+                  </summary>
+                  <p>
+                    Podczas testów poproś o nowy jednorazowy link dostępu osobę,
+                    która udostępniła Ci aplikację. Pozwoli Ci ustawić nowe
+                    hasło. Automatyczne linki e-mail będą dostępne po
+                    uruchomieniu poczty.
+                  </p>
+                </details>
+              </>
             ) : (
               <div className="alert">
                 Logowanie jest w przygotowaniu. Możesz obejrzeć podgląd
@@ -116,8 +136,8 @@ export default async function Login({
             <div className="login-help">
               <strong>Pierwszy raz w Psi Pawer?</strong>
               <p>
-                Zaloguj się swoim e-mailem. Przy pierwszym wejściu utworzymy
-                konto opiekuna i pomożemy uzupełnić profil.
+                Otwórz przekazany Ci jednorazowy link dostępu i ustaw własne
+                hasło. Jeśli nie masz linku, skontaktuj się z prowadzącą.
               </p>
             </div>
             {!configured && (

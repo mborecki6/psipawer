@@ -1,164 +1,205 @@
 # Psi Pawer
 
-Pierwszy etap aplikacji do spacerów socjalizacyjnych, oparty na Next.js 16.3.4 (App Router, TypeScript) i Supabase. Zachowuje paletę, geometrię, sidebar, karty i dashboard z dostarczonego prototypu.
+Aplikacja do organizacji spacerów socjalizacyjnych i pracy behawiorysty. Stos: Next.js App Router, TypeScript, React, Supabase Auth/PostgreSQL/Storage. Wygląd zachowuje ciepłą paletę i układ dostarczonego prototypu.
 
-## Stan projektu
+## Zakres pilota i stan wdrożenia
 
-Zaimplementowane: logowanie magic link, sesje SSR, oddzielne role i panele, uzupełnianie profilu, psy i kwestionariusze, prywatne zdjęcia, kwalifikacja psa, notatki z widocznością, tworzenie spacerów, zgłoszenia, zaproszenia administratora, akceptacja/odrzucenie/rezerwa, anulowanie z terminem, obecności, chroniona lokalizacja, KPI z filtrami, odczyt opublikowanych Psiutków, rozliczenia i pakiety z historią operacji.
+Obecny pilot jest przeznaczony dla administratora i behawiorystki. Oboje korzystają z roli `admin`; aplikacja ma również rolę `client` i panel opiekuna, ale zapraszanie klientów oraz konfiguracja SMTP są odłożone. Ograniczony skład pilota jest zasadą organizacyjną, nie dodatkową rolą ani automatyczną listą dozwolonych kont.
 
-**Supabase podłączony w środowisku roboczym (5 września 2026).** Zastosowano migracje podstawy oraz aktualizacje obsługi spacerów; sprawdzenie usługi potwierdziło RLS na wszystkich 15 tabelach oraz prywatny zasób zdjęć `dog-avatars`. Lokalna konfiguracja pozostaje poza repozytorium. Build z konfiguracją Supabase zakończył się poprawnie. Konto administratora jest utworzone, a publiczny callback zweryfikowano 8 września. Do ukończenia pozostają konfiguracja SMTP i weryfikacja pełnego przepływu użytkownika. Potwierdzanie e-maili pozostaje włączone.
+Podstawową metodą logowania jest e-mail i hasło. Pierwszy dostęp można nadać przez jednorazowy link aktywacyjny, bez wysyłania poczty z aplikacji. Nie ma publicznej rejestracji administratorów ani formularza zmiany ról.
 
-Testy PostgreSQL uruchamiają migracje i RLS lokalnie w PGlite z minimalnymi atrapami schematów Auth/Storage; nie zastępują integracji z usługą ani równoległego testu wielosesyjnego.
+**Aktualizacja z 8 września 2026 jest opublikowana pod [psipawer.vercel.app](https://psipawer.vercel.app/login).** Migracje do `202609080008` zastosowano w docelowej bazie. Kompilacja produkcyjna, ESLint i 133 testy zakończyły się poprawnie. Transakcyjny test rzeczywistego Supabase potwierdził zgody, moderację, wzajemność propozycji, prywatność i audyt relacji; dane testowe wycofano. Publiczne logowanie odpowiada, a chronione strony przekierowują niezalogowane osoby do formularza.
 
-`/demo` to **dostarczony prototyp referencyjny**, osadzony oddzielnie od aplikacji. Ma fikcyjne dane i lokalny zapis w przeglądarce. Nie jest panelem połączonym z bazą ani mechanizmem obejścia logowania. Prawdziwe panele `/admin` i `/app` nigdy nie przechodzą na dane demo. Nie wpisuj prawdziwych danych klientów w demo.
+Nadal pozostają przygotowanie dostępu behawiorystki i pełne sprawdzenie aktywacji, ustawienia hasła oraz prawdziwego uploadu zdjęć z sesji testowej. Nie są one oznaczone jako ukończone przez testy z atrapami. SMTP i klienci pozostają poza bieżącym pilotem.
 
-Edycja/moderacja Psiutków, zainteresowania i zarządzanie relacjami mają przygotowany schemat pod kolejny etap. Ostrzeżenia o istniejących relacjach są widoczne dla admina. Lista rezerwowa nie awansuje automatycznie. Nie ma czatu, AI, automatycznych płatności ani wielofirmowości.
+## Moduły aplikacji
 
-## Wersja internetowa do testów
+| Obszar | Zakres |
+| --- | --- |
+| Konta | Sesje SSR, logowanie hasłem, jednorazowa aktywacja, ustawienie własnego hasła, uzupełnianie profilu, role administratora i opiekuna. |
+| Psy | Profile, kwestionariusze, kwalifikacja, prywatne zdjęcia i notatki o określonej widoczności. |
+| Spacery | Tworzenie, edycja i kopiowanie przyszłych terminów, zgłoszenia, zaproszenia, decyzje administratora, rezerwa, rezygnacje, odwołanie terminu i obecności. |
+| Rozliczenia | Należności, częściowe wpłaty, zwroty/korekty, pakiety wejść, rezerwacja i odłączenie wejścia, anulowanie niewykorzystanego pakietu oraz historia. |
+| Relacje psów | Prywatne oceny par, notatki, data ostatniego spotkania, historia zmian i ostrzeżenia przy planowaniu grup. |
+| Psiutki | Wizytówki społecznościowe, osobne zdjęcia i zgody, moderacja, ukrywanie profili, zainteresowania i ocena wzajemnych propozycji przez behawiorystę. |
 
-Adres: https://psipawer.vercel.app — opublikowano na Vercel 5 września 2026. Publiczny formularz logowania odpowiada poprawnie; wejście do panelu administratora bez sesji przekierowuje na logowanie. Supabase URL i klucz publishable są zapisane w konfiguracji hostingu, bez klucza administratora.
+Panele działają pod `/admin` i `/app`. Finanse znajdują się pod odpowiednim `/finance`, Psiutki pod `/community`, a zarządzanie prywatnymi relacjami wyłącznie pod `/admin/relations`.
 
-Pełne logowanie testerów wymaga własnej wysyłki SMTP: domyślna poczta Supabase obsługuje tylko adresy członków organizacji. Publiczny callback `https://psipawer.vercel.app/auth/callback` jest zapisany w Supabase Auth. Nie potwierdzono jeszcze pełnego logowania przez pocztę.
+### Zasady spacerów i zgłoszeń
 
-## Uruchomienie bez Supabase
+- Akceptacja sprawdza kwalifikację psa oraz pojemność grupy. Lista rezerwowa nie awansuje automatycznie.
+- Edytować można przyszły termin. Nieaktualna wersja formularza jest odrzucana, a limit nie może spaść poniżej zaakceptowanego składu. Po pierwszym zgłoszeniu cena, tryb zapisów i liczba godzin bezpłatnej rezygnacji pozostają zablokowane.
+- Przy przesunięciu terminu istniejące zaakceptowane zgłoszenie zachowuje korzystniejszy termin bezpłatnej rezygnacji, przed faktycznym rozpoczęciem spaceru. Opis zmiany jest widoczny opiekunowi.
+- Kopia spaceru wymaga nowej daty; nie przenosi uczestników ani rozliczeń.
+- Odwołanie przyszłego spaceru wymaga powodu. Atomowo zamyka aktywne zgłoszenia, usuwa niezapłacone należności związane z odwołanym terminem i zwraca odpowiednie wejścia z pakietów. Zapisane wpłaty pozostają w historii; odwołanie nie wykonuje zwrotu pieniędzy.
+- Wycofane zgłoszenie lub rezygnację w terminie administrator może przywrócić do decyzji, podając powód. Nie akceptuje to psa automatycznie. Wpłaty i historia pozostają przy zgłoszeniu; pakiet trzeba wybrać ponownie. Późna rezygnacja nie podlega tej ścieżce.
+- Decyzji o zgłoszeniu nie można zmieniać po rozpoczęciu spaceru; obecność można skorygować.
+- Zmiana kwalifikacji psa już przyjętego na przyszły spacer wyświetla ostrzeżenie obu rolom. Nie odwołuje automatycznie rezerwacji ani nie zmienia rozliczeń. Opiekun otrzymuje prośbę o kontakt bez prywatnych notatek behawiorysty.
 
-Wymagany Node.js 22 LTS lub nowszy i pnpm 11.
+### Zasady rozliczeń
+
+Aplikacja ewidencjonuje pieniądze otrzymane poza nią. Nie wykonuje płatności, przelewów ani zwrotów i nie jest systemem fakturowania. Kwoty są przechowywane jako całkowite grosze.
+
+- Cena pakietu stanowi osobną należność. Przyznanie pakietu nie oznacza opłacenia go; aktywne wejścia mogą być używane przed pełną zapłatą.
+- Wejście można przypisać zaakceptowanemu przyszłemu zgłoszeniu tego samego psa. Rezerwacja zmniejsza pulę dostępną, a obecność lub płatna nieobecność zużywa wejście.
+- Rezygnacja w terminie i usprawiedliwiona nieobecność zwalniają wejście. Późna rezygnacja je zużywa; odwołanie całego terminu przez organizatora zwraca także takie wejście.
+- Korekta obecności rozlicza różnicę. Ponowienie tej samej operacji nie zużywa kolejnego wejścia. Brak salda przy ponownym obciążeniu powoduje atomowe odrzucenie zmiany.
+- Ważność pakietu jest sprawdzana przy nowym przydziale. Wejście zarezerwowane przed wygaśnięciem można później rozliczyć.
+- Błędny przydział można odłączyć przed spacerem z obowiązkowym powodem, przywracając pojedynczą należność. Niewykorzystany i niezarezerwowany pakiet można anulować z powodem.
+- Wpłaty mogą być częściowe. Klucz idempotencji oraz blokada należności chronią przed ponowieniem i nadpłatą. Korekta/zwrot odwraca cały wpis i wymaga powodu; zmianę kwoty wykonuje się przez odwrócenie błędnego wpisu i zapis właściwego.
+- Wpłaty wymagające sprawdzenia po odwołaniu lub zmianie rozliczenia są oznaczane. Rzeczywisty zwrot należy wykonać oddzielnie.
+
+Opiekun widzi własne należności, pakiety, wpłaty, powody korekt i historię wejść. Wewnętrzne notatki przyznania/przypisania pakietu pozostają w audycie administratora. Pobieranie finansów odbywa się stronicami, aby uniknąć cichego obcięcia historii przez limit API.
+
+### Relacje i Psiutki
+
+Prywatna ocena relacji dotyczy pary psów niezależnie od kolejności ich wyboru. Zapis wymaga notatki, sprawdza wersję wcześniejszej oceny i nie pozwala podać przyszłej daty ostatniego spotkania. Oceny oraz ich historia są dostępne wyłącznie administratorowi. Nie są publikowane w Psiutkach.
+
+Wizytówka Psiutka jest osobnym zestawem treści, widocznym po zatwierdzeniu dla zalogowanych użytkowników. Nie należy wpisywać telefonu, dokładnego adresu, danych zdrowotnych ani prywatnych zaleceń. Opiekun może tworzyć i edytować wyłącznie własną wizytówkę; administrator moderuje treść, ale nie edytuje cudzej wizytówki jako właściciel.
+
+Każdy zapis wymaga jawnej zgody i ponownego sprawdzenia. Zmiana opisu lub zdjęcia wycofuje publikację do czasu moderacji. Ukrycie przez właściciela cofa zgodę; ukrycie przez administratora pozostawia zgodę, lecz usuwa profil z katalogu. Moderacja odrzucenia przekazuje opiekunowi wskazówki do poprawy.
+
+Zdjęcia społecznościowe trafiają do osobnego prywatnego zasobu `community-avatars`. Nie są kopiowane z dokumentacji psa. Upload przyjmuje JPG, PNG lub WebP do 1,5 MB i 16 megapikseli; serwer sprawdza i przetwarza obraz do WebP, ogranicza rozmiar oraz usuwa metadane EXIF/GPS. Właściciel może także usunąć zdjęcie z wizytówki przy zapisie.
+
+Zainteresowanie wymaga własnej opublikowanej wizytówki i nie może dotyczyć drugiego psa tego samego opiekuna. Wzajemna propozycja trafia do oceny behawiorysty. Po zmianie lub ukryciu profilu wymagane jest ponowne potwierdzenie zainteresowania aktualnymi treściami. Wycofanie propozycji nie omija aktywnej negatywnej oceny pary. Zgłoszenie zainteresowania zapisuje dane w aplikacji — nie wysyła wiadomości do innych osób.
+
+## Instalacja i środowisko
+
+Wymagane: Node.js 22 lub nowszy oraz pnpm. Zależności są określone w `package.json` i `pnpm-lock.yaml`.
 
 ```sh
 pnpm install --frozen-lockfile
+cp .env.example .env.local
+```
+
+Uzupełnij lokalnie poniższe zmienne. W repozytorium nie zapisuj danych kont, haseł, kluczy ani linków z tokenami.
+
+| Zmienna | Zastosowanie |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Adres projektu Supabase. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publiczny klucz publishable projektu, używany wraz z sesją i RLS. |
+| `NEXT_PUBLIC_APP_URL` | Dokładny adres aplikacji, lokalnie `http://localhost:3000`, na hostingu domena HTTPS. |
+| `SUPABASE_SECRET_KEY` | Opcjonalny klucz administracyjny wyłącznie dla narzędzi w odizolowanym środowisku testowym. Runtime aplikacji go nie wymaga. |
+
+```sh
 pnpm dev
 ```
 
-Otwórz `http://localhost:3000/demo`. Na `/login` zobaczysz informację o braku konfiguracji. Bez połączenia z Supabase nie jest wysyłany żaden e-mail.
+Skrypt deweloperski nasłuchuje na interfejsie lokalnym. Otwórz adres zgodny z `NEXT_PUBLIC_APP_URL`. Po zmianie zmiennych uruchom serwer ponownie. Nie mieszaj `localhost` i `127.0.0.1` podczas logowania: sesja i starszy callback PKCE korzystają z cookies konkretnego hosta.
 
-## Podłączenie Supabase — projekt w chmurze
+Bez konfiguracji Supabase dostępny jest tylko `/demo` oraz informacja o braku konfiguracji logowania. `/demo` to odseparowany prototyp referencyjny z fikcyjnymi danymi i lokalnym zapisem przeglądarki. Nie wpisuj tam danych klientów. Panele `/admin` i `/app` nie przełączają się na dane demo i nie obchodzą logowania.
 
-1. Utwórz nowy projekt na Supabase. Zapisz jego Project URL oraz klucz **publishable**.
-2. Skopiuj `.env.example` do `.env.local` i uzupełnij:
+## Baza danych i migracje
 
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://TWOJ-PROJEKT.supabase.co
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=TWOJ_KLUCZ_PUBLISHABLE
-   SUPABASE_SECRET_KEY=
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
+Użyj projektu Supabase przeznaczonego dla tej aplikacji. Dla istniejącej bazy sprawdź historię migracji i kopię bezpieczeństwa przed aktualizacją. Zastosuj wszystkie brakujące pliki z `supabase/migrations/` w kolejności nazw; nie wykonuj ponownie migracji już zapisanej w historii.
 
-   Aplikacja nie wymaga secret/service_role. `SUPABASE_SECRET_KEY` jest potrzebny wyłącznie opcjonalnemu skryptowi seed/testom lokalnym. Nigdy nie umieszczaj go w kodzie przeglądarki ani w repo.
-
-3. Zastosuj po kolei **wszystkie migracje** z `supabase/migrations/` w SQL Editorze. Alternatywnie użyj Supabase CLI: `supabase link --project-ref TWOJ_REF`, potem `supabase db push`. Używaj nowego projektu dedykowanego tej aplikacji.
-4. W Authentication → URL Configuration ustaw Site URL identyczny z `NEXT_PUBLIC_APP_URL` i dodaj Redirect URL `http://localhost:3000/auth/callback`. Po wdrożeniu użyj docelowej domeny HTTPS. Nie mieszaj `localhost` i `127.0.0.1`: logowanie i callback muszą korzystać z tego samego hosta, ponieważ PKCE używa cookies.
-
-   `supabase/config.toml` służy do lokalnego środowiska deweloperskiego. Nie publikuj całego pliku do chmury przez `supabase config push`: zawiera lokalne ustawienia potwierdzania e-maili. Adresy powrotu ustaw oddzielnie, zachowując ustawienia bezpieczeństwa projektu.
-5. Włącz logowanie e-mail / magic link i możliwość samodzielnej rejestracji opiekunów. Zachowaj szablon magic link używający `{{ .ConfirmationURL }}`, aby Supabase przekierowało do callbacku PKCE z parametrem `code`. Na produkcji skonfiguruj własny SMTP i limity wysyłki w Supabase.
-6. Uruchom ponownie serwer po zmianie środowiska. Otwórz adres z `NEXT_PUBLIC_APP_URL` i zaloguj się własnym e-mailem. Nowe konto zawsze otrzymuje rolę `client`, niezależnie od metadanych rejestracji.
-7. Uzupełnij profil. Rolę behawiorysty nadaj ręcznie według poniższej instrukcji.
-
-## Pierwsze konto behawiorysty
-
-Utwórz konto w Authentication → Users lub zaloguj się przez aplikację. Skopiuj jego UUID, a następnie wykonaj jako administrator projektu w SQL Editorze:
-
-```sql
-update public.user_roles set role = 'admin'
-where user_id = 'UUID_TWOJEGO_KONTA';
+```sh
+supabase login
+supabase link --project-ref IDENTYFIKATOR_PROJEKTU
+supabase migration list
+supabase db push
 ```
 
-Nie istnieje publiczna rejestracja administratorów. Konto klienta zostaw z `role = 'client'`. Po ponownym wejściu admin trafia do `/admin`, klient do `/app`; oba konta muszą uzupełnić profil. Aplikacja nie oferuje formularza zmiany ról.
+Nie wklejaj danych uwierzytelniających CLI do repozytorium. Alternatywą jest kontrolowane wykonanie SQL przez administratora projektu, z zachowaniem kolejności i spójnej historii migracji.
 
-## Lokalny Supabase i dane demonstracyjne
+| Migracje | Zakres |
+| --- | --- |
+| `202609050001`–`202609050004` | Podstawa, role, RLS, operacje spacerów, tabele dalszych modułów i prywatne zdjęcia psów. |
+| `202609080001` | Odwołanie przyszłego spaceru i powiązane rozliczenia. |
+| `202609080002` | Edycja terminu, wersjonowanie i ochrona warunków zgłoszeń. |
+| `202609080003` | Spójność zgłoszeń, kwalifikacji i rezygnacji. |
+| `202609080004` | Finanse, wpłaty, korekty i operacje pakietów. |
+| `202609080005` | Kontrolowane przywracanie zgłoszeń do decyzji. |
+| `202609080006` | Zgody i moderacja Psiutków, zainteresowania oraz osobne zdjęcia społecznościowe. |
+| `202609080007` | Audytowany zapis prywatnych relacji psów i ochrona przed nadpisaniem oceny. |
+| `202609080008` | Rosnące wersje wizytówek i zainteresowań także przy kolejnych zapisach w jednej transakcji. |
 
-Wymagany Docker i Supabase CLI:
+Migracja `202609080006` wycofuje publikację wcześniejszych wizytówek bez udokumentowanej zgody i odłącza stare ścieżki zdjęć. Wymagana jest ponowna deklaracja właściciela i moderacja. To celowa zmiana, którą należy uwzględnić przed aktualizacją istniejących danych.
+
+`supabase/config.toml` dotyczy lokalnego środowiska: zawiera lokalne adresy oraz wyłączone lokalnie potwierdzanie e-maili. **Nie wysyłaj całego pliku do chmury przez `supabase config push`.** W chmurze ustaw osobno Site URL zgodny z `NEXT_PUBLIC_APP_URL` i dozwolony callback `/auth/callback`, zachowując potwierdzanie e-maili oraz właściwe limity Auth. Uruchomienie samodzielnej rejestracji klientów i SMTP wymaga osobnego etapu.
+
+### Lokalny Supabase i dane testowe
+
+Lokalny stos wymaga Dockera i Supabase CLI:
 
 ```sh
 supabase start
 supabase db reset
 ```
 
-Ustaw lokalne URL/klucze zwrócone przez CLI w `.env.local`. Lokalny panel jest dostępny pod `http://localhost:54323`, skrzynka Inbucket pod `http://localhost:54324`. `seed.sql` celowo nie tworzy użytkowników Auth. Opcjonalny skrypt tworzy ich kontrolowanie przez administracyjne API, a następnie dodaje fikcyjne psy, spacery, zgłoszenia, relacje i Kluskę w Psiutkach:
+`db reset` usuwa dane lokalnej bazy i odtwarza ją z migracji. Nie używaj resetu zdalnej bazy pilota. W `.env.local` ustaw dane lokalnego stosu zwrócone przez CLI. Studio działa pod `http://localhost:54323`, a lokalna skrzynka pod `http://localhost:54324`.
+
+`supabase/seed.sql` nie tworzy kont Auth. Opcjonalny `scripts/seed-demo.mjs` tworzy fikcyjne konta i przykładowe rekordy przez administracyjne API:
 
 ```sh
 PSI_ALLOW_DEMO_SEED=yes node --env-file=.env.local scripts/seed-demo.mjs
 ```
 
-Uruchamiaj go tylko w osobnym projekcie testowym. Skrypt używa `SUPABASE_SECRET_KEY`, nie wypisuje tokenów ani haseł. Każde uruchomienie tworzy nowe konta `@example.test`; lokalne linki logowania odczytasz w Inbucket. Po testach lokalne dane możesz usunąć przez `supabase db reset`.
+Skrypt wolno uruchamiać tylko w jednorazowym projekcie testowym. Wymaga lokalnego klucza administracyjnego, a kolejne uruchomienie tworzy kolejne dane. To pomocniczy seed, nie test procesu zgody/moderacji ani narzędzie do zakładania kont pilota. Konta seeda nie mają ustawionego hasła; dostęp wymaga osobnej konfiguracji testowej.
 
-## Reguły bezpieczeństwa
+## Dostęp dla administratora i behawiorystki
 
-- `src/proxy.ts` odświeża sesję, lecz każda operacja i odczyt ponownie weryfikują użytkownika. Chronione layouty są dynamiczne. RLS jest ostateczną granicą dostępu.
-- Osobne `user_roles` z zakazem publicznego zapisu. Profil opiekuna nie zawiera edytowalnej roli.
-- Psy mają niezmienne przez klienta `guardian_id` i kwalifikację. Zwykłe aktualizacje są ograniczone grantami kolumnowymi. Krytyczna zmiana kwestionariusza ustawia `needs_review`, nie zdejmuje zawieszenia ani obowiązku konsultacji.
-- Dokładna lokalizacja jest w osobnej tabeli `walk_private_details`. RLS ujawnia ją wyłącznie adminowi i opiekunowi zaakceptowanego psa. Opiekun nie widzi obcych zgłoszeń ani składu grupy.
-- Zapisy i decyzje wykonują transakcyjne funkcje SQL. Blokada rekordu spaceru, unikalność `(walk_id, dog_id)` i trigger pojemności zabezpieczają limit także poza UI. Zakwalifikuj psa przed akceptacją. Automatyczny tryb przyjmuje wyłącznie zakwalifikowane psy.
-- Autor, czas i historia decyzji są przechowywane. Obecność jest niezależna od statusu zgłoszenia. Kwoty to całkowite grosze, terminy to `timestamptz`, a czas biznesowy to `Europe/Warsaw`.
-- Zdjęcia trafiają do prywatnego bucketu `dog-avatars`, z ograniczeniami typu, rozmiaru i własności; dostęp przez krótkotrwały podpisany URL. Publiczne Psiutki nie korzystają z prywatnego bucketu ani danych kontaktowych.
-- Finanse można zmieniać wyłącznie przez audytowane funkcje administratora. Saldo pakietu wynika z `package_transactions`; zapis wpłaty ma klucz idempotencji i blokadę należności zapobiegającą nadpłacie. Klient odczytuje wyłącznie swoje rozliczenia.
+1. Administrator projektu tworzy lub wybiera właściwe konto Supabase Auth. Tożsamość i uprawnienia należy ustalić przed nadaniem dostępu. Nowe konto otrzymuje domyślnie rolę `client`, niezależnie od metadanych rejestracji.
+2. Dla konta uprawnionego do prowadzenia aplikacji administrator projektu ustawia rolę po UUID:
 
-## Sprawdzenie projektu
+   ```sql
+   update public.user_roles
+   set role = 'admin'
+   where user_id = 'UUID_UPRAWNIONEGO_KONTA';
+   ```
+
+3. Jeśli konto nie ma własnego hasła, uprawniony administrator generuje jednorazowy dostęp przez administracyjne API Supabase Auth typu `magiclink`. Hash weryfikacyjny należy przekazać w prywatnym linku do `/auth/access` jako parametr `token_hash`. Link jest poświadczeniem dostępu: nie zapisuj go w logach, repozytorium, zrzutach ani publicznych materiałach.
+4. Wejście metodą GET wyświetla przycisk potwierdzenia i **nie zużywa tokenu**. Dopiero wysłanie formularza weryfikuje jednorazowy dostęp, tworzy sesję i kieruje do `/account/security`. Cel przekierowania jest stały; parametry zmieniające typ lub cel aktywacji są odrzucane.
+5. Użytkownik ustawia własne hasło długości 12–128 znaków i uzupełnia wymagany profil. Kolejne logowanie odbywa się na `/login` hasłem. Zmiana hasła dotyczy wyłącznie konta aktualnej, zweryfikowanej sesji.
+
+Strona aktywacji ma `no-store`, `no-referrer` i wyłączone indeksowanie. Wygaśnięty lub wykorzystany dostęp wymaga nowego linku od administratora. Generowanie takich linków jest operacją administracyjną poza publicznym interfejsem aplikacji; klucz administracyjny nie jest potrzebny w jej runtime.
+
+Starszy kod logowania pocztą i callback PKCE pozostają w repozytorium, lecz formularz wysyłania linków nie jest obecnie udostępniony na `/login`. Włączenie poczty dla klientów wymaga konfiguracji dostawcy SMTP, adresów powrotu, limitów i oddzielnego testu dostarczania wiadomości.
+
+## Dostęp i prywatność danych
+
+- `src/proxy.ts` odświeża sesję. Odczyty i Server Actions ponownie sprawdzają użytkownika i rolę. Chronione layouty są dynamiczne, a RLS i granty bazy stanowią granicę dostępu również poza interfejsem.
+- Rola jest przechowywana w osobnym `user_roles`. Klient nie może zmieniać własnej roli, właściciela psa ani kwalifikacji. Istotna zmiana kwestionariusza ustawia `needs_review`, bez zdejmowania zawieszenia lub obowiązku konsultacji.
+- Dokładna lokalizacja znajduje się w `walk_private_details`. Dostęp mają administrator i opiekun zaakceptowanego psa. Klient nie otrzymuje cudzych zgłoszeń, prywatnych notatek ani składu grupy.
+- Operacje zapisów, decyzji i finansów wykonują transakcyjne funkcje SQL. Blokady, unikalność zgłoszenia i kontrola pojemności nie zależą wyłącznie od UI. Zmiany zachowują autora, czas oraz audyt.
+- `dog-avatars` i `community-avatars` są oddzielnymi prywatnymi zasobami. Podpisy zdjęć społecznościowych są ważne 60 sekund; obrazy są pobierane od razu. Ukrycie blokuje nowe podpisy, ale nie cofa wcześniej pobranego obrazu ani jeszcze ważnego podpisu.
+- Finanse klienta ograniczają się do jego psów. Prywatne relacje psów są dostępne tylko administratorowi; publiczne treści Psiutków nie zastępują dokumentacji behawioralnej.
+- Daty bazy mają typ `timestamptz`, a formularze i reguły terminów korzystają z `Europe/Warsaw`.
+- Nieudany zapis formularza zachowuje wpisane dane, wybory i plik. Komunikat błędu otrzymuje fokus; poprawny zapis zachowuje normalne resetowanie formularza.
+
+## Sprawdzanie projektu
 
 ```sh
 pnpm lint
 pnpm test
 pnpm build
-pnpm start
 ```
 
-Testy jednostkowe i testy rzeczywistych polityk PostgreSQL/RLS działają bez Supabase. Pokrywają własność, role, prywatne notatki/lokalizację, storage, duplikaty, akceptację, pojemność, odwołanie, kwestionariusz i strefę czasową.
+Vitest obejmuje domenę, walidację, widoki danych, zdjęcia i obsługę dostępu oraz migracje i rzeczywiste polityki SQL uruchamiane w PGlite. Testy bazy obejmują m.in. role, własność, prywatność, pojemność, edycję i odwołanie spacerów, przywracanie zgłoszeń, finanse, relacje oraz Psiutki. PGlite używa minimalnych atrap schematów Auth/Storage; nie zastępuje testu usługi Supabase ani konkurencyjnych operacji na niezależnych połączeniach. Testy Auth z atrapami nie dowodzą działania rzeczywistej sesji lub dostarczania poczty.
 
-Pełny Playwright flow jest w `tests/e2e/registration.spec.ts`: dwa konta logują się rzeczywistymi magic linkami odczytanymi z lokalnego Inbucket, opiekun tworzy psa, admin kwalifikuje psa i tworzy spacer, opiekun zgłasza psa, admin akceptuje, a lokalizacja staje się widoczna. Test tworzy i sprząta własne rekordy. Wymaga lokalnego Supabase, uruchomionej aplikacji z tym samym środowiskiem i przeglądarki Playwright:
+Scenariusz Playwright w `tests/e2e/registration.spec.ts` wymaga jednorazowego lokalnego Supabase po wszystkich migracjach oraz uruchomionej aplikacji korzystającej z tego samego środowiska. Ustaw lokalnie `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY` i `NEXT_PUBLIC_APP_URL`; adresy muszą wskazywać lokalny stos. Test tworzy potwierdzone konta administratora i klienta z losowymi hasłami, loguje je formularzem, przechodzi od utworzenia psa do akceptacji zgłoszenia i ujawnienia lokalizacji, a następnie sprząta własne dane. SMTP i Inbucket nie są wymagane dla tego scenariusza.
 
 ```sh
 pnpm exec playwright install chromium
 node --env-file=.env.local node_modules/@playwright/test/cli.js test
 ```
 
-Bez lokalnego Supabase test jest oznaczany jako pominięty. Wysyłka poczty i Auth nie są symulowane jako sukces. Weryfikacja WebMCP nie była dostępna; opcjonalna nawigacja WebMCP nie wpływa na bezpieczeństwo ani podstawowe działanie aplikacji.
+Bez wymaganego lokalnego środowiska scenariusz jest pomijany. Pominięcie nie oznacza poprawnego przejścia testu. Przegląd wyglądu z fikcyjnymi danymi i atrapami akcji służy sprawdzeniu układu oraz dostępności; działanie operacji należy sprawdzać oddzielnie na bazie i w rzeczywistej sesji.
 
-## Wdrożenie
+## Wdrożenie i ograniczenia
 
-To pełna aplikacja Next.js z serwerem, nie eksport statyczny. Wdróż ją na hostingu obsługującym Next.js/Node (np. standardowy runtime Node lub Vercel). Ustaw publiczne zmienne środowiskowe **przed buildem**, a potem popraw URL aplikacji i callback w Supabase. Nie używaj static export ani publicznego hostingu katalogu `.next`. Przy własnym serwerze Node uruchom `pnpm build`, a następnie `pnpm start`; zachowaj katalogi `public`, `.next` i zależności produkcyjne.
+Projekt wymaga runtime Next.js/Node, np. Vercel lub własnego serwera. Nie jest eksportem statycznym. Publiczne zmienne środowiskowe ustaw przed buildem, a adresy Auth dostosuj do docelowej domeny. Hosting musi obsługiwać serwerowe przetwarzanie zdjęć przez `sharp`. Przy własnym serwerze po `pnpm build` uruchom `pnpm start`; zachowaj `.next`, `public` i zależności produkcyjne. Domyślny skrypt startuje na interfejsie lokalnym, więc udostępnienie na zewnątrz wymaga odpowiedniego proxy.
 
-Wersja internetowa działa na Vercel. Sites wymaga formatu Cloudflare Worker lub statycznego eksportu; ten projekt zachowuje wymagany Next.js z jego serwerem. Dostosowanie hostingu nie powinno zastępować aplikacji samym prototypem.
+Końcowa kontrola aktualizacji powinna objąć zgodność migracji, logowanie obu kont pilota, jednorazową aktywację i ponowne logowanie hasłem, ograniczenia ról, zapis w modułach spacerów/finansów/relacji/Psiutków oraz widoki na komputerze i telefonie. Nie należy na podstawie samego builda ogłaszać gotowości wysyłki poczty lub wdrożenia klientów.
 
-## Źródła i dalsze prace
+Znane ograniczenia:
 
-Wzorem jest dostarczony `PSI_PAWER_CODEX_HANDOFF.md`; prototyp w `public/reference/prototype.html` został odseparowany od aplikacji i ma zneutralizowane dane kontaktowe. Lockup marki jest zgodny z wariantem zastępczym z dokumentu; docelowy oryginalny asset logo można podmienić po jego dostarczeniu. Dokumentacja: [Next.js Proxy](https://nextjs.org/docs/app/getting-started/proxy), [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nextjs).
+- SMTP, zapraszanie klientów i samodzielne odzyskiwanie dostępu przez pocztę są odłożone. Dostęp pilota obsługuje administrator.
+- Brak automatycznych powiadomień, WhatsApp, czatu, AI, płatności online, faktur i wielofirmowości. Kontakt, ustalanie spotkań i zwroty pieniędzy odbywają się poza aplikacją.
+- Zmiana spaceru lub jego odwołanie zapisuje informację, ale nie wysyła jej automatycznie uczestnikom.
+- Nie ma automatycznego awansu rezerwy. Kwalifikację, ostrzeżenia relacji i propozycje wspólnych spotkań ocenia behawiorysta.
+- Nie ma jeszcze paginacji interfejsu dla dużego katalogu. Pobieranie wielu stron API chroni kompletność danych, ale nie zastępuje optymalizacji dla większej skali.
+- Odłączenie zdjęcia z wizytówki nie usuwa automatycznie wcześniejszych obiektów Storage. Polityka sprzątania plików wymaga osobnego wdrożenia.
+- Opcjonalna nawigacja WebMCP nie zastępuje autoryzacji i nie jest warunkiem działania paneli. Jej integrację należy sprawdzić w obsługującym ją środowisku.
 
-Po podłączeniu Supabase: uruchom pełny flow i test konkurencyjnych akceptacji na dwóch niezależnych połączeniach, sprawdź zdjęcia/SMTP, zatwierdź wygląd rzeczywistych paneli na komputerze i telefonie, następnie wdrażaj. Etap drugi: moderacja i zainteresowania Psiutków, edycja relacji, zarządzanie statusem całego terminu oraz paginacja danych przy większej skali.
-
-## Aktualizacja 8 września — odwołanie terminu
-
-Behawiorysta może odwołać przyszły spacer z jego szczegółów. Powód i potwierdzenie są obowiązkowe. Baza atomowo zamyka aktywne zgłoszenia, usuwa niezapłacone należności tych zgłoszeń i zwraca zarezerwowane wejścia z pakietów. Wpłaty pozostają w historii — odwołanie nie oznacza wykonania zwrotu pieniędzy. Powód jest widoczny w szczegółach odwołanego spaceru; uczestników należy powiadomić osobno. Odwołanie rozpoczętego terminu jest blokowane. Testy: 35 zakończonych poprawnie, lint i build poprawne.
-
-## Edycja terminów i jakość formularzy
-
-Behawiorysta może edytować przyszły spacer lub utworzyć kolejny na podstawie wcześniejszego. Kopia wymaga nowej daty i nie przenosi uczestników ani rozliczeń. Edycja zapisuje opis zmiany dla klientów; zapis z nieaktualnej karty jest odrzucany, a limit nie może spaść poniżej zaakceptowanego składu. Po pierwszym zgłoszeniu cena, tryb zapisów i liczba godzin bezpłatnego odwołania pozostają zablokowane. Przy przesunięciu terminu istniejące zaakceptowane zgłoszenia zachowują korzystniejszy termin bezpłatnej rezygnacji (przed faktycznym rozpoczęciem spaceru). Opiekun widzi ten termin w swoim zgłoszeniu.
-
-Decyzji o zgłoszeniu nie można zmieniać po rozpoczęciu spaceru; obecność nadal można skorygować. Odwołanie przez organizatora usuwa także niezapłacone opłaty za wcześniejszą późną rezygnację. Zapisane wpłaty i zwroty pozostają w historii. Wysyłka wiadomości do uczestników nadal wymaga konfiguracji zewnętrznego dostawcy.
-
-Ekran logowania ma układ dopasowany do telefonu i komputera. Nieudany zapis formularza zachowuje tekst, wybory i wybrany plik; błędy otrzymują fokus. Nie promujemy fikcyjnego demo na skonfigurowanej stronie logowania. Kontrola: 48 testów jednostkowych/SQL, lint i build przeszły. Zachowanie formularzy sprawdzono dodatkowo w izolowanym teście prawdziwej przeglądarki. Widok logowania obejrzano przy szerokości 390 px i na komputerze. Nie jest to jeszcze potwierdzenie pełnego procesu logowania przez e-mail ani wszystkich ekranów na rzeczywistych kontach.
-
-Do pełnego pilotażu pozostają: konfiguracja poczty i próba od logowania po rezerwację, edycja relacji psów, moderacja Psiutków oraz przegląd rzeczywistych paneli z behawiorystą. Przywracanie zgłoszeń w kontrolowanej ścieżce administratora i ostrzeżenia kwalifikacji opisano niżej. Te punkty nie są oznaczone jako ukończone przez same testy podstawy.
-
-
-## Rozliczenia i pakiety
-
-`/admin/finance` pozwala przydzielać pakiety, odnotowywać wpłaty częściowe i pełne oraz rezerwować wejście dla zaakceptowanego przyszłego zgłoszenia tego samego psa. `/app/finance` pokazuje opiekunowi jego należności, salda i historię. Cena pakietu jest osobną należnością — przydzielenie pakietu nie oznacza otrzymania pieniędzy. Aplikacja prowadzi ewidencję środków otrzymanych poza nią; nie wykonuje przelewów i nie jest systemem fakturowania.
-
-- Rezerwacja przenosi jedno wejście z dostępnych do zarezerwowanych. Obecność i płatna nieobecność je zużywają. Usprawiedliwiona nieobecność zwalnia wejście i niezapłaconą należność.
-- Odwołanie w terminie zwraca wejście; późne odwołanie je zużywa. Odwołanie całego spaceru przez organizatora zwraca również wejście zużyte wskutek wcześniejszej późnej rezygnacji.
-- Korekta obecności przelicza tylko różnicę; ponowienie tej samej operacji nie pobiera kolejnego wejścia. Przy braku wejścia cofnięcie usprawiedliwienia jest atomowo odrzucane.
-- Ważność pakietu jest sprawdzana przy nowym przydziale. Wejście zarezerwowane przed wygaśnięciem można później rozliczyć.
-- Błędnie przypisane wejście można odłączyć przed spacerem z obowiązkowym powodem, przywracając pojedynczą należność. Niewykorzystany i niezarezerwowany pakiet można anulować z wpisem do historii.
-- Korekta lub zwrot wpłaty wymaga powodu, zachowuje oryginalną kwotę, metodę i datę oraz przelicza należność. Operacja dotyczy całego wpisu; korektę kwoty wykonuje się przez odwrócenie błędnego wpisu i zapis właściwego. Pieniądze zwraca się poza aplikacją. Otrzymane wpłaty za odwołane zdarzenia są oznaczone do sprawdzenia.
-
-Notatki wpłat, powody zwrotów oraz historia wejść są widoczne opiekunowi. Wewnętrzne notatki przyznania/przypisania pakietu trafiają do audytu administratora. Dane finansowe są pobierane stronicami, aby uniknąć cichego obcięcia historii przez domyślny limit API.
-
-## Odzyskiwanie zgłoszeń i widoczne ostrzeżenia
-
-Po wycofaniu lub rezygnacji w terminie behawiorysta może przywrócić zgłoszenie do decyzji, podając powód. Nie akceptuje to psa automatycznie: kwalifikacja i pojemność są sprawdzane ponownie przy akceptacji. Wpłaty i historia pozostają powiązane z tym samym zgłoszeniem; poprzedni pakiet trzeba ponownie wybrać w rozliczeniach. Późne rezygnacje nie mają tej opcji ze względu na istniejące rozliczenie.
-
-Zmiana kwalifikacji psa już przyjętego na przyszły spacer wyświetla ostrzeżenie w pulpitach i szczegółach obu ról. Prowadząca otrzymuje linki do profilu i zgłoszenia, a klient prośbę o kontakt bez prywatnych notatek. Ostrzeżenie nie odwołuje samodzielnie rezerwacji i nie zmienia pieniędzy — decyzja pozostaje u behawiorysty.
-
-
-Kontrola aktualizacji rozliczeń: 89 testów jednostkowych/SQL przeszło, podobnie lint i kompilacja produkcyjna. Migracje `202609080004` i `202609080005` zastosowano w podłączonej bazie 8 września. Dodatkowy test na rzeczywistym Supabase potwierdził zakup pakietu, idempotentną częściową wpłatę, rezerwację, rezygnację, przywrócenie, odpięcie pakietu, anulowanie, korektę wpłaty i izolację dwóch opiekunów. Cała transakcja wraz z fikcyjnymi kontami została wycofana. To test operacji bazy, nie pełnego logowania przez e-mail ani wielu równoległych sesji.
-
-Widoki finansów oraz ostrzeżenia/formularz przywrócenia sprawdzono w izolowanej przeglądarce z rzeczywistymi komponentami i fikcyjnymi danymi przy szerokościach 1440, 390 i 320 px, również z długim imieniem psa. Brak poziomego przewijania; klient nie otrzymuje formularzy administratora. W tej kontroli wizualnej akcje były atrapami — ich działanie sprawdzają oddzielne testy bazy. Błąd pobrania panelu zachowuje jego nawigację, a ponowienie faktycznie pobiera dane ponownie.
+Prototyp referencyjny znajduje się w `public/reference/prototype.html`. Docelowy oryginalny plik logo można podmienić po jego dostarczeniu. Zasady pracy z zainstalowaną wersją Next.js opisuje `AGENTS.md`; przed zmianą kodu czytaj odpowiednie lokalne przewodniki w `node_modules/next/dist/docs/`.

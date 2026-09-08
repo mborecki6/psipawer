@@ -3,8 +3,13 @@ import { getSnapshot } from "@/lib/data/queries";
 import { Badge, Empty, WalkRow } from "@/components/ui";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "@/components/qualification-alert";
+import { getFinanceData } from "@/lib/data/finance-queries";
+import { money } from "@/lib/domain";
 export default async function Page() {
-  const { walks, dogs, registrations } = await getSnapshot();
+  const [{ walks, dogs, registrations }, finance] = await Promise.all([
+    getSnapshot(),
+    getFinanceData(),
+  ]);
   const accepted = new Set(
     registrations.filter((r) => r.status === "accepted").map((r) => r.walk_id),
   );
@@ -28,11 +33,13 @@ export default async function Page() {
       />
       {cancelled.map((w) => (
         <div className="alert red" key={w.id} role="status">
-          <strong>Organizator odwołał spacer: {w.public_location}</strong>
-          <p className="preserve-lines">{w.cancellation_reason}</p>
-          <Link className="ghost-button" href={`/app/walks/${w.id}`}>
-            Sprawdź szczegóły →
-          </Link>
+          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            <strong>Organizator odwołał spacer: {w.public_location}</strong>
+            <p className="preserve-lines">{w.cancellation_reason}</p>
+            <Link className="ghost-button" href={`/app/walks/${w.id}`}>
+              Sprawdź szczegóły →
+            </Link>
+          </div>
         </div>
       ))}
       <article className="card">
@@ -112,6 +119,52 @@ export default async function Page() {
           </div>
         </article>
       </div>
+      <article className="card">
+        <div className="card-head">
+          <div>
+            <h2>Wasze pakiety i rozliczenia</h2>
+            <p>
+              {finance.totals.availableEntries} dostępnych wejść ·{" "}
+              {finance.totals.reservedEntries} zarezerwowanych
+            </p>
+          </div>
+          <Link className="ghost-button" href="/app/finance">
+            Otwórz rozliczenia →
+          </Link>
+        </div>
+        <div className="card-body">
+          {finance.packages
+            .filter((p) => p.status === "active")
+            .map((p) => (
+              <Link
+                key={p.id}
+                className="list-row"
+                href={`/app/finance#package-${p.id}`}
+              >
+                <div className="list-main">
+                  <strong>
+                    {p.dogName} · {p.name}
+                  </strong>
+                  <span>
+                    {p.available} dostępnych · {p.reserved} zarezerwowanych ·{" "}
+                    {p.used} wykorzystanych
+                  </span>
+                </div>
+              </Link>
+            ))}
+          {!finance.packages.some((p) => p.status === "active") && (
+            <p className="muted">
+              Nie macie jeszcze aktywnego pakietu. O dostępne pakiety zapytaj
+              prowadzącą.
+            </p>
+          )}
+          {finance.totals.dueCents > 0 && (
+            <p>
+              Do rozliczenia: <strong>{money(finance.totals.dueCents)}</strong>
+            </p>
+          )}
+        </div>
+      </article>
     </div>
   );
 }

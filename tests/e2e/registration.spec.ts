@@ -1,72 +1,57 @@
-import {
-  test,
-  expect,
-  type Page,
-  type APIRequestContext,
-} from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const secret = process.env.SUPABASE_SECRET_KEY || "";
-const mail = process.env.TEST_INBUCKET_URL || "http://localhost:54324";
-const enabled = Boolean(
-  url && secret && ["localhost", "127.0.0.1"].includes(new URL(url).hostname),
-);
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+function isLocalUrl(value: string | undefined) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) &&
+      ["localhost", "127.0.0.1"].includes(parsed.hostname) &&
+      !parsed.username &&
+      !parsed.password
+    );
+  } catch {
+    return false;
+  }
+}
+const enabled = Boolean(secret && isLocalUrl(url) && isLocalUrl(appUrl));
 test.skip(
   !enabled,
-  "Requires disposable local Supabase, migrations, Inbucket, and matching app environment.",
+  "Requires disposable local Supabase with migrations, an admin key, and a local app using the same environment.",
 );
-async function magicLogin(
-  page: Page,
-  request: APIRequestContext,
-  email: string,
-) {
+async function passwordLogin(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.getByLabel("Twój e-mail").fill(email);
-  await page.getByRole("button", { name: "Wyślij link do logowania" }).click();
-  await expect(page.getByRole("status")).toContainText("Sprawdź skrzynkę");
-  const mailbox = email.split("@")[0];
-  let messageId = "";
-  await expect
-    .poll(async () => {
-      const response = await request.get(`${mail}/api/v1/mailbox/${mailbox}`);
-      const messages = await response.json();
-      messageId = messages.at(-1)?.id || "";
-      return Boolean(messageId);
-    })
-    .toBe(true);
-  const response = await request.get(
-    `${mail}/api/v1/mailbox/${mailbox}/${messageId}`,
-  );
-  const message = await response.json();
-  const content = String(message.body.html || message.body.text);
-  const link = content
-    .match(/https?:\/\/[^\s"<>]*\/auth\/v1\/verify[^\s"<>]*/)?.[0]
-    ?.replaceAll("&amp;", "&");
-  if (!link) throw new Error("Magic link missing from local test mailbox.");
-  if (new URL(link).origin !== new URL(url).origin)
-    throw new Error("Unexpected magic-link origin.");
-  await page.goto(link);
+  await page.getByLabel("Hasło", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Zaloguj się", exact: true }).click();
   await expect(page).toHaveURL(/\/(admin|app)$/);
 }
-test("magic link → dog → registration → admin approval → private location", async ({
+test("password → dog → registration → admin approval → private location", async ({
   browser,
-  request,
+  baseURL,
 }) => {
+  // Check the effective Playwright URL as well, before creating any fixtures.
+  test.skip(!isLocalUrl(baseURL), "The app under test must also be local.");
   const db = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const ids: string[] = [];
   const suffix = crypto.randomUUID().slice(0, 8);
   let walkId = "";
-  const guardianContext = await browser.newContext();
-  const adminContext = await browser.newContext();
+  const guardianContext = await browser.newContext({ baseURL });
+  const adminContext = await browser.newContext({ baseURL });
   const guardian = await guardianContext.newPage();
   const admin = await adminContext.newPage();
   try {
     for (const [i, role] of ["admin", "client"].entries()) {
       const email = `psi-e2e-${role}-${suffix}@example.test`;
+      const password = `Psi-E2E!${crypto.randomUUID()}`;
       const { data, error } = await db.auth.admin.createUser({
         email,
+        password,
         email_confirm: true,
       });
       if (error || !data.user) throw error || new Error("Missing test user");
@@ -85,7 +70,7 @@ test("magic link → dog → registration → admin approval → private locatio
         .update({ role })
         .eq("user_id", data.user.id);
       if (roles.error) throw roles.error;
-      await magicLogin(i === 0 ? admin : guardian, request, email);
+      await passwordLogin(i === 0 ? admin : guardian, email, password);
     }
     await guardian.goto("/admin");
     await expect(guardian).toHaveURL("/app");
