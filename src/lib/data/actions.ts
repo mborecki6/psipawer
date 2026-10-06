@@ -12,6 +12,13 @@ import {
 } from "@/lib/validation/schemas";
 import type { ActionState } from "@/components/action-form";
 import { warsawLocalToISO } from "@/lib/time";
+import { prepareAvatarPhoto } from "../avatar-photo";
+import {
+  cleanupRetiredAvatar,
+  cleanupUnattachedUpload,
+  reserveAvatarUpload,
+  type AvatarState,
+} from "./avatar-cleanup";
 function refresh() {
   revalidatePath("/admin", "layout");
   revalidatePath("/app", "layout");
@@ -21,6 +28,8 @@ function issue(message: string): ActionState {
 }
 function dbError(message: string): ActionState {
   const allowed = [
+    "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
+    "Ten czas jest już zajęty przez spacer, konsultację lub blokadę. Sprawdź kalendarz.",
     "Brak wolnych miejsc.",
     "Spacer zmienił się w międzyczasie. Odśwież formularz przed zapisem.",
     "Nie można edytować rozpoczętego lub odwołanego spaceru.",
@@ -260,18 +269,32 @@ export async function markAttendance(
     })
     .safeParse(Object.fromEntries(form));
   if (!result.success) return issue("Wybierz obecność.");
-  const { error } = await db.rpc("mark_attendance", {
-    p_registration: result.data.id,
-    p_attendance: result.data.attendance,
-  });
-  if (error) return dbError(error.message);
+  try {
+    const { error } = await db.rpc("mark_attendance", {
+      p_registration: result.data.id,
+      p_attendance: result.data.attendance,
+    });
+    if (error?.message === "Brak dostępnych wejść w pakiecie.")
+      return issue(
+        "Brak dostępnych wejść w pakiecie. Sprawdź przypisane spacery w rozliczeniach i uzgodnij korektę wejścia przed ponownym zapisem obecności.",
+      );
+    if (error?.message === "Pakiet nie jest aktywny lub utracił ważność.")
+      return issue(
+        "Pakiet nie jest aktywny lub utracił ważność. Sprawdź jego rozliczenie przed korektą obecności.",
+      );
+    if (error) return dbError(error.message);
+  } catch {
+    return issue(
+      "Nie udało się potwierdzić zapisu obecności. Twoje pole pozostaje w formularzu. Sprawdź aktualny stan spaceru i spróbuj ponownie.",
+    );
+  }
   refresh();
   return { success: "Obecność zapisana." };
 }
 export async function uploadAvatar(
-  _: ActionState,
+  _: AvatarState,
   form: FormData,
-): Promise<ActionState> {
+): Promise<AvatarState> {
   const { db, user, role } = await requireSession();
   const id = uuid.safeParse(form.get("dog_id"));
   const file = form.get("photo");
@@ -284,35 +307,80 @@ export async function uploadAvatar(
     return issue("Wybierz zdjęcie JPG, PNG lub WebP do 1,5 MB.");
   const { data: dog } = await db
     .from("dogs")
-    .select("guardian_id")
+    .select("guardian_id,avatar_path")
     .eq("id", id.data)
     .single();
   if (!dog || (role !== "admin" && dog.guardian_id !== user.id))
     return issue("Brak dostępu do psa.");
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  const png = bytes.slice(0, 8).join(",") === "137,80,78,71,13,10,26,10";
-  const webp =
-    new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
-    new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
-  const ext = jpeg ? "jpg" : png ? "png" : webp ? "webp" : null;
-  if (!ext) return issue("Plik nie jest obsługiwanym zdjęciem.");
-  const path = `${dog.guardian_id}/${id.data}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await db.storage.from("dog-avatars").upload(path, bytes, {
-    contentType: ext === "jpg" ? "image/jpeg" : `image/${ext}`,
-    upsert: false,
-  });
-  if (error) return dbError(error.message);
-  const result = await db
-    .from("dogs")
-    .update({ avatar_path: path })
-    .eq("id", id.data);
-  if (result.error) {
-    await db.storage.from("dog-avatars").remove([path]);
-    return dbError(result.error.message);
+  const expected = String(form.get("expected_avatar_path") || "") || null;
+  const conflict =
+    "Zdjęcie psa zmieniło się. Odśwież kartę przed kolejną zmianą.";
+  if (dog.avatar_path !== expected) return issue(conflict);
+  let bytes: Buffer;
+  try {
+    bytes = await prepareAvatarPhoto(new Uint8Array(await file.arrayBuffer()));
+  } catch (error) {
+    return issue(
+      error instanceof Error ? error.message : "Nie można odczytać zdjęcia.",
+    );
   }
+  const path = `${dog.guardian_id}/${id.data}/${crypto.randomUUID()}.webp`;
+  const uncertain =
+    "Nie udało się potwierdzić zapisu zdjęcia. Sprawdź kartę psa i spróbuj ponownie.";
+  try {
+    await reserveAvatarUpload(db, id.data, "dog-avatars", path);
+    const upload = await db.storage.from("dog-avatars").upload(path, bytes, {
+      contentType: "image/webp",
+      upsert: false,
+    });
+    if (upload.error) {
+      await cleanupUnattachedUpload(db, "dog-avatars", path);
+      return issue(uncertain);
+    }
+    const result = await db.rpc("set_dog_avatar", {
+      p_dog: id.data,
+      p_expected_path: expected,
+      p_path: path,
+    });
+    if (result.error) {
+      await cleanupUnattachedUpload(db, "dog-avatars", path);
+      return issue(result.error.message === conflict ? conflict : uncertain);
+    }
+  } catch {
+    await cleanupUnattachedUpload(db, "dog-avatars", path);
+    return issue(uncertain);
+  }
+  await cleanupRetiredAvatar(db, "dog-avatars", expected);
   refresh();
-  return { success: "Zdjęcie zapisane." };
+  return { success: "Zdjęcie zapisane.", avatarPath: path };
+}
+export async function removeAvatar(
+  _: AvatarState,
+  form: FormData,
+): Promise<AvatarState> {
+  const { db } = await requireSession();
+  const id = uuid.safeParse(form.get("dog_id"));
+  const expected = String(form.get("expected_avatar_path") || "") || null;
+  if (!id.success || (expected && expected.length > 500))
+    return issue("Wybierz psa.");
+  const conflict =
+    "Zdjęcie psa zmieniło się. Odśwież kartę przed kolejną zmianą.";
+  const uncertain =
+    "Nie udało się potwierdzić usunięcia zdjęcia. Sprawdź kartę psa i spróbuj ponownie.";
+  try {
+    const result = await db.rpc("set_dog_avatar", {
+      p_dog: id.data,
+      p_expected_path: expected,
+      p_path: null,
+    });
+    if (result.error)
+      return issue(result.error.message === conflict ? conflict : uncertain);
+  } catch {
+    return issue(uncertain);
+  }
+  await cleanupRetiredAvatar(db, "dog-avatars", expected);
+  refresh();
+  return { success: "Zdjęcie usunięte z karty psa.", avatarPath: null };
 }
 export async function inviteDog(
   _: ActionState,

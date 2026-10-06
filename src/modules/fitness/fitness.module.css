@@ -1,0 +1,201 @@
+.header {
+  max-width: 850px;
+}
+.header h2 {
+  font-size: clamp(27px, 3vw, 40px);
+  line-height: 1.2;
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.eyebrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.toolbar,
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.toolbar a {
+  white-space: normal;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 20px;
+}
+.grid > *,
+.detail > * {
+  min-width: 0;
+}
+.package {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.package h3 {
+  margin: 0;
+  font-size: 23px;
+}
+.package p {
+  margin: 0;
+}
+.package > a:last-child {
+  margin-top: auto;
+}
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(270px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.fields {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.fields:disabled {
+  opacity: 0.65;
+}
+.quote {
+  display: grid;
+  gap: 8px;
+  background: var(--sage-2);
+  padding: 16px;
+  border-radius: 14px;
+  overflow-wrap: anywhere;
+}
+.quote span {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+}
+.confirmation input {
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+.session,
+.billing {
+  overflow-wrap: anywhere;
+  scroll-margin-top: 112px;
+}
+.session h3 {
+  margin: 0;
+}
+.session summary,
+.billing summary {
+  cursor: pointer;
+  padding: 14px 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+.location {
+  white-space: pre-wrap;
+}
+.session .location {
+  padding: 14px 16px;
+  background: var(--sage-2);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.facts,
+.billingFacts {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.facts dt,
+.billingFacts dt {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.facts dd,
+.billingFacts dd {
+  margin: 5px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.billing {
+  padding: 20px;
+  background: var(--sage-2);
+  border-radius: 14px;
+}
+.billing h5 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.billingFacts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 18px 0;
+}
+.history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.history li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.history li:last-child {
+  border: 0;
+}
+.history small {
+  display: block;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+.history p {
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+.refund {
+  padding: 12px 14px;
+  margin-top: 12px;
+  border-left: 3px solid var(--sage);
+  background: var(--paper);
+  border-radius: 0 10px 10px 0;
+}
+.create {
+  max-width: 820px;
+}
+@media (max-width: 1100px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .billingFacts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .billing {
+    padding: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .session,
+  .billing {
+    scroll-margin-top: 152px;
+  }
+}

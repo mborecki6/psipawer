@@ -483,6 +483,28 @@
   color: var(--ink-soft);
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+}
+.pagination p {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pagination > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 1050px) {
   .summaryCard {
     padding: 20px;
@@ -558,5 +580,20 @@
   }
   .packageHeader {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .packageStats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .packageStats div {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .packageStats dt {
+    font-size: 12px;
   }
 }

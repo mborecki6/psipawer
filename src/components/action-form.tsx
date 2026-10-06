@@ -26,6 +26,7 @@ export function ActionForm({
   pendingLabel = "Proszę czekać…",
   className = "",
   confirm,
+  disabled = false,
 }: {
   action: FormAction;
   children: React.ReactNode;
@@ -33,6 +34,7 @@ export function ActionForm({
   pendingLabel?: string;
   className?: string;
   confirm?: string;
+  disabled?: boolean;
 }) {
   const keepValuesOnReset = useRef(false);
   const formElement = useRef<HTMLFormElement>(null);
@@ -80,6 +82,10 @@ export function ActionForm({
       className={`form-stack ${className}`}
       aria-busy={pending}
       onSubmit={(e) => {
+        if (disabled) {
+          e.preventDefault();
+          return;
+        }
         if (confirm && !window.confirm(confirm)) e.preventDefault();
       }}
     >
@@ -120,7 +126,7 @@ export function ActionForm({
       <button
         className="primary-button action-submit"
         type="submit"
-        disabled={pending}
+        disabled={pending || disabled}
       >
         {pending && (
           <LoaderCircle className="button-spinner" aria-hidden="true" />

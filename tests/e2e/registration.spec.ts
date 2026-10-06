@@ -27,7 +27,7 @@ async function passwordLogin(page: Page, email: string, password: string) {
   await page.getByLabel("Twój e-mail").fill(email);
   await page.getByLabel("Hasło", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Zaloguj się", exact: true }).click();
-  await expect(page).toHaveURL(/\/(admin|app)$/);
+  await expect(page).toHaveURL(/\/(admin|app)$/, { timeout: 15000 });
 }
 test("password → dog → registration → admin approval → private location", async ({
   browser,
@@ -46,6 +46,19 @@ test("password → dog → registration → admin approval → private location"
   const guardian = await guardianContext.newPage();
   const admin = await adminContext.newPage();
   try {
+    const publicDb = createClient(
+      url,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    );
+    const signup = await publicDb.auth.signUp({
+      email: `psi-e2e-blocked-${suffix}@example.test`,
+      password: `Psi-E2E!${crypto.randomUUID()}`,
+    });
+    if (signup.data.user) ids.push(signup.data.user.id);
+    expect(signup.error?.code).toBe("signup_disabled");
     for (const [i, role] of ["admin", "client"].entries()) {
       const email = `psi-e2e-${role}-${suffix}@example.test`;
       const password = `Psi-E2E!${crypto.randomUUID()}`;
@@ -82,7 +95,7 @@ test("password → dog → registration → admin approval → private location"
     await expect(guardian).toHaveURL(/\/app\/dogs\/[a-f0-9-]+/);
     const dogId = guardian.url().split("/").pop()!.split("?")[0];
     await admin.goto(`/admin/dogs/${dogId}`);
-    await admin.getByLabel("Status", { exact: true }).selectOption("approved");
+    await admin.getByLabel("Status").selectOption("approved");
     await admin
       .getByLabel("Powód / zalecenia")
       .fill("Kwalifikacja do testu end-to-end.");
@@ -110,20 +123,32 @@ test("password → dog → registration → admin approval → private location"
     );
     await guardian.getByLabel("Wybierz swojego psa").selectOption(dogId);
     await guardian.getByRole("button", { name: "Zgłoś psa" }).click();
-    await expect(guardian.getByRole("status")).toContainText(
-      "Zgłoszenie zapisane",
-    );
+    // With the last eligible dog submitted, the form unmounts. Assert the
+    // durable registration card instead of its transient form feedback.
+    await expect(
+      guardian.getByText("Do decyzji", { exact: true }),
+    ).toBeVisible();
+    const registered = await db
+      .from("walk_registrations")
+      .select("id,status")
+      .eq("walk_id", walkId)
+      .eq("dog_id", dogId);
+    expect(registered.error).toBeNull();
+    expect(registered.data).toHaveLength(1);
+    expect(registered.data?.[0].status).toBe("pending");
     await admin.goto("/admin");
     await admin
       .getByRole("link")
       .filter({ hasText: "Zgłoszenia do decyzji" })
       .click();
-    await expect(admin).toHaveURL(/filter=pending/);
+    // First development navigation also compiles this route. Use the navigation
+    // deadline rather than the shorter assertion deadline for this transition.
+    await admin.waitForURL(/filter=pending/);
     await admin
       .getByRole("link")
       .filter({ hasText: `Park testowy ${suffix}` })
       .click();
-    await admin.getByLabel("Decyzja", { exact: true }).selectOption("accepted");
+    await admin.getByLabel("Decyzja").selectOption("accepted");
     admin.once("dialog", (dialog) => dialog.accept());
     await admin.getByRole("button", { name: "Zapisz decyzję" }).click();
     await expect(admin.getByRole("status")).toContainText("Decyzja zapisana");

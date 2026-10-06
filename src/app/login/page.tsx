@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { CalendarDays, HeartHandshake, Mail, PawPrint } from "lucide-react";
-import { isConfigured } from "@/lib/supabase/config";
+import { isConfigured, isRemoteDevelopment } from "@/lib/supabase/config";
 import { ActionForm, Field } from "@/components/action-form";
 import { signInWithPassword } from "@/lib/auth/access-actions";
+import { authEmailOrigin } from "@/lib/auth/email-config";
 
 export const metadata: Metadata = {
   title: "Zaloguj się — Psi Pawer",
@@ -15,6 +16,7 @@ export default async function Login({
   searchParams: Promise<{ error?: string }>;
 }) {
   const configured = isConfigured();
+  const recoveryAvailable = Boolean(authEmailOrigin());
   const error = (await searchParams).error;
   return (
     <main className="auth-page login-page">
@@ -115,22 +117,27 @@ export default async function Login({
                     maxLength={128}
                   />
                 </ActionForm>
+                <Link className="ghost-button" href="/forgot-password">
+                  Nie pamiętam hasła
+                </Link>
                 <details className="login-help">
                   <summary className="ghost-button">
-                    Potrzebujesz linku dostępu?
+                    {recoveryAvailable
+                      ? "Nie dotarła wiadomość?"
+                      : "Potrzebujesz linku dostępu?"}
                   </summary>
                   <p>
-                    Podczas testów poproś o nowy jednorazowy link dostępu osobę,
-                    która udostępniła Ci aplikację. Pozwoli Ci ustawić nowe
-                    hasło. Automatyczne linki e-mail będą dostępne po
-                    uruchomieniu poczty.
+                    {recoveryAvailable
+                      ? "Sprawdź folder spam i adres e-mail. Otwórz najnowszy link. Jeśli wiadomość nadal nie dotarła, skontaktuj się z prowadzącą."
+                      : "Podczas testów poproś o nowy jednorazowy link dostępu osobę, która udostępniła Ci aplikację. Pozwoli Ci ustawić nowe hasło. Automatyczne linki e-mail będą dostępne po uruchomieniu poczty."}
                   </p>
                 </details>
               </>
             ) : (
               <div className="alert">
-                Logowanie jest w przygotowaniu. Możesz obejrzeć podgląd
-                aplikacji na fikcyjnych danych.
+                {isRemoteDevelopment()
+                  ? "Pracujemy lokalnie. Połączenie z bazą w chmurze jest wyłączone. Logowanie będzie dostępne po uruchomieniu lokalnej bazy testowej."
+                  : "Logowanie jest w przygotowaniu. Możesz obejrzeć podgląd aplikacji na fikcyjnych danych."}
               </div>
             )}
             <div className="login-help">

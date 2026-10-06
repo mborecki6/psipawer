@@ -1,24 +1,16 @@
+import { getNextAppointment } from "@/modules/calendar/queries";
+import { NextAppointment } from "@/modules/calendar/next-appointment";
 import Link from "next/link";
 import { getSnapshot } from "@/lib/data/queries";
-import { Badge, Empty, WalkRow } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "@/components/qualification-alert";
 import { getFinanceData } from "@/lib/data/finance-queries";
 import { money } from "@/lib/domain";
+import { financePackageHref } from "@/lib/finance-pagination";
 export default async function Page() {
-  const [{ walks, dogs, registrations }, finance] = await Promise.all([
-    getSnapshot(),
-    getFinanceData(),
-  ]);
-  const accepted = new Set(
-    registrations.filter((r) => r.status === "accepted").map((r) => r.walk_id),
-  );
-  const next = walks.find(
-    (w) =>
-      accepted.has(w.id) &&
-      new Date(w.starts_at) > new Date() &&
-      w.status !== "cancelled",
-  );
+  const [{ walks, dogs, registrations }, finance, nextAppointment] =
+    await Promise.all([getSnapshot(), getFinanceData(), getNextAppointment()]);
   const cancelled = walks.filter(
     (w) =>
       w.status === "cancelled" &&
@@ -42,26 +34,7 @@ export default async function Page() {
           </div>
         </div>
       ))}
-      <article className="card">
-        <div className="card-head">
-          <div>
-            <h2>Wasz najbliższy spacer</h2>
-            <p>Spokojnie, krok po kroku.</p>
-          </div>
-        </div>
-        <div className="card-body">
-          {next ? (
-            <WalkRow walk={next} base="/app" />
-          ) : (
-            <Empty
-              title="Przed Wami wspólne spacery"
-              copy="Wybierz termin i zgłoś swojego psa. Przy zapisach z akceptacją poczekaj na decyzję prowadzącej."
-              href="/app/walks"
-              action="Zobacz terminy"
-            />
-          )}
-        </div>
-      </article>
+      <NextAppointment appointment={nextAppointment} admin={false} />
       <div className="dashboard-grid">
         <article className="card">
           <div className="card-head">
@@ -139,7 +112,7 @@ export default async function Page() {
               <Link
                 key={p.id}
                 className="list-row"
-                href={`/app/finance#package-${p.id}`}
+                href={financePackageHref("/app", p.id)}
               >
                 <div className="list-main">
                   <strong>

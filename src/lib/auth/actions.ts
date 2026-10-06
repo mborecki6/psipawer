@@ -5,6 +5,7 @@ import { isConfigured } from "@/lib/supabase/config";
 import { requireSession } from "./session";
 import { emailSchema, profileSchema } from "@/lib/validation/schemas";
 import type { ActionState } from "@/components/action-form";
+import { authEmailOrigin } from "./email-config";
 export async function signIn(
   _: ActionState,
   form: FormData,
@@ -13,13 +14,19 @@ export async function signIn(
   if (!result.success) return { error: result.error.issues[0].message };
   if (!isConfigured())
     return { error: "Logowanie nie jest jeszcze skonfigurowane." };
-  const db = await createClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL;
+  const origin = authEmailOrigin();
   if (!origin)
-    return { error: "Brakuje adresu aplikacji. Skontaktuj się z prowadzącą." };
+    return {
+      error:
+        "Wysyłka linków nie jest jeszcze dostępna. Skontaktuj się z prowadzącą.",
+    };
+  const db = await createClient();
   const { error } = await db.auth.signInWithOtp({
     email: result.data.email,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+      shouldCreateUser: false,
+    },
   });
   if (error) {
     if (

@@ -13,6 +13,8 @@ import {
   Upload,
 } from "lucide-react";
 import { ActionForm, Field } from "@/components/action-form";
+import { AvatarEditor } from "@/components/avatar-editor";
+import { CommunityModerationList } from "./community-moderation-list";
 import { Empty } from "@/components/ui";
 import { dateLabel } from "@/lib/domain";
 import type {
@@ -28,7 +30,6 @@ import {
   moderateCommunityProfile,
   reviewCommunityInterest,
   saveCommunityProfile,
-  uploadCommunityAvatar,
   withdrawCommunityInterest,
 } from "@/lib/data/community-actions";
 import styles from "./community.module.css";
@@ -397,7 +398,10 @@ function ManagedStatus({ item }: { item: CommunityManagedProfile }) {
     return <span className="badge neutral">Jeszcze bez wizytówki</span>;
   if (profile.published && profile.moderation_status === "approved")
     return <span className="badge green">Widoczna w Psiutkach</span>;
-  if (!consented || (profile.moderation_status === "approved" && !profile.published))
+  if (
+    !consented ||
+    (profile.moderation_status === "approved" && !profile.published)
+  )
     return <span className="badge neutral">Ukryta</span>;
   return (
     <span
@@ -474,34 +478,18 @@ function OwnerCard({ item }: { item: CommunityManagedProfile }) {
               unoptimized
             />
           )}
-          <ActionForm
-            action={uploadCommunityAvatar}
-            label="Dodaj zdjęcie do sprawdzenia"
-            pendingLabel="Zapisuję zdjęcie…"
+          <AvatarEditor
+            key={item.dogId}
+            scope="community"
+            dogId={item.dogId}
+            initialPath={profile.avatar_path}
+            initialUpdatedAt={profile.updated_at}
           >
-            <input type="hidden" name="dog_id" value={item.dogId} />
-            <input
-              type="hidden"
-              name="expected_updated_at"
-              value={profile.updated_at}
-            />
-            <label className="field">
-              <span>Zdjęcie psa</span>
-              <input
-                name="file"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                required
-              />
-              <small className="field-hint">
-                JPG, PNG lub WebP, maksymalnie 1,5 MB.
-              </small>
-            </label>
             <Consent photo />
-          </ActionForm>
+          </AvatarEditor>
         </Details>
       )}
-      {profile && (profile.published || consented) && (
+      {profile && (
         <Details title="Ukryj wizytówkę" icon={<EyeOff aria-hidden="true" />}>
           <p>
             Wizytówka zniknie z katalogu. Jej treść pozostanie w Twoim panelu.
@@ -509,6 +497,7 @@ function OwnerCard({ item }: { item: CommunityManagedProfile }) {
           <ActionForm
             action={hideCommunityProfile}
             label="Ukryj wizytówkę"
+            disabled={!profile.published && !consented}
             confirm={`Ukryć wizytówkę psa ${item.dogName}? Nie będzie widoczna w katalogu Psiutków.`}
           >
             <input type="hidden" name="dog_id" value={item.dogId} />
@@ -587,20 +576,19 @@ function ModerationCard({
             pozostaje ukryta.
           </p>
         )}
-        {profile.published && (
-          <Details
-            title="Ukryj opublikowaną wizytówkę"
-            icon={<EyeOff aria-hidden="true" />}
+        <Details
+          title="Ukryj opublikowaną wizytówkę"
+          icon={<EyeOff aria-hidden="true" />}
+        >
+          <ActionForm
+            action={hideCommunityProfile}
+            label="Ukryj wizytówkę"
+            disabled={!profile.published}
+            confirm={`Ukryć wizytówkę psa ${profile.display_name} w społeczności?`}
           >
-            <ActionForm
-              action={hideCommunityProfile}
-              label="Ukryj wizytówkę"
-              confirm={`Ukryć wizytówkę psa ${profile.display_name} w społeczności?`}
-            >
-              <input type="hidden" name="dog_id" value={profile.dog_id} />
-            </ActionForm>
-          </Details>
-        )}
+            <input type="hidden" name="dog_id" value={profile.dog_id} />
+          </ActionForm>
+        </Details>
       </div>
     </article>
   );
@@ -798,9 +786,6 @@ export function CommunityView({
       item.profile?.moderation_status === "pending" &&
       item.review?.consented_at,
   );
-  const otherModeration = data.moderation.filter(
-    (item) => !pending.includes(item),
-  );
   const interests = admin
     ? data.interests.filter((item) =>
         ["matched", "reviewed", "rejected"].includes(item.status),
@@ -934,28 +919,20 @@ export function CommunityView({
               </p>
             </div>
           </div>
-          {pending.length ? (
-            <div className={styles.catalog}>
-              {pending.map((item, index) => (
-                <ModerationCard key={item.dogId} item={item} index={index} />
-              ))}
-            </div>
-          ) : (
+          <CommunityModerationList
+            cards={data.moderation.map((item, index) => ({
+              id: item.dogId,
+              pending: pending.includes(item),
+              content: <ModerationCard item={item} index={index} />,
+            }))}
+          />
+          {!pending.length && (
             <article className="card">
               <Empty
                 title="Wszystkie nowe wizytówki sprawdzone"
                 copy="Zgłoszone opisy i zdjęcia pojawią się tutaj, gdy opiekun przekaże je do publikacji."
               />
             </article>
-          )}
-          {!!otherModeration.length && (
-            <Details title={`Pozostałe wizytówki (${otherModeration.length})`}>
-              <div className={styles.catalog}>
-                {otherModeration.map((item, index) => (
-                  <ModerationCard key={item.dogId} item={item} index={index} />
-                ))}
-              </div>
-            </Details>
           )}
         </>
       )}

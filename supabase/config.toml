@@ -24,10 +24,18 @@ file_size_limit = "2MiB"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://127.0.0.1:3000/auth/callback"]
+additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://127.0.0.1:3000/auth/callback", "http://localhost:3000/auth/recovery", "http://127.0.0.1:3000/auth/recovery"]
 jwt_expiry = 3600
-enable_signup = true
+enable_signup = false
 [auth.email]
+# Keep the email/password provider enabled for existing and invited accounts.
+# Public registration is blocked by auth.enable_signup=false above.
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+[auth.email.template.recovery]
+subject = "Ustaw nowe hasło — Psi Pawer"
+content_path = "./supabase/templates/recovery.html"
+[auth.email.template.invite]
+subject = "Zaproszenie do wspólnej pracy — Psi Pawer"
+content_path = "./supabase/templates/invite.html"

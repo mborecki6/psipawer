@@ -23,6 +23,10 @@ function failure(message: string): ActionState {
     "Pakiet można przypisać do zaakceptowanego przyszłego spaceru.",
     "Zgłoszenie ma już przypisany pakiet.",
     "Pakiet został anulowany.",
+    "Wpłatę można zapisać tylko dla umówionej lub zakończonej konsultacji.",
+    "Konsultacja nie ma ustalonej ceny.",
+    "Wpłatę za kurs zapisz dla przyjętego lub uzgodnionego po rezygnacji zgłoszenia.",
+    "Najpierw przyjmij pakiet lub uzgodnij należność po rezygnacji.",
   ];
   return {
     error: allowed.includes(message)
@@ -82,7 +86,13 @@ export async function recordPayment(
   const { db } = await requireSession("admin");
   const parsed = z
     .object({
-      target_kind: z.enum(["registration", "package"]),
+      target_kind: z.enum([
+        "registration",
+        "package",
+        "consultation",
+        "course",
+        "fitness",
+      ]),
       target_id: uuid,
       method: z.enum(["cash", "transfer", "card", "other"]),
       note,
@@ -96,15 +106,35 @@ export async function recordPayment(
         "Podaj kwotę od 0,01 do 10 000 zł (maksymalnie dwa miejsca po przecinku) i metodę wpłaty.",
     };
   const { data: p } = parsed;
-  const { error } = await db.rpc("record_payment", {
-    p_registration: p.target_kind === "registration" ? p.target_id : null,
-    p_package: p.target_kind === "package" ? p.target_id : null,
-    p_amount_cents: amount,
-    p_method: p.method,
-    p_note: p.note,
-    p_request_id: p.request_id,
-  });
-  if (error) return failure(error.message);
+  try {
+    const { data, error } =
+      p.target_kind === "fitness"
+        ? await db.rpc("record_fitness_payment", {
+            p_package: p.target_id,
+            p_amount_cents: amount,
+            p_method: p.method,
+            p_note: p.note,
+            p_request_id: p.request_id,
+          })
+        : await db.rpc("record_payment", {
+            p_registration:
+              p.target_kind === "registration" ? p.target_id : null,
+            p_package: p.target_kind === "package" ? p.target_id : null,
+            p_consultation:
+              p.target_kind === "consultation" ? p.target_id : null,
+            ...(p.target_kind === "course"
+              ? { p_course_enrollment: p.target_id }
+              : {}),
+            p_amount_cents: amount,
+            p_method: p.method,
+            p_note: p.note,
+            p_request_id: p.request_id,
+          });
+    if (error) return failure(error.message);
+    if (!uuid.safeParse(data).success) return failure("");
+  } catch {
+    return failure("");
+  }
   refresh();
   return { success: "Wpłata zapisana. Należność została przeliczona." };
 }
@@ -141,11 +171,16 @@ export async function voidPayment(
     .safeParse(Object.fromEntries(form));
   if (!parsed.success)
     return { error: "Podaj powód zwrotu lub korekty (3–2000 znaków)." };
-  const { error } = await db.rpc("void_payment", {
-    p_payment: parsed.data.payment_id,
-    p_note: parsed.data.note,
-  });
-  if (error) return failure(error.message);
+  try {
+    const { data, error } = await db.rpc("void_payment", {
+      p_payment: parsed.data.payment_id,
+      p_note: parsed.data.note,
+    });
+    if (error) return failure(error.message);
+    if (!uuid.safeParse(data).success) return failure("");
+  } catch {
+    return failure("");
+  }
   refresh();
   return {
     success:

@@ -1,18 +1,25 @@
+import { getWorkQueue } from "@/modules/work/queries";
+import { WorkPreview } from "@/modules/work/views";
+import { getNextAppointment } from "@/modules/calendar/queries";
+import { NextAppointment } from "@/modules/calendar/next-appointment";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { Hourglass, CalendarDays, Wallet, Activity } from "lucide-react";
 import { getSnapshot } from "@/lib/data/queries";
 import { getFinanceData } from "@/lib/data/finance-queries";
 import { Kpi, WalkRow, Empty } from "@/components/ui";
-import { kpiUrl, warsawDate, dateLabel } from "@/lib/domain";
+import { kpiUrl, warsawDate } from "@/lib/domain";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "@/components/qualification-alert";
 export default async function Page() {
   await requireSession("admin");
-  const [{ walks, registrations, dogs }, finance] = await Promise.all([
-    getSnapshot(),
-    getFinanceData(),
-  ]);
+  const [{ walks, registrations, dogs }, finance, nextAppointment, workQueue] =
+    await Promise.all([
+      getSnapshot(),
+      getFinanceData(),
+      getNextAppointment(),
+      getWorkQueue("all", 1),
+    ]);
   const upcoming = walks.filter(
     (w) =>
       new Date(w.starts_at) >= new Date() &&
@@ -63,7 +70,7 @@ export default async function Page() {
         <Kpi
           label="Do rozliczenia"
           value={finance.charges.length}
-          copy="Spacery i pakiety do opłacenia"
+          copy="Konsultacje, spacery i pakiety"
           href={kpiUrl("due-payments")}
           icon={<Wallet />}
         />
@@ -75,29 +82,7 @@ export default async function Page() {
           icon={<Activity />}
         />
       </div>
-      {upcoming[0] && (
-        <article className="card hero-card">
-          <div className="hero-content">
-            <span className="hero-eyebrow">
-              <CalendarDays /> Najbliższy spacer
-            </span>
-            <h2>{dateLabel(upcoming[0].starts_at)}</h2>
-            <p>
-              {upcoming[0].public_location}. {upcoming[0].type}.{" "}
-              {accepted(upcoming[0].id)} z {upcoming[0].capacity} miejsc jest
-              już potwierdzonych.
-            </p>
-            <div className="hero-actions">
-              <Link
-                className="primary-button"
-                href={`/admin/walks/${upcoming[0].id}`}
-              >
-                Otwórz skład →
-              </Link>
-            </div>
-          </div>
-        </article>
-      )}
+      <NextAppointment appointment={nextAppointment} admin />
       <div className="dashboard-grid">
         <article className="card">
           <div className="card-head">
@@ -132,48 +117,11 @@ export default async function Page() {
           </div>
         </article>
         <div className="stack">
-          <article className="card">
-            <div className="card-head">
-              <div>
-                <h3>Wymaga uwagi</h3>
-                <p>Zgłoszenia i profile do sprawdzenia</p>
-              </div>
-            </div>
-            <div className="card-body">
-              <div className="list">
-                {pending.slice(0, 4).map((r) => (
-                  <Link
-                    className="list-row"
-                    key={r.id}
-                    href={`/admin/walks/${r.walk_id}`}
-                  >
-                    <div className="role-avatar">
-                      {dogs.find((d) => d.id === r.dog_id)?.name.slice(0, 1)}
-                    </div>
-                    <div className="list-main">
-                      <strong>
-                        {dogs.find((d) => d.id === r.dog_id)?.name}
-                      </strong>
-                      <span>Zgłoszenie na spacer</span>
-                    </div>
-                    <span className="small-button">Sprawdź</span>
-                  </Link>
-                ))}
-              </div>
-              {!pending.length && (
-                <div className="alert green">
-                  Wszystkie zgłoszenia rozpatrzone.
-                </div>
-              )}
-              <Link
-                className="ghost-button"
-                href="/admin/dogs?status=needs_review"
-              >
-                {dogs.filter((d) => d.status === "needs_review").length} profili
-                do ponownej oceny →
-              </Link>
-            </div>
-          </article>
+          <WorkPreview
+            items={workQueue.items}
+            counts={workQueue.counts}
+            today={warsawDate(new Date())}
+          />
           <article className="card pad">
             <h3>Pakiety i płatności</h3>
             <p className="muted">

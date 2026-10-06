@@ -125,7 +125,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
     create role anon; create role authenticated;
-    create schema auth; create table auth.users(id uuid primary key,email text);
+    create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;
     grant execute on function auth.uid() to anon,authenticated;
@@ -154,6 +154,663 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await db?.close();
+});
+
+describe.sequential(
+  "durable reservations for interrupted avatar uploads",
+  () => {
+    const key = (dog: string, guardian = owner) =>
+      `${guardian}/${dog}/${crypto.randomUUID()}.webp`;
+    const reserve = (
+      dog: string,
+      bucket: string,
+      path: string,
+      actor = owner,
+    ) =>
+      asUser(actor, () =>
+        db.query<{ deadline: Date }>(
+          "select public.reserve_avatar_upload($1,$2,$3) as deadline",
+          [dog, bucket, path],
+        ),
+      );
+    const leases = async (path: string) =>
+      (
+        await db.query<{
+          dog_id: string | null;
+          guardian_id: string | null;
+          created_at: Date;
+          expires_at: Date;
+        }>("select * from public.avatar_uploads where object_path=$1", [path])
+      ).rows;
+    const expire = (paths: string[]) =>
+      db.query(
+        "update public.avatar_uploads set created_at=clock_timestamp()-interval '31 minutes',expires_at=clock_timestamp()-interval '1 minute' where object_path=any($1::text[])",
+        [paths],
+      );
+    const insert = (bucket: string, path: string) =>
+      asUser(owner, () =>
+        db.query("insert into storage.objects(bucket_id,name) values($1,$2)", [
+          bucket,
+          path,
+        ]),
+      );
+
+    it("records an owner reservation before bytes, keeps its original deadline and isolates reads", async () => {
+      const dog = await makeDog(owner),
+        path = key(dog);
+      const first = (await reserve(dog, "dog-avatars", path)).rows[0].deadline;
+      const second = (await reserve(dog, "dog-avatars", path)).rows[0].deadline;
+      expect(second).toEqual(first);
+      const row = (await leases(path))[0];
+      expect(row).toMatchObject({
+        dog_id: dog,
+        guardian_id: owner,
+        bucket_id: "dog-avatars",
+      });
+      expect(
+        Number(row.expires_at) - Number(row.created_at),
+      ).toBeGreaterThanOrEqual(30 * 60 * 1000 - 1);
+      expect(
+        (
+          await asUser(other, () =>
+            db.query(
+              "select * from public.avatar_uploads where object_path=$1",
+              [path],
+            ),
+          )
+        ).rows,
+      ).toEqual([]);
+      expect(
+        (
+          await asAdmin(() =>
+            db.query(
+              "select * from public.avatar_uploads where object_path=$1",
+              [path],
+            ),
+          )
+        ).rows,
+      ).toHaveLength(1);
+      await expect(reserve(dog, "dog-avatars", path, other)).rejects.toThrow(
+        "Brak dostępu",
+      );
+      await asUser(owner, () =>
+        db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+          path,
+        ]),
+      );
+      expect(await leases(path)).toEqual([]);
+    });
+
+    it("allows staff private uploads but requires the actual owner for public photos and denies malformed paths", async () => {
+      const dog = await makeDog(owner),
+        path = key(dog);
+      await reserve(dog, "dog-avatars", path, admin);
+      await expect(
+        reserve(dog, "community-avatars", key(dog), admin),
+      ).rejects.toThrow("Brak dostępu");
+      for (const bad of [
+        `${other}/${dog}/photo.webp`,
+        `${owner}/${dog}/..`,
+        `${owner}/${dog}/nested/photo.webp`,
+        `${owner}/missing/photo.webp`,
+        `${owner}/${dog}/`,
+      ])
+        await expect(reserve(dog, "dog-avatars", bad)).rejects.toThrow(
+          "Brak dostępu",
+        );
+      await expect(reserve(dog, "unknown", key(dog))).rejects.toThrow(
+        "Brak dostępu",
+      );
+      await asAdmin(() =>
+        db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+          path,
+        ]),
+      );
+    });
+
+    it("refuses existing Storage objects and permanently retired keys", async () => {
+      const dog = await makeDog(owner),
+        existing = key(dog),
+        retired = key(dog);
+      await insert("dog-avatars", existing);
+      await expect(reserve(dog, "dog-avatars", existing)).rejects.toThrow(
+        "Wybierz nowy plik",
+      );
+      await asUser(owner, () =>
+        db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+          retired,
+        ]),
+      );
+      await expect(reserve(dog, "dog-avatars", retired)).rejects.toThrow(
+        "nie jest już dostępne",
+      );
+      expect(await leases(existing)).toEqual([]);
+      expect(await leases(retired)).toEqual([]);
+    });
+
+    it("atomically closes reservations after private and public attachment without retiring the active keys", async () => {
+      const dog = await publicDog(owner),
+        privatePath = key(dog),
+        publicPath = key(dog);
+      await reserve(dog, "dog-avatars", privatePath);
+      await insert("dog-avatars", privatePath);
+      await asUser(owner, () =>
+        db.query("select public.set_dog_avatar($1,null,$2)", [
+          dog,
+          privatePath,
+        ]),
+      );
+      await reserve(dog, "community-avatars", publicPath);
+      await insert("community-avatars", publicPath);
+      await asUser(owner, async () =>
+        db.query("select public.set_community_avatar($1,$2,$3)", [
+          dog,
+          await version(dog),
+          publicPath,
+        ]),
+      );
+      expect(await leases(privatePath)).toEqual([]);
+      expect(await leases(publicPath)).toEqual([]);
+      await db.query("select * from public.worker_avatar_cleanup(50)");
+      expect(
+        (
+          await db.query(
+            "select * from public.avatar_cleanup where object_path=any($1::text[])",
+            [[privatePath, publicPath]],
+          )
+        ).rows,
+      ).toEqual([]);
+      expect(
+        (
+          await db.query(
+            "select name from storage.objects where name=any($1::text[])",
+            [[privatePath, publicPath]],
+          )
+        ).rows,
+      ).toHaveLength(2);
+    });
+
+    it("blocks expired late uploads and attachments, then queues abandoned files with and without bytes", async () => {
+      const dog = await publicDog(owner),
+        absent = key(dog),
+        uploaded = key(dog);
+      await reserve(dog, "dog-avatars", absent);
+      await reserve(dog, "community-avatars", uploaded);
+      await insert("community-avatars", uploaded);
+      await expire([absent, uploaded]);
+      await expect(insert("dog-avatars", absent)).rejects.toThrow(
+        "row-level security",
+      );
+      await expect(reserve(dog, "community-avatars", uploaded)).rejects.toThrow(
+        "nie jest już dostępne",
+      );
+      await expect(
+        asUser(owner, async () =>
+          db.query("select public.set_community_avatar($1,$2,$3)", [
+            dog,
+            await version(dog),
+            uploaded,
+          ]),
+        ),
+      ).rejects.toThrow("nie jest już dostępne");
+      const jobs = (
+        await db.query<{ object_path: string }>(
+          "select * from public.worker_avatar_cleanup(50)",
+        )
+      ).rows;
+      expect(jobs.map((job) => job.object_path)).toEqual(
+        expect.arrayContaining([absent, uploaded]),
+      );
+      expect(await leases(absent)).toEqual([]);
+      expect(await leases(uploaded)).toEqual([]);
+      await expect(insert("dog-avatars", absent)).rejects.toThrow(
+        "row-level security",
+      );
+      await expect(
+        asUser(owner, async () =>
+          db.query("select public.set_community_avatar($1,$2,$3)", [
+            dog,
+            await version(dog),
+            uploaded,
+          ]),
+        ),
+      ).rejects.toThrow("nie jest już dostępne");
+      expect(
+        (
+          await db.query(
+            "select * from public.avatar_cleanup where object_path=any($1::text[])",
+            [[absent, uploaded]],
+          )
+        ).rows,
+      ).toHaveLength(2);
+    });
+
+    it("bounds expiry work and does not sweep unexpired reservations", async () => {
+      const dog = await makeDog(owner),
+        paths = [key(dog), key(dog), key(dog)],
+        live = key(dog);
+      for (const path of [...paths, live])
+        await reserve(dog, "dog-avatars", path);
+      await expire(paths);
+      expect(
+        (
+          await db.query<{ retired: number }>(
+            "select public.worker_retire_avatar_uploads(1) as retired",
+          )
+        ).rows[0].retired,
+      ).toBe(1);
+      expect(
+        (
+          await db.query(
+            "select object_path from public.avatar_uploads where object_path=any($1::text[])",
+            [paths],
+          )
+        ).rows,
+      ).toHaveLength(2);
+      expect(
+        (
+          await db.query<{ retired: number }>(
+            "select public.worker_retire_avatar_uploads(50) as retired",
+          )
+        ).rows[0].retired,
+      ).toBe(2);
+      expect(await leases(live)).toHaveLength(1);
+      await asUser(owner, () =>
+        db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+          live,
+        ]),
+      );
+    });
+
+    it("restores the reservation when the attachment transaction fails its audit", async () => {
+      const dog = await makeDog(owner),
+        path = key(dog);
+      await reserve(dog, "dog-avatars", path);
+      await insert("dog-avatars", path);
+      await db.exec(
+        "create function public.fail_reserved_avatar_audit() returns trigger language plpgsql as $$begin if new.event='dog_avatar_changed' then raise exception 'fixture audit failure'; end if; return new; end$$; create trigger fail_reserved_avatar_audit before insert on public.audit_events for each row execute function public.fail_reserved_avatar_audit();",
+      );
+      try {
+        await expect(
+          asUser(owner, () =>
+            db.query("select public.set_dog_avatar($1,null,$2)", [dog, path]),
+          ),
+        ).rejects.toThrow("fixture audit failure");
+        expect(await leases(path)).toHaveLength(1);
+        expect(
+          (
+            await db.query<{ avatar_path: string | null }>(
+              "select avatar_path from public.dogs where id=$1",
+              [dog],
+            )
+          ).rows[0].avatar_path,
+        ).toBeNull();
+        expect(
+          (
+            await db.query(
+              "select * from public.avatar_cleanup where object_path=$1",
+              [path],
+            )
+          ).rows,
+        ).toEqual([]);
+      } finally {
+        await db.exec(
+          "drop trigger fail_reserved_avatar_audit on public.audit_events; drop function public.fail_reserved_avatar_audit();",
+        );
+      }
+      await asUser(owner, () =>
+        db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+          path,
+        ]),
+      );
+    });
+
+    it("preserves cleanup responsibility when the dog and owner are removed", async () => {
+      const guardian = crypto.randomUUID();
+      await db.query("insert into auth.users(id) values($1)", [guardian]);
+      const dog = await makeDog(guardian),
+        path = key(dog, guardian);
+      await reserve(dog, "dog-avatars", path, guardian);
+      await db.query("delete from public.dogs where id=$1", [dog]);
+      await db.query("delete from auth.users where id=$1", [guardian]);
+      expect((await leases(path))[0]).toMatchObject({
+        dog_id: null,
+        guardian_id: null,
+      });
+      await expire([path]);
+      await db.query("select public.worker_retire_avatar_uploads(50)");
+      expect(await leases(path)).toEqual([]);
+      expect(
+        (
+          await db.query(
+            "select guardian_id from public.avatar_cleanup where object_path=$1",
+            [path],
+          )
+        ).rows,
+      ).toEqual([{ guardian_id: null }]);
+    });
+
+    it("keeps expiry controls and reservation writes inaccessible to ordinary accounts", async () => {
+      await expect(
+        asUser(owner, () =>
+          db.query("select public.worker_retire_avatar_uploads(20)"),
+        ),
+      ).rejects.toThrow("permission denied");
+      await expect(
+        asUser(owner, () => db.query("delete from public.avatar_uploads")),
+      ).rejects.toThrow("permission denied");
+      await db.exec("begin; set local role anon");
+      try {
+        await expect(
+          db.query(
+            "select public.reserve_avatar_upload(null,'dog-avatars','anything')",
+          ),
+        ).rejects.toThrow("permission denied");
+      } finally {
+        await db.exec("rollback");
+      }
+    });
+  },
+);
+
+describe.sequential("avatar attachment and retirement lifecycle", () => {
+  it("rejects malformed abandoned-upload keys before they can poison the worker queue", async () => {
+    const dog = await makeDog(owner);
+    for (const path of [
+      `${owner}/not-a-dog/photo.webp`,
+      `${owner}/${dog}/..`,
+      `${owner}/${dog}/sub/photo.webp`,
+    ]) {
+      await expect(
+        asUser(owner, () =>
+          db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+            path,
+          ]),
+        ),
+      ).rejects.toThrow("Brak dostępu");
+      expect(
+        (
+          await db.query(
+            "select object_path from public.avatar_cleanup where object_path=$1",
+            [path],
+          )
+        ).rows,
+      ).toEqual([]);
+    }
+  });
+  async function object(dog: string, bucket = "dog-avatars") {
+    const path = `${owner}/${dog}/${crypto.randomUUID()}.webp`;
+    await asUser(owner, () =>
+      db.query("insert into storage.objects(bucket_id,name) values($1,$2)", [
+        bucket,
+        path,
+      ]),
+    );
+    return path;
+  }
+  const attach = (
+    dog: string,
+    expected: string | null,
+    path: string | null,
+    actor = owner,
+  ) =>
+    asUser(actor, () =>
+      db.query("select public.set_dog_avatar($1,$2,$3)", [dog, expected, path]),
+    );
+  async function job(path: string) {
+    return (
+      await db.query<{
+        attempts: number;
+        completed_at: Date | null;
+        guardian_id: string;
+        delayed: boolean;
+      }>(
+        "select attempts,completed_at,guardian_id,next_attempt_at>clock_timestamp() as delayed from public.avatar_cleanup where object_path=$1",
+        [path],
+      )
+    ).rows[0];
+  }
+  it("protects the active private file, retires only replaced files and rejects stale tabs", async () => {
+    const dog = await makeDog(owner),
+      first = await object(dog),
+      second = await object(dog);
+    await attach(dog, null, first);
+    for (const actor of [owner, admin])
+      expect(
+        (
+          await asUser(actor, () =>
+            db.query(
+              "delete from storage.objects where bucket_id='dog-avatars' and name=$1 returning name",
+              [first],
+            ),
+          )
+        ).rows,
+      ).toEqual([]);
+    expect(await job(first)).toBeUndefined();
+    await attach(dog, first, second);
+    expect(await job(first)).toMatchObject({
+      guardian_id: owner,
+      attempts: 0,
+      completed_at: null,
+    });
+    await expect(attach(dog, first, null)).rejects.toThrow(
+      "Zdjęcie psa zmieniło się",
+    );
+    expect(await job(second)).toBeUndefined();
+    await attach(dog, second, null);
+    expect(await job(second)).toBeDefined();
+    await attach(dog, second, null); // Exact retry does not add audit or queue entries.
+    expect(
+      (
+        await db.query(
+          "select id from public.audit_events where entity_id=$1 and event='dog_avatar_changed'",
+          [dog],
+        )
+      ).rows,
+    ).toHaveLength(3);
+  });
+  it("rejects unavailable, foreign and wrong-dog references even through direct row updates", async () => {
+    const dog = await makeDog(owner),
+      otherDog = await makeDog(owner),
+      path = await object(otherDog);
+    await expect(attach(dog, null, path)).rejects.toThrow("profilu tego psa");
+    await expect(
+      attach(dog, null, `${owner}/${dog}/missing.webp`),
+    ).rejects.toThrow("nie jest już dostępne");
+    await expect(attach(dog, null, null, other)).rejects.toThrow(
+      "Brak dostępu",
+    );
+    await expect(
+      asUser(owner, () =>
+        db.query("update public.dogs set avatar_path=$1 where id=$2", [
+          path,
+          dog,
+        ]),
+      ),
+    ).rejects.toThrow("profilu tego psa");
+  });
+  it("keeps retired keys blocked after removal and confirms cleanup only after metadata is absent", async () => {
+    const dog = await makeDog(owner),
+      path = await object(dog);
+    await attach(dog, null, path);
+    await attach(dog, path, null);
+    await expect(
+      asUser(owner, () =>
+        db.query(
+          "select public.finish_avatar_cleanup('dog-avatars',$1,false)",
+          [path],
+        ),
+      ),
+    ).rejects.toThrow("nie zostało potwierdzone");
+    await asUser(owner, () =>
+      db.query("select public.finish_avatar_cleanup('dog-avatars',$1,true)", [
+        path,
+      ]),
+    );
+    expect(await job(path)).toMatchObject({
+      attempts: 1,
+      delayed: true,
+      completed_at: null,
+    });
+    await expect(attach(dog, null, path)).rejects.toThrow(
+      "nie jest już dostępne",
+    );
+    await asUser(owner, () =>
+      db.query(
+        "delete from storage.objects where bucket_id='dog-avatars' and name=$1",
+        [path],
+      ),
+    );
+    await asUser(owner, () =>
+      db.query("select public.finish_avatar_cleanup('dog-avatars',$1,false)", [
+        path,
+      ]),
+    );
+    expect(await job(path)).toMatchObject({ attempts: 2 });
+    expect((await job(path)).completed_at).not.toBeNull();
+    await asUser(owner, () =>
+      db.query("select public.finish_avatar_cleanup('dog-avatars',$1,true)", [
+        path,
+      ]),
+    );
+    expect((await job(path)).attempts).toBe(2);
+    await expect(
+      asUser(owner, () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name) values('dog-avatars',$1)",
+          [path],
+        ),
+      ),
+    ).rejects.toThrow("row-level security");
+  });
+  it("does not erase an attached upload after a lost successful response and isolates cleanup records", async () => {
+    const dog = await makeDog(owner),
+      active = await object(dog),
+      abandoned = await object(dog);
+    await attach(dog, null, active);
+    expect(
+      (
+        await asUser(owner, () =>
+          db.query<{ retired: boolean }>(
+            "select public.retire_avatar_upload('dog-avatars',$1) as retired",
+            [active],
+          ),
+        )
+      ).rows[0].retired,
+    ).toBe(false);
+    expect(await job(active)).toBeUndefined();
+    await asUser(owner, () =>
+      db.query("select public.retire_avatar_upload('dog-avatars',$1)", [
+        abandoned,
+      ]),
+    );
+    expect(
+      (
+        await asUser(other, () =>
+          db.query("select * from public.avatar_cleanup where object_path=$1", [
+            abandoned,
+          ]),
+        )
+      ).rows,
+    ).toEqual([]);
+    await expect(
+      asUser(other, () =>
+        db.query("select public.finish_avatar_cleanup('dog-avatars',$1,true)", [
+          abandoned,
+        ]),
+      ),
+    ).rejects.toThrow("Brak dostępu");
+    await expect(
+      asUser(owner, () =>
+        db.query("select * from public.worker_avatar_cleanup(20)"),
+      ),
+    ).rejects.toThrow("permission denied");
+  });
+  it("preserves public text and returns the exact photo revision, with fresh moderation required", async () => {
+    const dog = await publicDog(owner),
+      path = await object(dog, "community-avatars"),
+      expected = await version(dog);
+    const saved = await asUser(owner, () =>
+      db.query<{ stamp: string }>(
+        "select public.set_community_avatar($1,$2,$3)::text as stamp",
+        [dog, expected, path],
+      ),
+    );
+    expect(saved.rows[0].stamp).toBe(await version(dog));
+    const profile = (
+      await db.query(
+        "select display_name,headline,avatar_path,published,moderation_status from public.psiutki_profiles where dog_id=$1",
+        [dog],
+      )
+    ).rows[0];
+    expect(profile).toMatchObject({
+      display_name: publicPayload().display_name,
+      headline: publicPayload().headline,
+      avatar_path: path,
+      published: false,
+      moderation_status: "pending",
+    });
+    await expect(
+      asUser(other, () =>
+        db.query("select public.set_community_avatar($1,$2,null)", [
+          dog,
+          saved.rows[0].stamp,
+        ]),
+      ),
+    ).rejects.toThrow("własnego psa");
+    await save(dog, owner);
+    expect(await job(path)).toBeDefined();
+    await expect(
+      asUser(owner, () =>
+        db.query("select public.set_community_avatar($1,$2,$3)", [
+          dog,
+          saved.rows[0].stamp,
+          path,
+        ]),
+      ),
+    ).rejects.toThrow("zmienił się");
+  });
+  it("queues photo retirement when a private dog or a community profile is deleted", async () => {
+    const dog = await makeDog(owner),
+      privatePath = await object(dog),
+      publicPath = await object(dog, "community-avatars");
+    await attach(dog, null, privatePath);
+    await save(dog, owner, { ...publicPayload(), avatar_path: publicPath });
+    // Simulate authorized account cleanup; owners use hiding rather than DELETE.
+    await db.query("delete from public.psiutki_profiles where dog_id=$1", [
+      dog,
+    ]);
+    await db.query("delete from public.dogs where id=$1", [dog]);
+    expect(await job(privatePath)).toBeDefined();
+    expect(await job(publicPath)).toBeDefined();
+  });
+  it("rolls back attachment and retirement if its audit cannot be saved", async () => {
+    const dog = await makeDog(owner),
+      first = await object(dog),
+      second = await object(dog);
+    await attach(dog, null, first);
+    await db.exec(
+      "create function public.fail_avatar_audit() returns trigger language plpgsql as $$begin if new.event='dog_avatar_changed' then raise exception 'fixture audit failure'; end if; return new; end$$; create trigger fail_avatar_audit before insert on public.audit_events for each row execute function public.fail_avatar_audit();",
+    );
+    try {
+      await expect(attach(dog, first, second)).rejects.toThrow(
+        "fixture audit failure",
+      );
+      expect(
+        (
+          await db.query<{ avatar_path: string }>(
+            "select avatar_path from public.dogs where id=$1",
+            [dog],
+          )
+        ).rows[0].avatar_path,
+      ).toBe(first);
+      expect(await job(first)).toBeUndefined();
+    } finally {
+      await db.exec(
+        "drop trigger fail_avatar_audit on public.audit_events; drop function public.fail_avatar_audit();",
+      );
+    }
+  });
 });
 
 describe.sequential("consented, moderated public community profiles", () => {
@@ -693,12 +1350,13 @@ describe.sequential("separate, consented community photo storage", () => {
     );
     await save(dog, owner, { ...publicPayload(), avatar_path: photo });
     await approve(dog);
-    await asUser(owner, () =>
+    const removal = await asUser(owner, () =>
       db.query(
-        "delete from storage.objects where bucket_id='community-avatars' and name=$1",
+        "delete from storage.objects where bucket_id='community-avatars' and name=$1 returning name",
         [photo],
       ),
     );
+    expect(removal.rows).toEqual([]);
     await expect(
       asUser(owner, () =>
         db.query(

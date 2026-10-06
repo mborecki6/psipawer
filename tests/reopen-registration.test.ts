@@ -1,3 +1,4 @@
+import { freeFixtureTime } from "./helpers/calendar-fixture";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -36,8 +37,8 @@ async function fixture(
   const walk = (
     await db.query<{ id: string }>(
       `insert into public.walks(starts_at,public_location,type,price_cents,capacity,status)
-     values(now()+make_interval(hours=>$1),'Park testowy','Spacer',6000,1,$2::public.walk_status) returning id`,
-      [hours, walkStatus],
+     values($1::timestamptz,'Park testowy','Spacer',6000,1,$2::public.walk_status) returning id`,
+      [await freeFixtureTime(db, hours), walkStatus],
     )
   ).rows[0].id;
   const id = (
@@ -95,7 +96,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
     create role anon; create role authenticated;
-    create schema auth; create table auth.users(id uuid primary key,email text);
+    create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as
       $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;

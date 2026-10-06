@@ -7,13 +7,13 @@ import { getSnapshot } from "@/lib/data/queries";
 import { dogStatuses, uuid } from "@/lib/validation/schemas";
 import { labels, dateLabel } from "@/lib/domain";
 import { ActionForm, Field } from "./action-form";
+import { AvatarEditor } from "./avatar-editor";
 import { Badge, Empty } from "./ui";
 import {
   saveDog,
   saveBehavior,
   setDogStatus,
   addNote,
-  uploadAvatar,
 } from "@/lib/data/actions";
 import type { Dog } from "@/lib/data/types";
 export function DogForm({ dog }: { dog?: Dog }) {
@@ -93,6 +93,11 @@ export async function DogsList({
         {role === "client" && (
           <Link className="primary-button" href="/app/dogs/new">
             Dodaj psa +
+          </Link>
+        )}
+        {role === "admin" && (
+          <Link className="primary-button" href="/admin/invitations">
+            Zaproszenia opiekunów
           </Link>
         )}
       </div>
@@ -218,20 +223,40 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
               Zadzwoń do opiekuna
             </a>
           )}
-          <ActionForm action={uploadAvatar} label="Zapisz zdjęcie">
-            <input type="hidden" name="dog_id" value={id} />
-            <label className="field">
-              <span>Zdjęcie (JPG, PNG, WebP do 1,5 MB)</span>
-              <input
-                type="file"
-                name="photo"
-                accept="image/jpeg,image/png,image/webp"
-                required
-              />
-            </label>
-          </ActionForm>
+          <AvatarEditor
+            key={id}
+            scope="dog"
+            dogId={id}
+            initialPath={dog.avatar_path}
+          />
         </aside>
         <div className="stack">
+          <article className="card pad">
+            <h3>Konsultacje indywidualne</h3>
+            <p className="muted">
+              Zgłoszenia, uzgodnione terminy i historia spotkań tego psa.
+            </p>
+            <Link
+              className="ghost-button"
+              href={`${role === "admin" ? "/admin" : "/app"}/consultations?dog=${id}`}
+            >
+              Otwórz konsultacje →
+            </Link>
+          </article>
+          <article className="card pad">
+            <h2>Plan pracy i postępy</h2>
+            <p className="muted">
+              {role === "admin"
+                ? "Przygotuj zalecenia dla tego psa i wróć do odpowiedzi opiekuna."
+                : "Przeczytaj wskazówki prowadzącej i opowiedz, jak Wam idzie."}
+            </p>
+            <Link
+              className="primary-button"
+              href={`${role === "admin" ? "/admin" : "/app"}/dogs/${id}/care`}
+            >
+              Otwórz plan i postępy →
+            </Link>
+          </article>
           <article className="card pad">
             <h2>Profil psa</h2>
             <DogForm dog={dog as Dog} />

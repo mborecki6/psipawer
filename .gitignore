@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-local/
 .env*
 !.env.example
 coverage/
@@ -10,3 +11,9 @@ playwright-report/
 supabase/.temp/
 .pnpm-store/
 .vercel
+.local/
+output/
+tmp/
+.supabase/
+supabase/snippets/
+supabase/.branches/

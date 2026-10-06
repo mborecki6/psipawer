@@ -2,6 +2,7 @@ import { requireSession } from "@/lib/auth/session";
 import { NewWalk } from "@/components/walks";
 import { uuid } from "@/lib/validation/schemas";
 import { notFound } from "next/navigation";
+import { getServices } from "@/modules/services/queries";
 export default async function Page({
   searchParams,
 }: {
@@ -9,7 +10,8 @@ export default async function Page({
 }) {
   const { db } = await requireSession("admin");
   const { copy } = await searchParams;
-  if (!copy) return <NewWalk />;
+  const { services } = await getServices(false, "walk");
+  if (!copy) return <NewWalk services={services} />;
   if (!uuid.safeParse(copy).success) notFound();
   const { data: walk, error } = await db
     .from("walks")
@@ -32,6 +34,7 @@ export default async function Page({
         rozliczenia nie będą kopiowane.
       </div>
       <NewWalk
+        services={services}
         initial={{
           ...walk,
           ...location,

@@ -18,12 +18,14 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const {
-    data: { user },
-  } = await db.auth.getUser();
-  if (!user) {
+  // Proxy verifies/refreshes the token. Each data access still calls
+  // requireSession, which retrieves the current Auth user and database role.
+  const { data, error } = await db.auth.getClaims();
+  response.headers.set("Cache-Control", "private, no-store");
+  if (error || !data?.claims?.sub) {
     const destination = NextResponse.redirect(new URL("/login", request.url));
     response.cookies.getAll().forEach((c) => destination.cookies.set(c));
+    destination.headers.set("Cache-Control", "private, no-store");
     return destination;
   }
   return response;

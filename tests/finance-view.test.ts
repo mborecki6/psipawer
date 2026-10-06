@@ -5,6 +5,7 @@ import {
   type PackageRecord,
   type PaymentRecord,
   type PackageTransaction,
+  type ConsultationBalance,
 } from "../src/lib/finance";
 import type { Dog, Walk, Registration } from "../src/lib/data/types";
 
@@ -183,4 +184,99 @@ it("removes cancelled and excused charges while surfacing received money requiri
   });
   expect(result.charges).toEqual([]);
   expect(result.payments[0].needsReview).toBe(true);
+});
+
+const consultation: ConsultationBalance = {
+  id: "consultation",
+  dog_id: dog.id,
+  status: "scheduled",
+  starts_at: walk.starts_at,
+  created_at: pack.purchased_at,
+  service_name: "Konsultacja online",
+  agreed_price_cents: 10000,
+  is_test_price: true,
+  paid_cents: 4000,
+  due_cents: 6000,
+  needs_review: false,
+};
+it("combines consultation debt with walk debt, keeping service price, partial receipt and a direct link", () => {
+  const result = fixture({
+    consultations: [consultation],
+    payments: [
+      payment({
+        registration_id: null,
+        consultation_id: consultation.id,
+        amount_cents: 4000,
+      }),
+    ],
+  });
+  expect(result.charges).toHaveLength(2);
+  expect(result.charges.find((c) => c.kind === "consultation")).toMatchObject({
+    amountCents: 10000,
+    paidCents: 4000,
+    dueCents: 6000,
+    title: "Konsultacja online",
+    dogName: "Luna",
+    href: "/admin/consultations/consultation",
+    isTestPrice: true,
+    availablePackages: [],
+  });
+  expect(result.totals).toMatchObject({ dueCents: 12000, paidCents: 4000 });
+  expect(result.payments[0]).toMatchObject({
+    title: "Konsultacja online",
+    href: "/admin/consultations/consultation",
+    needsReview: false,
+  });
+});
+it("links the guardian to their own consultation and flags cancelled receipts without creating another debt", () => {
+  const result = fixture({
+    admin: false,
+    registrations: [],
+    consultations: [
+      {
+        ...consultation,
+        status: "cancelled",
+        due_cents: 0,
+        needs_review: true,
+      },
+    ],
+    payments: [
+      payment({
+        registration_id: null,
+        consultation_id: consultation.id,
+        amount_cents: 4000,
+      }),
+    ],
+  });
+  expect(result.charges).toEqual([]);
+  expect(result.payments[0]).toMatchObject({
+    href: "/app/consultations/consultation",
+    needsReview: true,
+  });
+  expect(result.totals).toMatchObject({ dueCents: 0, paidCents: 4000 });
+});
+it("does not invent receivables for requested, legacy, paid or cancelled consultation balances", () => {
+  const result = fixture({
+    registrations: [],
+    consultations: [
+      {
+        ...consultation,
+        id: "requested",
+        status: "requested",
+        due_cents: 0,
+        paid_cents: 0,
+      },
+      {
+        ...consultation,
+        id: "legacy",
+        agreed_price_cents: null,
+        due_cents: 0,
+        paid_cents: 0,
+      },
+      { ...consultation, id: "paid", due_cents: 0, paid_cents: 10000 },
+      { ...consultation, id: "cancelled", status: "cancelled", due_cents: 0 },
+    ],
+  });
+  expect(result.charges).toEqual([]);
+  expect(result.totals.dueCents).toBe(0);
 });

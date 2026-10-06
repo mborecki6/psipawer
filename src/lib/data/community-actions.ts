@@ -6,6 +6,12 @@ import { communityProfileSchema } from "@/lib/community";
 import { prepareCommunityPhoto } from "@/lib/community-photo";
 import { uuid } from "@/lib/validation/schemas";
 import type { ActionState } from "@/components/action-form";
+import {
+  cleanupRetiredAvatar,
+  cleanupUnattachedUpload,
+  reserveAvatarUpload,
+  type AvatarState,
+} from "./avatar-cleanup";
 
 const version = z.iso.datetime({ offset: true });
 const decisionNote = z.string().trim().min(3).max(2000);
@@ -78,6 +84,13 @@ export async function saveCommunityProfile(
         "Sprawdź opis wizytówki i długość pól. Możesz dodać do 8 cech po 40 znaków.",
       fields: parsed.error.flatten().fieldErrors,
     };
+  const { data: current, error: readError } = await db
+    .from("psiutki_profiles")
+    .select("avatar_path")
+    .eq("dog_id", meta.data.dog_id)
+    .maybeSingle();
+  if (readError)
+    return { error: "Nie udało się odczytać wizytówki. Spróbuj ponownie." };
   const { error } = await db.rpc("save_community_profile", {
     p_dog: meta.data.dog_id,
     p_expected_updated_at: meta.data.expected_updated_at,
@@ -85,6 +98,12 @@ export async function saveCommunityProfile(
     p_consent: true,
   });
   if (error) return failure(error.message);
+  if (current?.avatar_path !== parsed.data.avatar_path)
+    await cleanupRetiredAvatar(
+      db,
+      "community-avatars",
+      current?.avatar_path || null,
+    );
   refresh();
   return {
     success:
@@ -216,9 +235,9 @@ export async function reviewCommunityInterest(
 }
 
 export async function uploadCommunityAvatar(
-  _: ActionState,
+  _: AvatarState,
   form: FormData,
-): Promise<ActionState> {
+): Promise<AvatarState> {
   const { db, user } = await requireSession();
   const meta = z
     .object({
@@ -244,15 +263,20 @@ export async function uploadCommunityAvatar(
     return { error: "Możesz dodać zdjęcie tylko do wizytówki swojego psa." };
   const { data: current, error: readError } = await db
     .from("psiutki_profiles")
-    .select(
-      "display_name,area,headline,seeking,traits,likes,dislikes,avatar_path",
-    )
+    .select("avatar_path,updated_at")
     .eq("dog_id", meta.data.dog_id)
     .maybeSingle();
   if (readError || !current)
     return {
       error: "Najpierw zapisz wizytówkę psa, a następnie dodaj zdjęcie.",
     };
+  if (
+    new Date(current.updated_at).getTime() !==
+    new Date(meta.data.expected_updated_at).getTime()
+  )
+    return failure(
+      "Profil Psiutka zmienił się w międzyczasie. Odśwież formularz.",
+    );
   let bytes: Buffer;
   try {
     bytes = await prepareCommunityPhoto(
@@ -265,26 +289,43 @@ export async function uploadCommunityAvatar(
     };
   }
   const path = `${user.id}/${meta.data.dog_id}/${crypto.randomUUID()}.webp`;
-  const { error: uploadError } = await db.storage
-    .from("community-avatars")
-    .upload(path, bytes, {
-      contentType: "image/webp",
-      upsert: false,
+  const uncertain =
+    "Nie udało się potwierdzić zapisu zdjęcia. Sprawdź wizytówkę i spróbuj ponownie.";
+  let updatedAt: string;
+  try {
+    await reserveAvatarUpload(db, meta.data.dog_id, "community-avatars", path);
+    const upload = await db.storage
+      .from("community-avatars")
+      .upload(path, bytes, {
+        contentType: "image/webp",
+        upsert: false,
+      });
+    if (upload.error) {
+      await cleanupUnattachedUpload(db, "community-avatars", path);
+      return { error: uncertain };
+    }
+    const result = await db.rpc("set_community_avatar", {
+      p_dog: meta.data.dog_id,
+      p_expected_updated_at: meta.data.expected_updated_at,
+      p_path: path,
     });
-  if (uploadError) return failure(uploadError.message);
-  const { error } = await db.rpc("save_community_profile", {
-    p_dog: meta.data.dog_id,
-    p_expected_updated_at: meta.data.expected_updated_at,
-    payload: { ...current, avatar_path: path },
-    p_consent: true,
-  });
-  if (error) {
-    await db.storage.from("community-avatars").remove([path]);
-    return failure(error.message);
+    if (result.error || typeof result.data !== "string") {
+      await cleanupUnattachedUpload(db, "community-avatars", path);
+      return result.error
+        ? failure(result.error.message)
+        : { error: uncertain };
+    }
+    updatedAt = result.data;
+  } catch {
+    await cleanupUnattachedUpload(db, "community-avatars", path);
+    return { error: uncertain };
   }
+  await cleanupRetiredAvatar(db, "community-avatars", current.avatar_path);
   refresh();
   return {
     success:
       "Zdjęcie dodane. Wizytówka ponownie czeka na sprawdzenie przed publikacją.",
+    avatarPath: path,
+    updatedAt,
   };
 }

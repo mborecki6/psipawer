@@ -70,7 +70,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
     create role anon; create role authenticated;
-    create schema auth; create table auth.users(id uuid primary key,email text);
+    create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as
       $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;
@@ -203,7 +203,7 @@ describe.sequential("private audited dog relations", () => {
     expect(await relation(id)).toEqual(after);
     const { rows } = await db.query<{
       details: {
-        from: { level: string; note: string };
+        from: { level: string; note: string } | null;
         to: { level: string; note: string };
       };
     }>(
@@ -211,7 +211,10 @@ describe.sequential("private audited dog relations", () => {
       [id],
     );
     expect(rows).toHaveLength(2);
-    expect(rows[1].details).toMatchObject({
+    // Rapid transactions may have identical created_at values; random UUIDs
+    // are not chronological. Assert the audited transition, not row position.
+    const updated = rows.find((row) => row.details.from?.level === "block");
+    expect(updated?.details).toMatchObject({
       from: { level: "block", note: "Nie łączyć bez ponownej oceny." },
       to: { level: "possible_duet", note: "Udane spotkanie po konsultacji." },
     });

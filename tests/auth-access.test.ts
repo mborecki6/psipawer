@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/supabase/config", () => ({ isConfigured: mocks.isConfigured }));
+vi.mock("@/lib/auth/email-config", () => ({ authEmailOrigin: () => null }));
 vi.mock("../src/lib/auth/session", () => ({
   requireSession: mocks.requireSession,
 }));
@@ -261,7 +262,7 @@ describe("one-time access and own-account passwords", () => {
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
-  it("updates only the current user's password, ignores identity fields, then continues to their profile", async () => {
+  it("updates only the current user's password, ignores identity fields, then confirms the saved change", async () => {
     await expect(
       saveOwnPassword(
         {},
@@ -273,7 +274,7 @@ describe("one-time access and own-account passwords", () => {
           role: "admin",
         }),
       ),
-    ).rejects.toThrow("REDIRECT:/complete-profile");
+    ).rejects.toThrow("REDIRECT:/account/security?updated=1");
     expect(mocks.updateUser).toHaveBeenCalledExactlyOnceWith({
       password: "not-a-real-password",
     });

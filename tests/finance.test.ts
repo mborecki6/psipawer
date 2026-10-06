@@ -1,3 +1,4 @@
+import { freeFixtureTime } from "./helpers/calendar-fixture";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -37,8 +38,8 @@ async function makeBooking(dogId?: string, hours = 100, status = "accepted") {
   const dog = dogId || (await makeDog());
   const { rows: walks } = await db.query<{ id: string }>(
     `insert into public.walks(starts_at,public_location,type,price_cents,capacity)
-     values(now()+make_interval(hours=>$1),'Park testowy','Spacer',6000,10) returning id`,
-    [hours],
+     values($1::timestamptz,'Park testowy','Spacer',6000,10) returning id`,
+    [await freeFixtureTime(db, hours)],
   );
   const walk = walks[0].id;
   const { rows } = await db.query<{ id: string }>(
@@ -125,7 +126,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
     create role anon; create role authenticated;
-    create schema auth; create table auth.users(id uuid primary key,email text);
+    create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as
       $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;
@@ -311,10 +312,10 @@ describe.sequential("audited payments and package lifecycle", () => {
         [registration.id, secondPackage],
       ),
     ).rejects.toThrow("bez rozliczenia poprzedniego");
-    await db.query(
-      "update public.walks set starts_at=now()-interval '2 hours' where id=$1",
-      [registration.walk],
-    );
+    await db.query("update public.walks set starts_at=$2 where id=$1", [
+      registration.walk,
+      await freeFixtureTime(db, -2),
+    ]);
     await expect(
       asAdmin(() =>
         db.query("select public.release_package($1,'Pomyłka')", [
@@ -450,10 +451,10 @@ describe.sequential("audited payments and package lifecycle", () => {
     });
     const nextPackage = await purchase(registration.dog, 2);
     await assign(registration.id, nextPackage);
-    await db.query(
-      "update public.walks set starts_at=now()-interval '2 hours' where id=$1",
-      [registration.walk],
-    );
+    await db.query("update public.walks set starts_at=$2 where id=$1", [
+      registration.walk,
+      await freeFixtureTime(db, -2),
+    ]);
     await attend(registration.id, "present");
     await expect(
       asAdmin(() =>
@@ -902,10 +903,10 @@ describe.sequential("audited payments and package lifecycle", () => {
     const registration = await makeBooking();
     const packageId = await purchase(registration.dog, 1);
     await assign(registration.id, packageId);
-    await db.query(
-      "update public.walks set starts_at=now()-interval '2 hours' where id=$1",
-      [registration.walk],
-    );
+    await db.query("update public.walks set starts_at=$2 where id=$1", [
+      registration.walk,
+      await freeFixtureTime(db, -2),
+    ]);
     for (const [attendance, expected] of [
       ["present", { available: 0, reserved: 0, used: 1 }],
       ["present", { available: 0, reserved: 0, used: 1 }],
@@ -967,6 +968,46 @@ describe.sequential("audited payments and package lifecycle", () => {
     ).toEqual([{ status: "refunded" }]);
   });
 
+  it.each([false, true])(
+    "keeps a completed refund visible whether attendance is excused first: %s",
+    async (attendanceFirst) => {
+      const registration = await makeBooking(undefined, -2);
+      const receipt = await payment(registration.id, null, 6000);
+      if (attendanceFirst) await attend(registration.id, "absent");
+      await asAdmin(() =>
+        db.query("select public.void_payment($1,'Uzgodniony zwrot')", [
+          receipt,
+        ]),
+      );
+      if (!attendanceFirst) await attend(registration.id, "absent");
+      expect(await bookingState(registration.id)).toMatchObject({
+        attendance: "absent",
+        payment_status: "refunded",
+      });
+      expect(
+        (
+          await db.query(
+            "select status,amount_cents,refund_note from public.payments where id=$1",
+            [receipt],
+          )
+        ).rows,
+      ).toEqual([
+        {
+          status: "refunded",
+          amount_cents: 6000,
+          refund_note: "Uzgodniony zwrot",
+        },
+      ]);
+      await attend(registration.id, "present");
+      expect((await bookingState(registration.id)).payment_status).toBe("due");
+      await expect(payment(registration.id, null, 6001)).rejects.toThrow(
+        "przekracza pozostałą kwotę",
+      );
+      await payment(registration.id, null, 6000);
+      expect((await bookingState(registration.id)).payment_status).toBe("paid");
+    },
+  );
+
   it("does not resurrect a refunded receipt on request retry and allows correcting package receipts", async () => {
     const dog = await makeDog();
     const packageId = await purchase(dog);
@@ -1003,10 +1044,10 @@ describe.sequential("audited payments and package lifecycle", () => {
     const old = await makeBooking();
     const packageId = await purchase(old.dog, 1);
     await assign(old.id, packageId);
-    await db.query(
-      "update public.walks set starts_at=now()-interval '2 hours' where id=$1",
-      [old.walk],
-    );
+    await db.query("update public.walks set starts_at=$2 where id=$1", [
+      old.walk,
+      await freeFixtureTime(db, -2),
+    ]);
     await attend(old.id, "absent");
     const next = await makeBooking(old.dog);
     await assign(next.id, packageId);
@@ -1037,10 +1078,10 @@ describe.sequential("audited payments and package lifecycle", () => {
       "update public.packages set expires_at=now()-interval '1 hour' where id=$1",
       [packageId],
     );
-    await db.query(
-      "update public.walks set starts_at=now()-interval '2 hours' where id=$1",
-      [registration.walk],
-    );
+    await db.query("update public.walks set starts_at=$2 where id=$1", [
+      registration.walk,
+      await freeFixtureTime(db, -2),
+    ]);
     await attend(registration.id, "present");
     await attend(registration.id, "pending");
     await attend(registration.id, "absent");

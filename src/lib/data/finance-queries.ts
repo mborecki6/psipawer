@@ -5,8 +5,16 @@ import {
   type PackageRecord,
   type PackageTransaction,
   type PaymentRecord,
+  type ConsultationBalance,
+  type CourseBalance,
+  type CourseRefundRecord,
 } from "@/lib/finance";
-import type { Dog, Walk, Registration } from "./types";
+import { getSnapshot } from "./queries";
+import type { FitnessBalance, FitnessRefund } from "@/modules/fitness/types";
+import type { GiftCashReturn, GiftSale } from "@/modules/gifts/types";
+type GiftSaleRow = GiftSale & {
+  gift_cards: { sender_label: string; recipient_label: string } | null;
+};
 
 // A ledger must never silently stop at the API's default row limit.
 async function allRows<T>(
@@ -30,21 +38,20 @@ async function allRows<T>(
 export async function getFinanceData() {
   const { db, role } = await requireSession();
   const [
-    dogs,
-    walks,
-    registrations,
+    snapshot,
     packages,
     transactions,
     payments,
     profiles,
+    consultations,
+    courses,
+    courseRefunds,
+    fitness,
+    fitnessRefunds,
+    giftSales,
+    giftCashReturns,
   ] = await Promise.all([
-    allRows<Dog>((a, b) => db.from("dogs").select("*").order("id").range(a, b)),
-    allRows<Walk>((a, b) =>
-      db.from("walks").select("*").order("id").range(a, b),
-    ),
-    allRows<Registration>((a, b) =>
-      db.from("walk_registrations").select("*").order("id").range(a, b),
-    ),
+    getSnapshot(),
     allRows<PackageRecord>((a, b) =>
       db.from("packages").select("*").order("id").range(a, b),
     ),
@@ -57,8 +64,55 @@ export async function getFinanceData() {
     allRows<{ id: string; full_name: string }>((a, b) =>
       db.from("profiles").select("id,full_name").order("id").range(a, b),
     ),
+    allRows<ConsultationBalance>((a, b) =>
+      db.from("consultation_balances").select("*").order("id").range(a, b),
+    ),
+    allRows<CourseBalance>((a, b) =>
+      db.from("course_balances").select("*").order("id").range(a, b),
+    ),
+    allRows<CourseRefundRecord>((a, b) =>
+      db
+        .from("course_payment_refunds")
+        .select("id,payment_id,enrollment_id,amount_cents,note,created_at")
+        .order("id")
+        .range(a, b),
+    ),
+    allRows<FitnessBalance>((a, b) =>
+      db.from("fitness_balances").select("*").order("id").range(a, b),
+    ),
+    allRows<FitnessRefund>((a, b) =>
+      db
+        .from("fitness_payment_refunds")
+        .select("id,payment_id,package_id,amount_cents,note,created_at")
+        .order("id")
+        .range(a, b),
+    ),
+    role === "admin"
+      ? allRows<GiftSaleRow>((a, b) =>
+          db
+            .from("gift_card_sales")
+            .select(
+              "card_id,amount_cents,method,note,created_at,gift_cards(sender_label,recipient_label)",
+            )
+            .order("card_id")
+            .range(a, b),
+        )
+      : Promise.resolve([] as GiftSaleRow[]),
+    role === "admin"
+      ? allRows<GiftCashReturn>((a, b) =>
+          db
+            .from("gift_card_ledger")
+            .select("card_id,delta_cents")
+            .eq("kind", "cash_refund")
+            .order("id")
+            .range(a, b),
+        )
+      : Promise.resolve([] as GiftCashReturn[]),
   ]);
-  dogs.sort((a, b) => a.name.localeCompare(b.name, "pl"));
+  const { walks, registrations } = snapshot;
+  const dogs = [...snapshot.dogs].sort((a, b) =>
+    a.name.localeCompare(b.name, "pl"),
+  );
   packages.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
   transactions.sort((a, b) => b.created_at.localeCompare(a.created_at));
   payments.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -70,6 +124,17 @@ export async function getFinanceData() {
     transactions,
     payments,
     profiles,
+    consultations,
+    courses,
+    courseRefunds,
+    fitness,
+    fitnessRefunds,
+    giftCardSales: giftSales.map((s) => {
+      if (!s.gift_cards)
+        throw new Error("Nie udało się pobrać danych sprzedaży karty.");
+      return { ...s, ...s.gift_cards };
+    }),
+    giftCardCashReturns: giftCashReturns,
     admin: role === "admin",
   });
 }

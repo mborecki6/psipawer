@@ -48,29 +48,34 @@ export function kpiUrl(filter: string) {
     ? "/admin/finance?filter=due"
     : `/admin/walks?filter=${["pending", "today", "next-six"].includes(filter) ? filter : "upcoming"}`;
 }
+// Formatters contain no account data and use fixed locale/time-zone options.
+// Reuse them instead of rebuilding ICU state for every row of a ledger.
+const warsawDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const dateLabelFormatter = new Intl.DateTimeFormat("pl-PL", {
+  timeZone: "Europe/Warsaw",
+  weekday: "short",
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+const moneyFormatter = new Intl.NumberFormat("pl-PL", {
+  style: "currency",
+  currency: "PLN",
+});
 export function warsawDate(date: Date | string) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(date));
+  return warsawDateFormatter.format(new Date(date));
 }
 export function dateLabel(value: string) {
-  return new Intl.DateTimeFormat("pl-PL", {
-    timeZone: "Europe/Warsaw",
-    weekday: "short",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return dateLabelFormatter.format(new Date(value));
 }
 export function money(cents: number) {
-  return new Intl.NumberFormat("pl-PL", {
-    style: "currency",
-    currency: "PLN",
-  }).format(cents / 100);
+  return moneyFormatter.format(cents / 100);
 }
 export const labels: Record<string, string> = {
   new: "Nowy profil",

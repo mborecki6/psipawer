@@ -100,5 +100,5 @@ export async function saveOwnPassword(
         "Nie udało się ustawić hasła. Zaloguj się ponownie i spróbuj jeszcze raz.",
     };
   }
-  redirect("/complete-profile");
+  redirect("/account/security?updated=1", RedirectType.replace);
 }

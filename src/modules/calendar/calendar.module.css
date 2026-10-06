@@ -1,0 +1,266 @@
+.header h2 {
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.2;
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.header {
+  max-width: 850px;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dateJump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+}
+.dateJump input {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.layout > * {
+  min-width: 0;
+}
+.days {
+  display: grid;
+  gap: 16px;
+}
+.day {
+  overflow: hidden;
+}
+.dayHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.dayHead h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.dayHead small {
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+.events {
+  padding: 18px 22px;
+}
+.events > p {
+  font-size: 13px;
+  margin: 0;
+}
+.event {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 2fr);
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.event:last-child {
+  border-bottom: 0;
+}
+.eventTime {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.eventTime svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.eventMain {
+  min-width: 0;
+  border-left: 3px solid var(--sage);
+  padding-left: 14px;
+  overflow-wrap: anywhere;
+}
+.block .eventMain {
+  border-color: #b89862;
+}
+.consultation .eventMain {
+  border-color: #829da6;
+}
+.course .eventMain {
+  border-color: #9379a0;
+}
+.eventMain h4 {
+  margin: 6px 0;
+  font-size: 17px;
+}
+.eventMain p {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.eventMain a {
+  font-size: 13px;
+  padding-left: 0;
+  justify-content: flex-start;
+  white-space: normal;
+}
+.eventMain summary {
+  font-size: 13px;
+  cursor: pointer;
+  padding: 14px 0;
+  color: var(--ink-soft);
+}
+.fields {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.fields:disabled {
+  opacity: 0.65;
+}
+.note {
+  background: var(--sage-2);
+}
+.quickLinks {
+  display: grid;
+  gap: 8px;
+}
+.quickLinks a {
+  white-space: normal;
+  justify-content: flex-start;
+  text-align: left;
+}
+.layout aside h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.controls button {
+  white-space: normal;
+}
+.event .form-stack {
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout > aside > article:first-child {
+    max-width: none;
+  }
+}
+@media (max-width: 600px) {
+  .event {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dayHead,
+  .events {
+    padding: 16px;
+  }
+  .dayHead small {
+    margin-left: 0;
+    width: 100%;
+  }
+  .dateJump {
+    width: 100%;
+  }
+  .dateJump label {
+    width: 100%;
+  }
+  .toolbar nav {
+    gap: 4px;
+  }
+  .toolbar a {
+    font-size: 12px;
+  }
+  .eventTime {
+    font-size: 12px;
+  }
+}
+.fitness {
+  border-left-color: var(--sage);
+  background: var(--sage-2);
+}
+.workingWeek {
+  display: grid;
+  gap: 12px;
+}
+.workingDay {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.dayToggle {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dayToggle input {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+}
+.hourPair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+.workingDay small {
+  display: block;
+  margin: 8px 0 0 27px;
+}
+.workingDay select {
+  min-width: 0;
+  width: 100%;
+}
+.layout aside summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 13px;
+}

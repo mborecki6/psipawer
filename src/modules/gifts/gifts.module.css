@@ -1,0 +1,334 @@
+.header {
+  display: grid;
+  gap: 12px;
+  max-width: 760px;
+}
+.header h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+  letter-spacing: -0.04em;
+}
+.header p {
+  margin: 0;
+  max-width: 62ch;
+  line-height: 1.6;
+}
+.header a,
+.header .badge {
+  justify-self: start;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #42674f;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.create {
+  max-width: 760px;
+  margin-inline: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 18px;
+}
+.listCard {
+  display: grid;
+  gap: 13px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+.listCard h3,
+.listCard p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.listCard:hover {
+  border-color: #98b4a0;
+}
+.cardTop,
+.cardFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.cardTop {
+  color: #40614b;
+  flex-wrap: wrap;
+}
+.cardFoot {
+  padding-top: 14px;
+  border-top: 1px solid #e6e9e5;
+  font-size: 0.8rem;
+  color: #59695b;
+}
+.cardFoot svg {
+  flex: none;
+}
+.balance {
+  display: grid;
+  gap: 4px;
+}
+.balance span {
+  color: #677365;
+  font-size: 0.8rem;
+}
+.balance strong {
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+.fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.fields input,
+.fields select,
+.fields textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+.fields button {
+  justify-self: start;
+  white-space: normal;
+}
+.twoFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.printCard {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 760px);
+  justify-self: center;
+  background: #f0eee4;
+  color: #233e31;
+  border: 1px solid #d9dccf;
+  border-radius: 24px;
+  padding: clamp(22px, 5vw, 48px);
+  display: grid;
+  gap: 20px;
+  text-align: center;
+}
+.printTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.printTop span:first-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 800;
+}
+.giftMark {
+  justify-self: center;
+  margin-top: 8px;
+  color: #637d57;
+}
+.printCard h3 {
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.printCard p,
+.printCard blockquote {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.giftRecipient {
+  line-height: 1.8;
+}
+.giftRecipient span {
+  color: #66755f;
+}
+.faceValue {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  letter-spacing: -0.06em;
+}
+.printCard blockquote {
+  font-style: italic;
+  padding: 16px;
+  white-space: pre-wrap;
+  border-top: 1px solid #d8ddce;
+  border-bottom: 1px solid #d8ddce;
+  line-height: 1.6;
+}
+.validity {
+  line-height: 1.7;
+}
+.printCard small {
+  color: #54664e;
+  line-height: 1.5;
+  font-size: 0.75rem;
+}
+.code {
+  display: grid;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #d8ddce;
+}
+.code span {
+  font-size: 0.75rem;
+}
+.code code {
+  font-size: clamp(0.75rem, 2vw, 0.95rem);
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0;
+}
+.facts dt {
+  color: #6e766b;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+.facts dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.ledger {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ledger li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  border-bottom: 1px solid #e5e9e1;
+  padding: 16px 0;
+}
+.ledger li:last-child {
+  border-bottom: 0;
+}
+.ledger li > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.ledger time {
+  color: #72796d;
+  font-size: 0.77rem;
+}
+.ledger p {
+  margin: 0;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+.ledger b {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .twoFields,
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ledger li {
+    flex-wrap: wrap;
+  }
+}
+@media print {
+  :global(body):has(.printCard) * {
+    visibility: hidden;
+  }
+  .printCard,
+  .printCard * {
+    visibility: visible !important;
+  }
+  .printCard {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    padding: 20px;
+    gap: 12px;
+    margin: 0;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    break-inside: avoid;
+  }
+  :global([data-gift-print="hide"]) {
+    display: none !important;
+  }
+  :global(body):has(.printCard) {
+    background: white;
+    page: giftCard;
+  }
+  .printCard h3 {
+    font-size: 28px;
+  }
+  .giftMark {
+    width: 32px;
+    height: 32px;
+  }
+  .faceValue {
+    font-size: 42px;
+  }
+  .printCard blockquote {
+    font-size: 14px;
+    padding: 10px;
+    line-height: 1.5;
+    white-space: normal;
+  }
+  :global(body):has(.printCard) :global(.app-shell) {
+    display: block;
+    min-height: 0;
+  }
+  :global(body):has(.printCard) :global(.sidebar),
+  :global(body):has(.printCard) :global(.topbar) {
+    display: none !important;
+  }
+  :global(body):has(.printCard) :global(.main) {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+  @page giftCard {
+    size: A4;
+    margin: 14mm;
+  }
+}

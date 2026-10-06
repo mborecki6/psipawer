@@ -1,0 +1,210 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.header > div {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.header h2 {
+  margin: 6px 0 10px;
+  font-size: clamp(24px, 3vw, 36px);
+  overflow-wrap: anywhere;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.eyebrow svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.document {
+  border-top: 4px solid var(--clay);
+}
+.document h3 {
+  margin: 12px 0;
+  font-size: 23px;
+  overflow-wrap: anywhere;
+}
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  margin: 24px 0;
+  max-width: 76ch;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--sage-2);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.followUp {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--sage-2);
+  margin-top: 20px;
+  overflow-wrap: anywhere;
+}
+.fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.fields:disabled {
+  opacity: 0.65;
+}
+.fields textarea {
+  min-height: 220px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.templatePicker {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--sage-2);
+}
+.templatePicker label {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.templatePicker select {
+  width: 100%;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.actions > * {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+.disclosure {
+  min-width: 0;
+}
+.disclosure > summary {
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.disclosure[open] > summary {
+  margin-bottom: 22px;
+}
+.response {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper-2);
+  min-width: 0;
+}
+.response h3 {
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.response dl {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0;
+}
+.response dt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-top: 8px;
+}
+.response dd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  line-height: 1.7;
+}
+.response form {
+  margin-top: 16px;
+}
+.list {
+  display: grid;
+  gap: 16px;
+}
+.planLink {
+  display: block;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper-2);
+  color: inherit;
+  text-decoration: none;
+}
+.planLink:hover {
+  border-color: var(--clay);
+}
+.planLink h3 {
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+.empty {
+  padding: 24px 0;
+  max-width: 65ch;
+}
+.empty p {
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+@media (max-width: 480px) {
+  .actions > *,
+  .templatePicker > button {
+    width: 100%;
+  }
+  .templatePicker {
+    padding: 12px;
+  }
+  .response,
+  .planLink {
+    padding: 16px;
+  }
+  .document h3 {
+    font-size: 20px;
+  }
+}

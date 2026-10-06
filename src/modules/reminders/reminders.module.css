@@ -1,0 +1,59 @@
+.header,
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.header > div {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.header p {
+  max-width: 65ch;
+}
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filters [aria-current="page"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+.list > li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.facts dt {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.facts dd {
+  margin: 0.3rem 0 0;
+  font-weight: 600;
+}
+.row > form {
+  /* ActionForm is an inline-size container, so its contents cannot supply
+     the flex item's intrinsic width. Reserve room before wrapping the row. */
+  flex: 0 1 16rem;
+  max-width: 100%;
+  margin-top: 0;
+}
+.row a {
+  white-space: normal;
+}

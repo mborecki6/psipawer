@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,29 +14,65 @@ import {
   X,
   Plus,
   Network,
+  ClipboardList,
+  MessageCircle,
+  Tags,
+  Bell,
+  GraduationCap,
+  Activity,
+  Gift,
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import type { Role } from "@/lib/auth/session";
+import { notificationCountLabel } from "@/modules/notifications/types";
+import { useHydrated } from "./use-hydrated";
 export function Shell({
   role,
   name,
   children,
+  unreadNotifications = null,
 }: {
   role: Role;
   name: string;
   children: React.ReactNode;
+  unreadNotifications?: number | null;
 }) {
   const [open, setOpen] = useState(false);
+  const hydrated = useHydrated();
+  const menu = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const path = usePathname();
   const router = useRouter();
   const base = role === "admin" ? "/admin" : "/app";
+  const careView =
+    path.startsWith(`${base}/care`) ||
+    /^\/(admin|app)\/dogs\/[^/]+\/care$/.test(path);
   const nav = [
     {
       href: base,
       label: role === "admin" ? "Pulpit" : "Mój start",
       icon: LayoutDashboard,
     },
+    ...(role === "admin"
+      ? [{ href: "/admin/work", label: "Do zrobienia", icon: ClipboardList }]
+      : []),
+    { href: `${base}/notifications`, label: "Powiadomienia", icon: Bell },
     { href: `${base}/walks`, label: "Spacery", icon: CalendarDays },
+    { href: `${base}/calendar`, label: "Kalendarz", icon: CalendarDays },
+    { href: `${base}/courses`, label: "Kursy", icon: GraduationCap },
+    { href: `${base}/fitness`, label: "PSI FITNESS", icon: Activity },
+    { href: `${base}/gifts`, label: "Karty podarunkowe", icon: Gift },
+    {
+      href: `${base}/consultations`,
+      label: "Konsultacje",
+      icon: MessageCircle,
+    },
+    { href: `${base}/care`, label: "Plany i postępy", icon: ClipboardList },
+    {
+      href: `${base}/services`,
+      label: role === "admin" ? "Usługi i cennik" : "Oferta",
+      icon: Tags,
+    },
     {
       href: `${base}/dogs`,
       label: role === "admin" ? "Psy i opiekunowie" : "Moje psy",
@@ -53,13 +89,64 @@ export function Shell({
     { href: `${base}/community`, label: "Psiutki", icon: Heart },
   ];
   useEffect(() => {
+    if (!open) return;
+    const panel = menu.current;
+    const trigger = menuButton.current;
+    const mobile = window.matchMedia("(max-width: 760px)");
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex="0"]',
+        ) || [],
+      ).filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+      } else if (event.key === "Tab") {
+        const elements = focusable();
+        const first = elements[0],
+          last = elements.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    const resize = () => {
+      if (!mobile.matches) setOpen(false);
+    };
+    document.addEventListener("keydown", keyboard);
+    mobile.addEventListener("change", resize);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", keyboard);
+      mobile.removeEventListener("change", resize);
+      if (mobile.matches) trigger?.focus();
+    };
+  }, [open]);
+  useEffect(() => {
     const views = [
       "dashboard",
+      "notifications",
       "walks",
+      "calendar",
+      "courses",
+      "fitness",
+      "gifts",
+      "consultations",
+      "care",
+      "services",
       "dogs",
       "finance",
       "community",
-      ...(role === "admin" ? ["relations"] : []),
+      ...(role === "admin" ? ["relations", "work"] : []),
     ];
     const context = (
       document as Document & {
@@ -110,7 +197,25 @@ export function Shell({
       <a className="skip-link" href="#content">
         Przejdź do treści
       </a>
-      <aside className={`sidebar ${open ? "open" : ""}`}>
+      <aside
+        id="app-navigation"
+        ref={menu}
+        className={`sidebar ${open ? "open" : ""}`}
+        role={open ? "dialog" : undefined}
+        aria-modal={open || undefined}
+        aria-label={open ? "Menu główne" : undefined}
+      >
+        <div className="sidebar-mobile-heading">
+          <span>Menu</span>
+          <button
+            type="button"
+            className="mobile-menu-button"
+            aria-label="Zamknij menu"
+            onClick={() => setOpen(false)}
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
         <div className="brand">
           <div className="brand-mark">
             <PawPrint />
@@ -134,20 +239,43 @@ export function Shell({
           {nav.map((n) => (
             <Link
               onClick={() => setOpen(false)}
-              className={`nav-item ${path === n.href || (n.href !== base && path.startsWith(n.href)) ? "active" : ""}`}
+              className={`nav-item ${(careView ? n.href === `${base}/care` : path === n.href || (n.href !== base && path.startsWith(n.href))) ? "active" : ""}`}
               key={n.href}
               href={n.href}
+              aria-label={
+                n.href === `${base}/notifications`
+                  ? notificationCountLabel(unreadNotifications)
+                  : undefined
+              }
             >
               <n.icon />
               <span>{n.label}</span>
+              {n.href === `${base}/notifications` &&
+                (unreadNotifications === null || unreadNotifications > 0) && (
+                  <b className="notification-count" aria-hidden="true">
+                    {unreadNotifications === null
+                      ? "!"
+                      : unreadNotifications > 99
+                        ? "99+"
+                        : unreadNotifications}
+                  </b>
+                )}
             </Link>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <Link className="nav-item" href="/complete-profile">
+          <Link
+            className="nav-item"
+            href="/complete-profile"
+            onClick={() => setOpen(false)}
+          >
             Moje dane
           </Link>
-          <Link className="nav-item" href="/account/security">
+          <Link
+            className="nav-item"
+            href="/account/security"
+            onClick={() => setOpen(false)}
+          >
             Hasło do konta
           </Link>
           <form action={signOut}>
@@ -162,26 +290,57 @@ export function Shell({
         <button
           className="drawer-backdrop"
           onClick={() => setOpen(false)}
-          aria-label="Zamknij menu"
+          tabIndex={-1}
+          aria-hidden="true"
         />
       )}
-      <main className="main" id="content">
+      <main className="main" id="content" inert={open}>
         <header className="topbar">
           <button
+            ref={menuButton}
             className="mobile-menu-button"
             onClick={() => setOpen(!open)}
             aria-label={open ? "Zamknij menu" : "Otwórz menu"}
+            aria-expanded={open}
+            aria-controls="app-navigation"
+            disabled={!hydrated}
           >
             {open ? <X /> : <Menu />}
           </button>
           <div className="page-heading">
             <h1>
-              {nav.find((n) => n.href === path)?.label ||
-                (path.includes("/dogs/")
-                  ? "Profil psa"
-                  : path.includes("/walks/")
-                    ? "Szczegóły spaceru"
-                    : "Psi Pawer")}
+              {(careView
+                ? path.endsWith("/library")
+                  ? "Biblioteka zaleceń"
+                  : "Plany i postępy"
+                : nav.find((n) => n.href === path)?.label) ||
+                (path.startsWith("/admin/work/")
+                  ? path.includes("/progress/")
+                    ? "Odpowiedź opiekuna"
+                    : "Kontakty kontrolne"
+                  : path.startsWith("/admin/invitations")
+                    ? "Zaproszenia opiekunów"
+                    : path.startsWith("/admin/reminders")
+                      ? "Przypomnienia"
+                      : path.includes("/gifts/")
+                        ? path.endsWith("/new")
+                          ? "Wystaw kartę"
+                          : "Karta podarunkowa"
+                        : path.includes("/services/")
+                          ? "Usługa i cena"
+                          : path.includes("/consultations/")
+                            ? path.endsWith("/new")
+                              ? "Nowa konsultacja"
+                              : "Szczegóły konsultacji"
+                            : path.includes("/courses/")
+                              ? path.endsWith("/new")
+                                ? "Nowy cykl kursu"
+                                : "Szczegóły kursu"
+                              : path.includes("/dogs/")
+                                ? "Profil psa"
+                                : path.includes("/walks/")
+                                  ? "Szczegóły spaceru"
+                                  : "Psi Pawer")}
             </h1>
             <p>
               {role === "admin"
@@ -190,6 +349,22 @@ export function Shell({
             </p>
           </div>
           <div className="topbar-actions">
+            <Link
+              href={`${base}/notifications`}
+              className="notification-button"
+              aria-label={notificationCountLabel(unreadNotifications)}
+            >
+              <Bell size={21} aria-hidden="true" />
+              {(unreadNotifications === null || unreadNotifications > 0) && (
+                <b className="notification-count" aria-hidden="true">
+                  {unreadNotifications === null
+                    ? "!"
+                    : unreadNotifications > 99
+                      ? "99+"
+                      : unreadNotifications}
+                </b>
+              )}
+            </Link>
             <Link
               className="primary-button"
               href={role === "admin" ? "/admin/walks/new" : "/app/walks"}

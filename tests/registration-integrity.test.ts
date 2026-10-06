@@ -1,3 +1,4 @@
+import { freeFixtureTime } from "./helpers/calendar-fixture";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -22,9 +23,9 @@ async function asUser<T>(id: string, run: () => Promise<T>) {
 async function makeWalk(started = false, status = "open") {
   const { rows } = await db.query<{ id: string }>(
     `insert into public.walks(starts_at,public_location,type,price_cents,capacity,status)
-     values(now()+make_interval(hours=>$1),'Park testowy','Spacer',6000,10,$2::public.walk_status)
+     values($1::timestamptz,'Park testowy','Spacer',6000,10,$2::public.walk_status)
      returning id`,
-    [started ? -2 : 2, status],
+    [await freeFixtureTime(db, started ? -2 : 2), status],
   );
   await db.query(
     "insert into public.walk_private_details(walk_id,exact_location) values($1,'Prywatna zbiórka')",
@@ -54,7 +55,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
     create role anon; create role authenticated;
-    create schema auth; create table auth.users(id uuid primary key,email text);
+    create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as
       $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;

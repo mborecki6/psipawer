@@ -2,6 +2,8 @@ import { warsawDateTimeInput } from "@/lib/time";
 import type { Walk } from "@/lib/data/types";
 import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
+import { WalkServiceFields } from "@/modules/services/selection";
+import type { Service } from "@/modules/services/types";
 import { notFound } from "next/navigation";
 import { getSnapshot, allRows } from "@/lib/data/queries";
 import {
@@ -175,8 +177,8 @@ export async function WalkDetail({ id }: { id: string }) {
             <p className="preserve-lines">{walk.change_note}</p>
             {role === "admin" && (
               <p>
-                Poinformuj zgłoszonych opiekunów o zmianie — wysyłka
-                automatycznych powiadomień nie jest jeszcze podłączona.
+                Opiekunowie otrzymali powiadomienie w aplikacji. Jeśli zmiana
+                wymaga pilnego kontaktu, poinformuj ich także osobiście.
               </p>
             )}
           </div>
@@ -228,9 +230,8 @@ export async function WalkDetail({ id }: { id: string }) {
             <summary>Odwołaj cały spacer</summary>
             <p>
               Wszystkie aktywne zgłoszenia zostaną odwołane bez opłaty za późną
-              rezygnację. Powód będzie widoczny dla opiekunów. Poinformuj
-              uczestników osobiście — automatyczna wysyłka powiadomień nie jest
-              jeszcze podłączona.
+              rezygnację. Opiekunowie zobaczą powód i powiadomienie w aplikacji.
+              Jeśli termin jest bliski, poinformuj ich także osobiście.
             </p>
             <ActionForm action={cancelWalk} label="Potwierdź odwołanie spaceru">
               <input type="hidden" name="walk_id" value={walk.id} />
@@ -397,6 +398,20 @@ export async function WalkDetail({ id }: { id: string }) {
                         ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
                         : ""}
                     </p>
+                    {role === "client" &&
+                      !["cancelled", "completed"].includes(walk.status) &&
+                      new Date(walk.starts_at) > new Date() &&
+                      ["pending", "waitlisted", "rejected"].includes(
+                        r.status,
+                      ) && (
+                        <p className="alert">
+                          {r.status === "pending"
+                            ? "Zgłoszenie czeka na decyzję prowadzącej. Miejsce będzie potwierdzone po akceptacji."
+                            : r.status === "waitlisted"
+                              ? "Twój pies jest na liście rezerwowej. Zwolnienie miejsca nie oznacza automatycznego przyjęcia. Prowadząca potwierdzi zmianę osobno."
+                              : "To zgłoszenie nie zostało przyjęte. Sprawdź wiadomość prowadzącej lub skontaktuj się z nią, aby uzgodnić inny termin."}
+                        </p>
+                      )}
                     {r.status === "accepted" && r.cancellation_free_until && (
                       <p className="alert">
                         Termin bezpłatnego odwołania po zmianie spaceru:{" "}
@@ -477,6 +492,11 @@ export async function WalkDetail({ id }: { id: string }) {
                               )}
                             </select>
                           </label>
+                          <p className="muted">
+                            {r.package_id
+                              ? "Do oznaczenia rezerwuje wejście. Obecność lub nieobecność płatna je zużywa. Usprawiedliwienie oddaje wejście do pakietu."
+                              : "Usprawiedliwienie zwalnia z opłaty. Otrzymaną wcześniej wpłatę rozlicz osobno w finansach."}
+                          </p>
                         </ActionForm>
                       )}
                     {role === "client" &&
@@ -515,10 +535,12 @@ export function NewWalk({
   initial = {},
   editing = false,
   hasRegistrations = false,
+  services = [],
 }: {
   initial?: WalkFormValues;
   editing?: boolean;
   hasRegistrations?: boolean;
+  services?: Service[];
 }) {
   return (
     <article className="card pad form-card">
@@ -526,6 +548,14 @@ export function NewWalk({
       <p className="muted">
         Godzinę podaj według czasu polskiego (Europe/Warsaw).
       </p>
+      <Link
+        className="ghost-button"
+        href="/admin/calendar"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Sprawdź kalendarz w nowej karcie ↗
+      </Link>
       {hasRegistrations && (
         <div className="alert">
           Są już zgłoszenia. Cena, tryb zapisów i liczba godzin na bezpłatne
@@ -553,31 +583,16 @@ export function NewWalk({
             type="datetime-local"
             required
           />
-          <Field
-            label="Czas trwania w minutach"
-            name="duration_minutes"
-            type="number"
-            value={initial.duration_minutes ?? 60}
-            required
+          <WalkServiceFields
+            services={services}
+            initial={initial}
+            editing={editing}
+            hasRegistrations={hasRegistrations}
           />
           <Field
             label="Ogólna lokalizacja"
             name="public_location"
             value={initial.public_location}
-            required
-          />
-          <Field
-            label="Rodzaj spaceru"
-            name="type"
-            value={initial.type ?? "Spacer socjalizacyjny"}
-            required
-          />
-          <Field
-            label="Cena za psa (zł)"
-            name="price"
-            readOnly={hasRegistrations}
-            type="number"
-            value={initial.price_cents ? initial.price_cents / 100 : 60}
             required
           />
           <Field

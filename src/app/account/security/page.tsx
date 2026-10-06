@@ -15,10 +15,23 @@ export const metadata: Metadata = {
 export default async function Security({
   searchParams,
 }: {
-  searchParams: Promise<{ activated?: string }>;
+  searchParams: Promise<{
+    activated?: string;
+    recovered?: string;
+    updated?: string;
+  }>;
 }) {
-  const { user } = await requireSession(undefined, false);
-  const activated = (await searchParams).activated === "1";
+  const { user, profile, role } = await requireSession(undefined, false);
+  const search = await searchParams;
+  const activated = search.activated === "1",
+    recovered = search.recovered === "1",
+    updated = search.updated === "1";
+  const next =
+    profile?.full_name && profile?.phone && profile?.area
+      ? role === "admin"
+        ? "/admin"
+        : "/app"
+      : "/complete-profile";
   return (
     <main className="auth-page">
       <section className="card auth-card">
@@ -26,7 +39,20 @@ export default async function Security({
           <KeyRound />
         </div>
         <span className="eyebrow">TWOJE KONTO</span>
-        <h1>{activated ? "Ustaw swoje hasło." : "Zmień swoje hasło."}</h1>
+        <h1>
+          {updated
+            ? "Hasło zostało zapisane."
+            : recovered
+              ? "Ustaw nowe hasło."
+              : activated
+                ? "Ustaw swoje hasło."
+                : "Zmień swoje hasło."}
+        </h1>
+        {recovered && !updated && (
+          <div className="alert green" role="status">
+            Link został potwierdzony. Teraz wybierz nowe hasło do swojego konta.
+          </div>
+        )}
         {activated && (
           <div className="alert green" role="status">
             Konto zostało otwarte. Ustaw hasło, aby kolejne logowanie było
@@ -37,31 +63,43 @@ export default async function Security({
           Zalogowano jako <strong>{user.email}</strong>. Hasło ustawiasz
           wyłącznie dla tego konta.
         </p>
-        <ActionForm
-          action={saveOwnPassword}
-          label="Zapisz hasło i przejdź dalej"
-          pendingLabel="Zapisuję hasło…"
+        {!updated && (
+          <ActionForm
+            action={saveOwnPassword}
+            label="Zapisz nowe hasło"
+            pendingLabel="Zapisuję hasło…"
+          >
+            <Field
+              name="password"
+              label="Nowe hasło"
+              type="password"
+              autoComplete="new-password"
+              required
+              maxLength={128}
+              hint="Od 12 do 128 znaków. Możesz użyć dłuższej frazy lub hasła z menedżera haseł."
+            />
+            <Field
+              name="confirm_password"
+              label="Powtórz nowe hasło"
+              type="password"
+              autoComplete="new-password"
+              required
+              maxLength={128}
+            />
+          </ActionForm>
+        )}
+        {updated && (
+          <p role="status">
+            Przy kolejnej wizycie zalogujesz się swoim e-mailem i nowym hasłem.
+          </p>
+        )}
+        <Link
+          className={updated ? "primary-button" : "ghost-button"}
+          href={next}
         >
-          <Field
-            name="password"
-            label="Nowe hasło"
-            type="password"
-            autoComplete="new-password"
-            required
-            maxLength={128}
-            hint="Od 12 do 128 znaków. Możesz użyć dłuższej frazy lub hasła z menedżera haseł."
-          />
-          <Field
-            name="confirm_password"
-            label="Powtórz nowe hasło"
-            type="password"
-            autoComplete="new-password"
-            required
-            maxLength={128}
-          />
-        </ActionForm>
-        <Link className="ghost-button" href="/complete-profile">
-          Przejdź do moich danych →
+          {next === "/complete-profile"
+            ? "Uzupełnij moje dane"
+            : "Przejdź do mojego panelu"}
         </Link>
       </section>
     </main>
