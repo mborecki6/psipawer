@@ -10,6 +10,8 @@ Pulpit pokazuje najbliższe spotkanie i sprawy do obsługi. Statystyki oraz pods
 
 Kompilacja lokalna i Vercel z TypeScript oraz ESLint zmienionego kodu przeszły. Aktualizacja nie zawiera migracji ani resetu zestawu DEMO. Odczyty chmury przed i po publikacji potwierdziły zdrowy Supabase, zgodną historię 48 migracji i aktywny proces przypomnień. [Mapa nawigacji i scenariusze](PILOT-TEST-SCENARIOS.md) odpowiadają nowemu panelowi.
 
+Sprawdzono **40 stron** prowadzącej i dwóch opiekunów, logowanie hasłem kont DEMO, prywatność danych drugiego konta i ochronę trzech nowych ekranów prowadzącej. Rzeczywista przeglądarka potwierdziła sześć głównych linków, ustawienia, sekcję Zajęcia, rozwijane opcje, obsługę klawiatury mobilnego menu oraz brak poziomego przewijania przy **320/390/1440 px**. Końcowy przebieg nie miał błędów skryptów ani konsoli. Uzupełniono ikonę karty przeglądarki. Testy odczytowe nie zmieniały danych modułów; pełne lokalne E2E MVP pozostają wcześniejszym odbiorem.
+
 ## Opublikowany pilot 06.10.2026
 
 - Cloud Supabase we Frankfurcie ma **48 migracji** do `202610030012`. Przed zmianą wykonano kopię schematu i danych, odtworzono ją w oddzielnej lokalnej bazie i sprawdzono wszystkie 35 brakujących migracji. Dotychczasowe profile i role zostały zachowane.
