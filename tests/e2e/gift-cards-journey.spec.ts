@@ -254,7 +254,7 @@ test("issues, claims, spends and returns a gift card through both real local pan
     // rules must not turn the following finance screen into a blank page.
     await page.setViewportSize({ width: 1440, height: 900 });
     await page
-      .getByRole("link", { name: "Pakiety i płatności", exact: true })
+      .getByRole("link", { name: "Rozliczenia", exact: true })
       .click();
     await expect(page).toHaveURL(/\/admin\/finance$/);
     await page.emulateMedia({ media: "print" });

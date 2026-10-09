@@ -18,6 +18,11 @@ export function ServicesView({
 }) {
   return (
     <div className="stack">
+      {admin && (
+        <Link className="ghost-button" href="/admin/settings">
+          ← Ustawienia
+        </Link>
+      )}
       <header className={styles.header}>
         <span className={styles.eyebrow}>
           <Tags size={17} /> Oferta Psi Pawer

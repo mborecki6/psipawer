@@ -264,3 +264,22 @@
   padding: 8px 0;
   font-size: 13px;
 }
+
+.blockDisclosure summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+.blockDisclosure summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 20px;
+}
+.blockDisclosure[open] summary::after {
+  content: "−";
+}
+.blockDisclosure[open] summary {
+  margin-bottom: 16px;
+}

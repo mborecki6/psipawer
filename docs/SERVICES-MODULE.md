@@ -1,10 +1,10 @@
 # Usługi i cennik Psi Pawer
 
-Stan: implementacja lokalna, 19.09.2026. Migracja `202609180003_service_catalog.sql` pozostaje wyłącznie w projekcie lokalnym i testach. Nie wdrażano jej do chmury. Pełne uruchomienie z logowaniem wymaga [lokalnego stosu Supabase](LOCAL-DEVELOPMENT.md).
+Moduł działa w opublikowanym pilocie od 06.10.2026; migracja `202609180003_service_catalog.sql` jest zastosowana w chmurze. Rozwój i testy zapisu korzystają z oddzielnego [lokalnego stosu Supabase](LOCAL-DEVELOPMENT.md).
 
 ## Obsługa cen
 
-Prowadząca i administrator mają pozycję **Usługi i cennik** (`/admin/services`). Edycja obejmuje nazwę, opis, kwotę, jednostkę ceny, czas, liczbę spotkań, widoczność i oznaczenie ceny jako roboczej lub docelowej. Opiekun ma katalog **Oferta** (`/app/services`). Edycja ceny nie wymaga programisty ani publikacji nowej wersji aplikacji: aktualizuje rekord w bazie. Kwoty przechowujemy w groszach.
+Prowadząca i administrator otwierają cennik przez **Ustawienia → Usługi i ceny** (`/admin/services`). Edycja obejmuje nazwę, opis, kwotę, jednostkę ceny, czas, liczbę spotkań, widoczność i oznaczenie ceny jako roboczej lub docelowej. Opiekun ma katalog **Oferta** (`/app/services`). Edycja ceny nie wymaga programisty ani publikacji nowej wersji aplikacji: aktualizuje rekord w bazie. Kwoty przechowujemy w groszach.
 
 Każda z 17 pozycji rozpoczyna od **100 zł**, zgodnie z decyzją użytkownika, niezależnie od rzeczywistych cen na stronie. Kurs i pakiet kosztują roboczo 100 zł za całość, a nie za każde spotkanie. Spacer jest wyceniony za jednego psa. Nie jest to automatycznie synchronizowany cennik witryny.
 

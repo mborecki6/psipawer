@@ -4,7 +4,6 @@ import type { Appointment, CalendarSettings } from "./types";
 import { localDate, onDay, dayLabel, clockTime, weekRange } from "./dates";
 import { BlockEditor, CreateBlockEditor } from "./editor";
 import styles from "./calendar.module.css";
-import { CalendarSettingsEditor } from "./settings-editor";
 const labels = {
   walk: "Spacer",
   consultation: "Spotkanie indywidualne",
@@ -18,7 +17,6 @@ export function CalendarView({
   admin,
   newBlockId,
   now,
-  settings,
 }: {
   appointments: Appointment[];
   range: ReturnType<typeof weekRange>;
@@ -152,34 +150,18 @@ export function CalendarView({
         </div>
         {admin && (
           <aside className="stack">
-            {settings && (
-              <article className="card pad" id="calendar-settings">
-                <h3>
-                  <Clock3 size={18} /> Rytm pracy
-                </h3>
+            <details className={`card pad ${styles.blockDisclosure}`}>
+              <summary>
+                <LockKeyhole size={18} aria-hidden="true" /> Zarezerwuj czas
+              </summary>
+              <div id="calendar-block-editor">
                 <p className="muted">
-                  {settings.hours_enabled
-                    ? "Harmonogram tygodnia jest włączony."
-                    : "Harmonogram tygodnia jest wyłączony."}{" "}
-                  Przerwy: {settings.before_minutes} min przed i{" "}
-                  {settings.after_minutes} min po spotkaniu.
+                  Blokada jest widoczna tylko dla zespołu. Może obejmować
+                  przerwę, dojazd lub kilka dni urlopu.
                 </p>
-                <details>
-                  <summary>Ustaw godziny i przerwy</summary>
-                  <CalendarSettingsEditor initial={settings} />
-                </details>
-              </article>
-            )}
-            <article className="card pad" id="calendar-block-editor">
-              <h3>
-                <LockKeyhole size={18} /> Zarezerwuj czas
-              </h3>
-              <p className="muted">
-                Blokada jest widoczna tylko dla zespołu. Może obejmować przerwę,
-                dojazd lub kilka dni urlopu.
-              </p>
-              <CreateBlockEditor id={newBlockId} />
-            </article>
+                <CreateBlockEditor id={newBlockId} />
+              </div>
+            </details>
             <article className={`card pad ${styles.note}`}>
               <h3>Zaplanuj spotkanie</h3>
               <p>
@@ -202,6 +184,9 @@ export function CalendarView({
                 zajęty, najpierw uzgodnij zmianę spotkania.
               </p>
             </article>
+            <Link className="ghost-button" href="/admin/settings/calendar">
+              Godziny i przerwy →
+            </Link>
           </aside>
         )}
       </div>

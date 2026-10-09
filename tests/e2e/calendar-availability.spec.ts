@@ -29,8 +29,7 @@ test("working rhythm: version conflicts, atomic buffers, weekly hours and privat
   let phase = "accounts";
   const rhythm = (page = staff) => page.locator("#calendar-settings");
   const open = async (page = staff) => {
-    await page.goto("/admin/calendar");
-    await rhythm(page).locator("summary").click();
+    await page.goto("/admin/settings/calendar");
     await expect(
       rhythm(page).getByRole("button", { name: "Zapisz rytm pracy" }),
     ).toBeEnabled();

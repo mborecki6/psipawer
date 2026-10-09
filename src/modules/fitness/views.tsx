@@ -53,9 +53,11 @@ export function FitnessListView({
         <Link className="ghost-button" href={`${base}/calendar`}>
           Wspólny kalendarz →
         </Link>
-        <Link className="ghost-button" href={`${base}/services`}>
-          Oferta i ceny →
-        </Link>
+        {!admin && (
+          <Link className="ghost-button" href="/app/services">
+            Oferta i ceny →
+          </Link>
+        )}
       </div>
       <nav className={styles.toolbar} aria-label="Filtry pakietów fitness">
         {[

@@ -1,10 +1,10 @@
 # Sprawy prowadzącej i kontakty kontrolne
 
-Stan: implementacja i rzeczywiste próby lokalne, 03.10.2026. Migracje `202609190002_work_queue_followups.sql` i `202610030006_fitness_notifications_work.sql` nie zostały wykonane w chmurze. Produkcja pozostaje bez zmian.
+Moduł działa w opublikowanym pilocie od 06.10.2026. Migracje `202609190002_work_queue_followups.sql` i `202610030006_fitness_notifications_work.sql` są zastosowane w chmurze. Rozwój oraz rzeczywiste próby zapisu korzystają z oddzielnej lokalnej bazy.
 
 ## Proces
 
-Panel **Do zrobienia** (`/admin/work`) zbiera sześć rodzajów spraw: kontakty kontrolne, nowe zgłoszenia konsultacji, nieprzeczytane odpowiedzi o postępach, profile psów do oceny, oczekujące zgłoszenia na przyszłe spacery i pakiety PSI FITNESS wymagające działania. Każda sprawa prowadzi bezpośrednio do miejsca obsługi. Odczyt listy niczego nie oznacza jako zakończone; zmiana w źródłowym module usuwa rozwiązaną sprawę z kolejki.
+Panel **Do zrobienia** (`/admin/work`), dostępny z pulpitu i sekcji **Zajęcia**, zbiera sześć rodzajów spraw: kontakty kontrolne, nowe zgłoszenia konsultacji, nieprzeczytane odpowiedzi o postępach, profile psów do oceny, oczekujące zgłoszenia na przyszłe spacery i pakiety PSI FITNESS wymagające działania. Każda sprawa prowadzi bezpośrednio do miejsca obsługi. Odczyt listy niczego nie oznacza jako zakończone; zmiana w źródłowym module usuwa rozwiązaną sprawę z kolejki.
 
 Kontakty po terminie oraz na dziś pojawiają się przed pozostałymi sprawami. Kontakty na późniejsze dni są za bieżącymi zgłoszeniami. Listę można filtrować; ma po 20 pozycji na stronę. Liczniki dotyczą całej kolejki, także jeśli odpowiedzi jest więcej niż limit jednej odpowiedzi API. Pulpit pokazuje pierwsze cztery sprawy i odsyła do pełnej listy.
 

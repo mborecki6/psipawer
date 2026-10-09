@@ -1,6 +1,6 @@
 # Przypomnienia i kolejka prób
 
-Stan lokalny: 03.10.2026. Moduł `src/modules/reminders/`, migracje `202609190005_reminders.sql` i `202610030001_course_notifications.sql` i `202610030007_fitness_reminders.sql`, lokalny proces `scripts/reminders.mjs`. Brak wdrożenia, migracji w chmurze i wiadomości poza aplikację.
+Moduł działa w opublikowanym pilocie od 06.10.2026. Migracje `202609190005_reminders.sql`, `202610030001_course_notifications.sql` i `202610030007_fitness_reminders.sql` są zastosowane w chmurze. Harmonogram Supabase sprawdza przypomnienia co pięć minut; wiadomości trafiają wyłącznie do skrzynek aplikacji. Lokalny proces `scripts/reminders.mjs` obsługuje oddzielne środowisko testowe.
 
 ## Zasady robocze
 
@@ -14,7 +14,7 @@ Zmiana terminu wycofuje oczekujące zadanie i tworzy nowe. Odwołanie, zakończe
 
 ## Panel prowadzącej
 
-**Powiadomienia → Przypomnienia** (`/admin/reminders`) pokazuje pełne liczniki, filtry stanów, listę po 20 pozycji, szczegóły i historię prób. Stronicowanie tego panelu jest numerowane; przy napływie zmian warto odświeżyć początek listy. Osobista skrzynka powiadomień zachowuje własne stabilne stronicowanie po kursorze.
+**Ustawienia → Kontrola przypomnień → Sprawdź przypomnienia** (`/admin/reminders`) pokazuje pełne liczniki, filtry stanów, listę po 20 pozycji, szczegóły i historię prób. Stronicowanie tego panelu jest numerowane; przy napływie zmian warto odświeżyć początek listy. Osobista skrzynka powiadomień, dostępna przez dzwonek u góry, zachowuje własne stabilne stronicowanie po kursorze.
 
 - **Zaplanowane**: czekają na swój czas i uruchomienie procesu.
 - **Ponowna próba**: po błędzie lub po ręcznym wznowieniu.

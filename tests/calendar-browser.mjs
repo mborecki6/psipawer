@@ -90,6 +90,7 @@ try {
   await mkdir(output, { recursive: true });
   await page.goto(base);
   await server.waitForRequestsIdle();
+  await page.getByText("Zarezerwuj czas", { exact: true }).click();
   const create = page.locator("#calendar-block-editor");
   await create.getByLabel("Nazwa blokady").fill("Przerwa testowa");
   await create.getByLabel("Od (czas polski)").fill("2026-09-22T12:00");

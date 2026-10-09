@@ -1,6 +1,6 @@
 # Wspólny kalendarz i dostępność
 
-Stan: implementacja lokalna, aktualizacja 03.10.2026. Migracje kalendarza, w tym `202610030010_calendar_availability.sql`, `202610030011_calendar_api_revalidation.sql` i `202610030012_calendar_completed_buffers.sql`, nie zostały zastosowane w chmurze. Moduł rozwija uzgodniony produkt dla jednej praktyki i jednej prowadzącej.
+Moduł działa w opublikowanym pilocie od 06.10.2026. Migracje kalendarza, w tym `202610030010_calendar_availability.sql`, `202610030011_calendar_api_revalidation.sql` i `202610030012_calendar_completed_buffers.sql`, są zastosowane w chmurze. Moduł obsługuje jedną praktykę i jedną prowadzącą; rozwój korzysta z oddzielnej lokalnej bazy.
 
 ## Przebieg
 
@@ -10,11 +10,11 @@ Opiekun widzi tylko spacery z zaakceptowanym zgłoszeniem własnego psa i swoje 
 
 Pulpit obu ról pokazuje najbliższe spotkanie dowolnego typu w kolejnych 31 dniach, z odnośnikiem do szczegółów i kalendarza. Wciąż trwające spotkanie również może się tam pojawić. Jeśli w tym zakresie niczego nie ma, ekran mówi o tym wprost.
 
-Prowadząca może dodać, zmienić lub usunąć prywatną blokadę: przerwę, dojazd, urlop albo inną niedostępność. Blokada nie odwołuje zajęć; nakładający się przedział zostaje odrzucony. Zapis zachowuje wersję edytowanego formularza i nie nadpisuje nowszej zmiany z innej karty. Po zapisaniu lub usunięciu można od razu dodać kolejną blokadę. Błąd pozostawia wpisane dane.
+Prowadząca może dodać, zmienić lub usunąć prywatną blokadę: przerwę, dojazd, urlop albo inną niedostępność. Formularz w kalendarzu rozwija się przez **Zarezerwuj czas**. Blokada nie odwołuje zajęć; nakładający się przedział zostaje odrzucony. Zapis zachowuje wersję edytowanego formularza i nie nadpisuje nowszej zmiany z innej karty. Po zapisaniu lub usunięciu można od razu dodać kolejną blokadę. Błąd pozostawia wpisane dane.
 
 ## Rytm pracy — tygodniowe godziny i przerwy
 
-W panelu prowadzącej **Kalendarz → Rytm pracy → Ustaw godziny i przerwy** można ustalić przerwę przed i po spotkaniu (każda 0–120 minut), włączyć pilnowanie godzin pracy i określić dni wolne oraz jedno okno godzinowe na dzień. Godziny wybiera się co 15 minut, z możliwością zakończenia dnia o 24:00. Stały tydzień obowiązuje w strefie Europe/Warsaw; wyjątkowy urlop lub dojazd pozostaje osobną blokadą.
+W panelu prowadzącej **Ustawienia → Godziny i przerwy** (`/admin/settings/calendar`) można ustalić przerwę przed i po spotkaniu (każda 0–120 minut), włączyć pilnowanie godzin pracy i określić dni wolne oraz jedno okno godzinowe na dzień. Kalendarz ma też odnośnik do tego ekranu. Godziny wybiera się co 15 minut, z możliwością zakończenia dnia o 24:00. Stały tydzień obowiązuje w strefie Europe/Warsaw; wyjątkowy urlop lub dojazd pozostaje osobną blokadą.
 
 Domyślnie harmonogram jest **wyłączony**, a obie przerwy mają **0 minut**. Proponowane w formularzu godziny poniedziałek–piątek 9:00–17:00 nie ograniczają zapisów przed świadomym włączeniem. Nie zmieniono istniejących godzin, cen ani zasad zapisów.
 
@@ -36,7 +36,7 @@ Odwołanie zaplanowanego spotkania usuwa zajętość. Zakończenie spaceru, kons
 
 ## Uruchomienie i ograniczenia
 
-- Wyłącznie [lokalny tryb pracy](LOCAL-DEVELOPMENT.md). Testy modułu nie wykorzystują chmury ani rzeczywistych danych klientów.
+- Rozwój i testy zapisu wykorzystują [lokalny tryb pracy](LOCAL-DEVELOPMENT.md). Opublikowany pilot ma osobną bazę; testy modułu nie wykorzystują rzeczywistych danych klientów.
 - Migracja importuje obecne aktywne terminy. **Zastane nakładanie się terminów zatrzyma migrację** — trzeba wcześniej sprawdzić kolizje i świadomie poprawić dane. Migracja nie przesuwa i nie usuwa istniejących zajęć automatycznie.
 - Kalendarz jest wspólny dla jednej prowadzącej. Nie wprowadzono rozdzielenia dostępności wielu pracowników.
 - Automatyczne przerwy i stały tydzień są opcjonalnymi ustawieniami panelu. Nadal brak synchronizacji zewnętrznego kalendarza i wielu okien w jednym dniu; godziny przechodzące przez północ wymagają osobnych terminów lub wyłączenia ograniczenia godzin.

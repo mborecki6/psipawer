@@ -49,11 +49,6 @@ export function NotificationInboxView({
           </p>
         </div>
         <div className={styles.actions}>
-          {role === "admin" && (
-            <Link className="ghost-button" href="/admin/reminders">
-              Przypomnienia
-            </Link>
-          )}
           <RefreshInbox />
         </div>
       </header>

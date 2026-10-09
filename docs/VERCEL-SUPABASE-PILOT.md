@@ -14,6 +14,8 @@ Zmienne produkcyjne obejmują dokładny adres aplikacji, URL projektu i klucz pu
 
 Powiadomienia biznesowe są zapisywane transakcyjnie w skrzynkach aplikacji. Harmonogram `psi-pilot-reminders` w Supabase wykonuje `worker_process_due_reminders(50)` co pięć minut. [Operacja SQL](../supabase/operations/pilot-maintenance.sql) nie zawiera kluczy, nie wysyła e-maili i nie usuwa plików. Ostatni wynik można sprawdzić w panelu przypomnień oraz w `reminder_worker_state`; błędy i próby pozostają w kolejce.
 
+W panelu prowadzącej ceny i godziny pracy znajdują się w **Ustawieniach**; kontrola procesu przypomnień jest dostępna przez rozwijaną **Kontrolę przypomnień**. Skrzynkę otwiera dzwonek u góry. [Mapa nawigacji](PILOT-TEST-SCENARIOS.md#gdzie-znaleźć-funkcje-w-panelu-prowadzącej) obejmuje również sekcje Zajęcia i Więcej.
+
 Chroniony adres `/api/internal/maintenance` przyjmuje POST z autoryzacją i wykonuje wyłącznie przypomnienia. Zwraca 401 bez prawidłowego sekretu, działa tylko w środowisku produkcyjnym i odrzuca nieprawidłową konfigurację projektu.
 
 Domyślna [poczta Supabase](https://supabase.com/docs/guides/auth/auth-smtp) obsługuje wyłącznie Auth, z ograniczeniem odbiorców do zespołu i niskim limitem wysyłki. Nie zastępuje poczty biznesowej. Fikcyjne adresy `.test` nie mają skrzynek. Wysyłkę i rzeczywiste zaproszenia uruchom po konfiguracji dostawcy i odrębnym odbiorze.
@@ -32,4 +34,4 @@ Przed migracją pobrano prywatną kopię schematu i danych chmury, w tym Auth, S
 
 Aktualne wdrożenie Vercel to `dpl_3sBHXVr1H1a2MtzcGoox2PVE7dUv`. Poprzedni pilot: `dpl_DpaLVt9fonmfVfpb2FENkMoDrGEB`. Powrót aliasu do starszego wdrożenia zmienia aplikację, nie cofa migracji ani danych. Wycofanie bazy wymaga osobnej procedury odtworzenia i uzgodnienia późniejszych zapisów; nie wykonuj go automatycznie.
 
-Przed kolejną publikacją porównaj historię migracji, zrób kopię, sprawdź zmianę na kopii i użyj kompilacji oraz testów odpowiednich do zakresu. Po publikacji potwierdź logowanie, uprawnienia, oba panele, dane i zdrowie przypomnień. Lokalne wyniki 971 testów i 45 E2E nie zastępują pomiaru wydajności hostingu ani wspólnego odbioru użytkowego.
+Przed kolejną publikacją porównaj historię migracji i użyj kompilacji oraz testów odpowiednich do zakresu. Przed zmianą bazy wykonaj nową kopię i sprawdź migracje na odtworzonej kopii. Aktualizacja samego interfejsu nie uruchamia migracji, zestawu DEMO ani resetu danych. Po publikacji potwierdź logowanie, uprawnienia, oba panele, dane i zdrowie przypomnień. Lokalne wyniki 971 testów i 45 E2E nie zastępują pomiaru wydajności hostingu ani wspólnego odbioru użytkowego.

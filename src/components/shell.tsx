@@ -4,28 +4,22 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   PawPrint,
-  LayoutDashboard,
-  CalendarDays,
-  Dog,
-  Wallet,
-  Heart,
   LogOut,
   Menu,
   X,
   Plus,
-  Network,
-  ClipboardList,
-  MessageCircle,
-  Tags,
+  CalendarDays,
   Bell,
-  GraduationCap,
-  Activity,
-  Gift,
+  Settings,
+  ChevronDown,
+  MoreHorizontal,
+  UserRound,
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import type { Role } from "@/lib/auth/session";
 import { notificationCountLabel } from "@/modules/notifications/types";
 import { useHydrated } from "./use-hydrated";
+import { getShellNavigation } from "./shell-navigation";
 export function Shell({
   role,
   name,
@@ -43,51 +37,43 @@ export function Shell({
   const menuButton = useRef<HTMLButtonElement>(null);
   const path = usePathname();
   const router = useRouter();
-  const base = role === "admin" ? "/admin" : "/app";
-  const careView =
-    path.startsWith(`${base}/care`) ||
-    /^\/(admin|app)\/dogs\/[^/]+\/care$/.test(path);
-  const nav = [
-    {
-      href: base,
-      label: role === "admin" ? "Pulpit" : "Mój start",
-      icon: LayoutDashboard,
-    },
-    ...(role === "admin"
-      ? [{ href: "/admin/work", label: "Do zrobienia", icon: ClipboardList }]
-      : []),
-    { href: `${base}/notifications`, label: "Powiadomienia", icon: Bell },
-    { href: `${base}/walks`, label: "Spacery", icon: CalendarDays },
-    { href: `${base}/calendar`, label: "Kalendarz", icon: CalendarDays },
-    { href: `${base}/courses`, label: "Kursy", icon: GraduationCap },
-    { href: `${base}/fitness`, label: "PSI FITNESS", icon: Activity },
-    { href: `${base}/gifts`, label: "Karty podarunkowe", icon: Gift },
-    {
-      href: `${base}/consultations`,
-      label: "Konsultacje",
-      icon: MessageCircle,
-    },
-    { href: `${base}/care`, label: "Plany i postępy", icon: ClipboardList },
-    {
-      href: `${base}/services`,
-      label: role === "admin" ? "Usługi i cennik" : "Oferta",
-      icon: Tags,
-    },
-    {
-      href: `${base}/dogs`,
-      label: role === "admin" ? "Psy i opiekunowie" : "Moje psy",
-      icon: Dog,
-    },
-    ...(role === "admin"
-      ? [{ href: "/admin/relations", label: "Relacje psów", icon: Network }]
-      : []),
-    {
-      href: `${base}/finance`,
-      label: role === "admin" ? "Pakiety i płatności" : "Moje rozliczenia",
-      icon: Wallet,
-    },
-    { href: `${base}/community`, label: "Psiutki", icon: Heart },
-  ];
+  const {
+    base,
+    careView,
+    sections,
+    nav,
+    extraNav,
+    settingsView,
+    extraView,
+    active,
+  } = getShellNavigation(role, path);
+  const navigationLink = (item: (typeof nav)[number]) => (
+    <Link
+      onClick={() => setOpen(false)}
+      className={`nav-item ${active(item.href) ? "active" : ""}`}
+      key={item.href}
+      href={item.href}
+      aria-current={active(item.href) ? "page" : undefined}
+      aria-label={
+        item.href === `${base}/notifications`
+          ? notificationCountLabel(unreadNotifications)
+          : undefined
+      }
+    >
+      <item.icon aria-hidden="true" />
+      <span>{item.label}</span>
+      {item.href === `${base}/notifications` &&
+        (unreadNotifications === null || unreadNotifications > 0) && (
+          <b className="notification-count" aria-hidden="true">
+            {unreadNotifications === null
+              ? "!"
+              : unreadNotifications > 99
+                ? "99+"
+                : unreadNotifications}
+          </b>
+        )}
+    </Link>
+  );
   useEffect(() => {
     if (!open) return;
     const panel = menu.current;
@@ -98,7 +84,7 @@ export function Shell({
     const focusable = () =>
       Array.from(
         panel?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), [tabindex="0"]',
+          'a[href], button:not([disabled]), summary, [tabindex="0"]',
         ) || [],
       ).filter((element) => element.getClientRects().length > 0);
     focusable()[0]?.focus();
@@ -146,7 +132,9 @@ export function Shell({
       "dogs",
       "finance",
       "community",
-      ...(role === "admin" ? ["relations", "work"] : []),
+      ...(role === "admin"
+        ? ["relations", "work", "activities", "settings"]
+        : []),
     ];
     const context = (
       document as Document & {
@@ -236,48 +224,83 @@ export function Shell({
         </div>
         <div className="nav-label">Panel</div>
         <nav className="sidebar-nav" aria-label="Główna nawigacja">
-          {nav.map((n) => (
-            <Link
-              onClick={() => setOpen(false)}
-              className={`nav-item ${(careView ? n.href === `${base}/care` : path === n.href || (n.href !== base && path.startsWith(n.href))) ? "active" : ""}`}
-              key={n.href}
-              href={n.href}
-              aria-label={
-                n.href === `${base}/notifications`
-                  ? notificationCountLabel(unreadNotifications)
-                  : undefined
-              }
+          {nav.map(navigationLink)}
+          {role === "admin" && (
+            <details
+              className="sidebar-disclosure"
+              open={extraView || undefined}
             >
-              <n.icon />
-              <span>{n.label}</span>
-              {n.href === `${base}/notifications` &&
-                (unreadNotifications === null || unreadNotifications > 0) && (
-                  <b className="notification-count" aria-hidden="true">
-                    {unreadNotifications === null
-                      ? "!"
-                      : unreadNotifications > 99
-                        ? "99+"
-                        : unreadNotifications}
-                  </b>
-                )}
-            </Link>
-          ))}
+              <summary className={`nav-item ${extraView ? "active" : ""}`}>
+                <MoreHorizontal aria-hidden="true" />
+                <span>Więcej</span>
+                <ChevronDown
+                  className="disclosure-chevron"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="sidebar-subnav">
+                {extraNav.map(navigationLink)}
+              </div>
+            </details>
+          )}
         </nav>
         <div className="sidebar-footer">
-          <Link
-            className="nav-item"
-            href="/complete-profile"
-            onClick={() => setOpen(false)}
-          >
-            Moje dane
-          </Link>
-          <Link
-            className="nav-item"
-            href="/account/security"
-            onClick={() => setOpen(false)}
-          >
-            Hasło do konta
-          </Link>
+          {role === "admin" && (
+            <Link
+              className={`nav-item ${settingsView ? "active" : ""}`}
+              href="/admin/settings"
+              aria-current={settingsView ? "page" : undefined}
+              onClick={() => setOpen(false)}
+            >
+              <Settings aria-hidden="true" />
+              <span>Ustawienia</span>
+            </Link>
+          )}
+          {role === "admin" ? (
+            <details className="sidebar-disclosure">
+              <summary className="nav-item">
+                <UserRound aria-hidden="true" />
+                <span>Moje konto</span>
+                <ChevronDown
+                  className="disclosure-chevron"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="sidebar-subnav">
+                <Link
+                  className="nav-item"
+                  href="/complete-profile"
+                  onClick={() => setOpen(false)}
+                >
+                  Moje dane
+                </Link>
+                <Link
+                  className="nav-item"
+                  href="/account/security"
+                  onClick={() => setOpen(false)}
+                >
+                  Hasło do konta
+                </Link>
+              </div>
+            </details>
+          ) : (
+            <>
+              <Link
+                className="nav-item"
+                href="/complete-profile"
+                onClick={() => setOpen(false)}
+              >
+                Moje dane
+              </Link>
+              <Link
+                className="nav-item"
+                href="/account/security"
+                onClick={() => setOpen(false)}
+              >
+                Hasło do konta
+              </Link>
+            </>
+          )}
           <form action={signOut}>
             <button className="nav-item">
               <LogOut />
@@ -313,34 +336,40 @@ export function Shell({
                 ? path.endsWith("/library")
                   ? "Biblioteka zaleceń"
                   : "Plany i postępy"
-                : nav.find((n) => n.href === path)?.label) ||
-                (path.startsWith("/admin/work/")
-                  ? path.includes("/progress/")
-                    ? "Odpowiedź opiekuna"
-                    : "Kontakty kontrolne"
-                  : path.startsWith("/admin/invitations")
-                    ? "Zaproszenia opiekunów"
-                    : path.startsWith("/admin/reminders")
-                      ? "Przypomnienia"
-                      : path.includes("/gifts/")
-                        ? path.endsWith("/new")
-                          ? "Wystaw kartę"
-                          : "Karta podarunkowa"
-                        : path.includes("/services/")
-                          ? "Usługa i cena"
-                          : path.includes("/consultations/")
-                            ? path.endsWith("/new")
-                              ? "Nowa konsultacja"
-                              : "Szczegóły konsultacji"
-                            : path.includes("/courses/")
+                : sections.find((n) => n.href === path)?.label) ||
+                (path === "/admin/settings"
+                  ? "Ustawienia"
+                  : path === "/admin/settings/calendar"
+                    ? "Godziny i przerwy"
+                    : path === "/admin/activities"
+                      ? "Zajęcia"
+                      : path.startsWith("/admin/work/")
+                        ? path.includes("/progress/")
+                          ? "Odpowiedź opiekuna"
+                          : "Kontakty kontrolne"
+                        : path.startsWith("/admin/invitations")
+                          ? "Zaproszenia opiekunów"
+                          : path.startsWith("/admin/reminders")
+                            ? "Przypomnienia"
+                            : path.includes("/gifts/")
                               ? path.endsWith("/new")
-                                ? "Nowy cykl kursu"
-                                : "Szczegóły kursu"
-                              : path.includes("/dogs/")
-                                ? "Profil psa"
-                                : path.includes("/walks/")
-                                  ? "Szczegóły spaceru"
-                                  : "Psi Pawer")}
+                                ? "Wystaw kartę"
+                                : "Karta podarunkowa"
+                              : path.includes("/services/")
+                                ? "Usługa i cena"
+                                : path.includes("/consultations/")
+                                  ? path.endsWith("/new")
+                                    ? "Nowa konsultacja"
+                                    : "Szczegóły konsultacji"
+                                  : path.includes("/courses/")
+                                    ? path.endsWith("/new")
+                                      ? "Nowy cykl kursu"
+                                      : "Szczegóły kursu"
+                                    : path.includes("/dogs/")
+                                      ? "Profil psa"
+                                      : path.includes("/walks/")
+                                        ? "Szczegóły spaceru"
+                                        : "Psi Pawer")}
             </h1>
             <p>
               {role === "admin"
@@ -367,14 +396,47 @@ export function Shell({
             </Link>
             <Link
               className="primary-button"
-              href={role === "admin" ? "/admin/walks/new" : "/app/walks"}
-              aria-label={role === "admin" ? "Nowy spacer" : "Znajdź spacer"}
+              href={role === "admin" ? "/admin/activities" : "/app/walks"}
+              aria-label={
+                role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"
+              }
             >
               {role === "admin" ? <Plus /> : <CalendarDays />}
-              <span>{role === "admin" ? "Nowy spacer" : "Znajdź spacer"}</span>
+              <span>
+                {role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"}
+              </span>
             </Link>
           </div>
         </header>
+        {role === "admin" &&
+          [
+            "/admin/walks",
+            "/admin/consultations",
+            "/admin/courses",
+            "/admin/fitness",
+          ].includes(path) && (
+            <nav className="activity-tabs" aria-label="Rodzaj zajęć">
+              {sections
+                .filter((item) =>
+                  [
+                    "/admin/walks",
+                    "/admin/consultations",
+                    "/admin/courses",
+                    "/admin/fitness",
+                  ].includes(item.href),
+                )
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={path === item.href ? "page" : undefined}
+                  >
+                    <item.icon size={17} aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                ))}
+            </nav>
+          )}
         {children}
       </main>
     </div>

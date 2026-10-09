@@ -138,6 +138,9 @@ test("password → dog → registration → admin approval → private location"
     expect(registered.data?.[0].status).toBe("pending");
     await admin.goto("/admin");
     await admin
+      .getByText("Podsumowanie spacerów i rozliczeń", { exact: true })
+      .click();
+    await admin
       .getByRole("link")
       .filter({ hasText: "Zgłoszenia do decyzji" })
       .click();

@@ -50,91 +50,98 @@ export default async function Page() {
         warnings={getQualificationWarnings({ dogs, walks, registrations })}
         role="admin"
       />
-      <div className="grid-4">
-        <Kpi
-          label="Zgłoszenia do decyzji"
-          value={pending.length}
-          copy={
-            pending.length ? "Czekają na Twoją decyzję" : "Wszystko rozpatrzone"
-          }
-          href={kpiUrl("pending")}
-          icon={<Hourglass />}
-        />
-        <Kpi
-          label="Dzisiejsze spacery"
-          value={today.length}
-          copy="Plan na dziś"
-          href={kpiUrl("today")}
-          icon={<CalendarDays />}
-        />
-        <Kpi
-          label="Do rozliczenia"
-          value={finance.charges.length}
-          copy="Konsultacje, spacery i pakiety"
-          href={kpiUrl("due-payments")}
-          icon={<Wallet />}
-        />
-        <Kpi
-          label="Wypełnienie najbliższych"
-          value={`${fill}%`}
-          copy="6 kolejnych terminów"
-          href={kpiUrl("next-six")}
-          icon={<Activity />}
+      <div className="dashboard-grid admin-start">
+        <NextAppointment appointment={nextAppointment} admin />
+        <WorkPreview
+          items={workQueue.items}
+          counts={workQueue.counts}
+          today={warsawDate(new Date())}
         />
       </div>
-      <NextAppointment appointment={nextAppointment} admin />
-      <div className="dashboard-grid">
-        <article className="card">
-          <div className="card-head">
-            <div>
-              <h2>Najbliższe terminy</h2>
-              <p>Plan spacerów i zgłoszenia w jednym miejscu</p>
-            </div>
-            <Link className="ghost-button" href="/admin/walks">
-              Wszystkie →
-            </Link>
-          </div>
-          <div className="card-body">
-            <div className="list">
-              {upcoming.slice(0, 5).map((w) => (
-                <WalkRow
-                  key={w.id}
-                  walk={w}
-                  base="/admin"
-                  accepted={accepted(w.id)}
-                  pending={pending.filter((r) => r.walk_id === w.id).length}
-                />
-              ))}
-            </div>
-            {!upcoming.length && (
-              <Empty
-                title="Czas na pierwszy spacer"
-                copy="Dodaj termin, a opiekunowie będą mogli zgłosić swoje psy."
-                href="/admin/walks/new"
-                action="Dodaj spacer"
-              />
-            )}
-          </div>
-        </article>
-        <div className="stack">
-          <WorkPreview
-            items={workQueue.items}
-            counts={workQueue.counts}
-            today={warsawDate(new Date())}
+      <details className="card pad dashboard-summary">
+        <summary>Podsumowanie spacerów i rozliczeń</summary>
+        <div className="grid-4">
+          <Kpi
+            label="Zgłoszenia do decyzji"
+            value={pending.length}
+            copy={
+              pending.length
+                ? "Czekają na Twoją decyzję"
+                : "Wszystko rozpatrzone"
+            }
+            href={kpiUrl("pending")}
+            icon={<Hourglass />}
           />
-          <article className="card pad">
-            <h3>Pakiety i płatności</h3>
-            <p className="muted">
-              {finance.totals.availableEntries} wolnych wejść w pakietach.
-              Wpłaty, rezerwacje i historię rozliczeń znajdziesz w jednym
-              miejscu.
-            </p>
-            <Link className="ghost-button" href="/admin/finance">
-              Otwórz rozliczenia →
-            </Link>
-          </article>
+          <Kpi
+            label="Dzisiejsze spacery"
+            value={today.length}
+            copy="Plan na dziś"
+            href={kpiUrl("today")}
+            icon={<CalendarDays />}
+          />
+          <Kpi
+            label="Do rozliczenia"
+            value={finance.charges.length}
+            copy="Konsultacje, spacery i pakiety"
+            href={kpiUrl("due-payments")}
+            icon={<Wallet />}
+          />
+          <Kpi
+            label="Wypełnienie najbliższych"
+            value={`${fill}%`}
+            copy="6 kolejnych terminów"
+            href={kpiUrl("next-six")}
+            icon={<Activity />}
+          />
         </div>
-      </div>
+        <div className="dashboard-grid">
+          <article className="card">
+            <div className="card-head">
+              <div>
+                <h2>Najbliższe terminy</h2>
+                <p>Plan spacerów i zgłoszenia w jednym miejscu</p>
+              </div>
+              <Link className="ghost-button" href="/admin/walks">
+                Wszystkie →
+              </Link>
+            </div>
+            <div className="card-body">
+              <div className="list">
+                {upcoming.slice(0, 5).map((w) => (
+                  <WalkRow
+                    key={w.id}
+                    walk={w}
+                    base="/admin"
+                    accepted={accepted(w.id)}
+                    pending={pending.filter((r) => r.walk_id === w.id).length}
+                  />
+                ))}
+              </div>
+              {!upcoming.length && (
+                <Empty
+                  title="Czas na pierwszy spacer"
+                  copy="Dodaj termin, a opiekunowie będą mogli zgłosić swoje psy."
+                  href="/admin/walks/new"
+                  action="Dodaj spacer"
+                />
+              )}
+            </div>
+          </article>
+          <div className="stack">
+            <article className="card pad">
+              <h3>Pakiety i płatności</h3>
+              <p className="muted">
+                {finance.totals.availableEntries} wolnych wejść w pakietach.
+                Wpłaty, rezerwacje i historię rozliczeń znajdziesz w jednym
+                miejscu.
+              </p>
+              <Link className="ghost-button" href="/admin/finance">
+                Otwórz rozliczenia →
+              </Link>
+            </article>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

@@ -8,6 +8,14 @@ Prowadząca korzysta z dotychczasowego konta `asiakostrzanowska@gmail.com`, admi
 
 Otwórz konto opiekuna w osobnej przeglądarce lub oknie prywatnym, aby równolegle sprawdzać oba panele. Pierwszy opiekun ma Kluskę i nowego Borysa; drugi Lunę i Figę. Przy zgłaszaniu uwag zapisz rolę, ekran, wykonaną czynność i oczekiwany rezultat.
 
+## Gdzie znaleźć funkcje w panelu prowadzącej
+
+Główne menu obejmuje **Pulpit, Kalendarz, Zajęcia, Psy i opiekunowie, Plany i postępy oraz Rozliczenia**. W sekcji **Zajęcia** wybierz spacery, konsultacje, kursy albo PSI FITNESS. Kolejkę spraw otworzysz z pulpitu lub z sekcji Zajęcia. Dodatkowe statystyki pulpitu rozwiniesz w **Podsumowaniu spacerów i rozliczeń**.
+
+**Ustawienia**, u dołu menu, zawierają **Usługi i ceny**, **Godziny i przerwy** oraz **Dostęp opiekunów**. Historię działania przypomnień znajdziesz w rozwijanej **Kontroli przypomnień**. W kalendarzu rozwiń **Zarezerwuj czas**, aby dodać prywatną blokadę.
+
+**Więcej** otwiera karty podarunkowe, relacje psów i Psiutki. Dzwonek u góry prowadzi do skrzynki powiadomień; **Moje konto** rozwija dane i zmianę hasła. Menu opiekuna zachowuje dotychczasowy układ. Funkcje i dane pozostają dostępne także przez wcześniejsze adresy.
+
 ## Scenariusze obu ról
 
 | Obszar | Opiekun | Prowadząca | Co sprawdzić |

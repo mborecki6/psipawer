@@ -1,0 +1,113 @@
+.intro {
+  max-width: 640px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.grid,
+.settingsGrid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.settingsGrid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 840px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  color: var(--forest);
+  background: var(--sand);
+  border-radius: 14px;
+}
+.mark svg {
+  width: 22px;
+  height: 22px;
+}
+.tile h2 {
+  margin: 18px 0 6px;
+}
+.tile p {
+  margin: 0 0 24px;
+}
+.actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.setting {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.setting:hover {
+  border-color: var(--forest);
+  box-shadow: 0 6px 24px #253b2e0c;
+}
+.setting > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.setting h2 {
+  margin: 0 0 4px;
+}
+.setting p {
+  margin: 0;
+}
+.arrow {
+  flex-shrink: 0;
+}
+.disclosure {
+  max-width: 840px;
+}
+.disclosure summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+.disclosure[open] summary {
+  margin-bottom: 16px;
+}
+.disclosure summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 20px;
+}
+.disclosure[open] summary::after {
+  content: "−";
+}
+.calendarEditor {
+  max-width: 840px;
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .setting {
+    padding: 20px;
+    gap: 14px;
+  }
+  .setting h2 {
+    font-size: 18px;
+  }
+}

@@ -8,6 +8,8 @@ Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.verce
 
 Pilot obejmuje prowadzącą, administratora i **dwa fikcyjne konta opiekunów**. [Scenariusze testów](docs/PILOT-TEST-SCENARIOS.md) obejmują profile, spacery, konsultacje, kursy, fitness, zalecenia, rozliczenia, karty, społeczność i skrzynki. Hasła testowe są przekazywane prywatnie, poza repozytorium. Wszystkie dane oznaczone DEMO są fikcyjne; wdrożenia nie resetują postępu testerów.
 
+Panel prowadzącej ma sześć głównych sekcji. **Zajęcia** grupują spacery, konsultacje, kursy i fitness, **Ustawienia** zawierają ceny, godziny pracy i dostęp opiekunów, a **Więcej** — karty podarunkowe, relacje psów i Psiutki. Pulpit skupia się na najbliższym spotkaniu i sprawach do obsługi; dodatkowe podsumowanie jest rozwijane. [Mapa nawigacji do testów](docs/PILOT-TEST-SCENARIOS.md#gdzie-znaleźć-funkcje-w-panelu-prowadzącej).
+
 Logowanie odbywa się e-mailem i hasłem. Powiadomienia biznesowe trafiają do skrzynek w aplikacji, a Supabase sprawdza przypomnienia co pięć minut. Zewnętrzny SMTP, e-mailowe zaproszenia i odzyskiwanie hasła w chmurze pozostają wyłączone. Domyślna poczta Supabase obsługuje Auth z ograniczeniami odbiorców i liczby wiadomości, nie wysyła biznesowych przypomnień. Automatyczne fizyczne usuwanie nieużywanych zdjęć pozostaje wyłączone.
 
 Lokalny odbiór 03.10.2026 objął **971 testów**, **45 pełnych scenariuszy obu ról**, próbę 50 kont oraz odtworzenie kopii bazy i zdjęć. Pomiar lokalny nie jest pomiarem wydajności hostingu. [Stan produktu](docs/PRODUCT-STATUS.md) i [obsługa wdrożenia](docs/VERCEL-SUPABASE-PILOT.md) rozdzielają te wyniki i ograniczenia pilota.
