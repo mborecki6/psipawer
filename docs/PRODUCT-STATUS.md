@@ -1,6 +1,14 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 06.10.2026. Ukończony lokalny MVP został opublikowany na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
+Aktualizacja: 09.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
+
+## Lżejszy panel prowadzącej 09.10.2026
+
+Główna nawigacja ma sześć sekcji: Pulpit, Kalendarz, Zajęcia, Psy i opiekunowie, Plany i postępy oraz Rozliczenia. Spacery, konsultacje, kursy i fitness są dostępne przez Zajęcia oraz wspólne zakładki ich list. Ustawienia zawierają cennik, stały tydzień pracy, przerwy i dostęp opiekunów. Więcej grupuje karty podarunkowe, relacje psów i Psiutki; kontrola przypomnień i dane konta są rozwijane. Powiadomienia otwiera dzwonek.
+
+Pulpit pokazuje najbliższe spotkanie i sprawy do obsługi. Statystyki oraz podsumowanie spacerów i rozliczeń pozostają dostępne po rozwinięciu. Formularz prywatnej blokady w kalendarzu jest rozwijany przez Zarezerwuj czas. Menu opiekuna, wcześniejsze adresy modułów, operacje zapisu i zasady dostępu pozostają zachowane.
+
+Kompilacja lokalna i Vercel z TypeScript oraz ESLint zmienionego kodu przeszły. Aktualizacja nie zawiera migracji ani resetu zestawu DEMO. Odczyty chmury przed i po publikacji potwierdziły zdrowy Supabase, zgodną historię 48 migracji i aktywny proces przypomnień. [Mapa nawigacji i scenariusze](PILOT-TEST-SCENARIOS.md) odpowiadają nowemu panelowi.
 
 ## Opublikowany pilot 06.10.2026
 
