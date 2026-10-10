@@ -1,6 +1,8 @@
 # Konsultacje indywidualne
 
-Stan: implementacja lokalna, 18.09.2026. Migracja `202609180002_consultations.sql` nie została zastosowana w chmurze. Dalszy rozwój zgodnie z [lokalnym trybem pracy](LOCAL-DEVELOPMENT.md).
+Moduł działa w opublikowanym pilocie, z aktualizacją planowania z 10.10.2026; [wydanie i odczytowa kontrola hostingu](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026) opisują stan produkcji. Rozwój nadal korzysta z osobnej lokalnej bazy.
+
+Historyczny stan przed pierwszą publikacją: implementacja lokalna, 18.09.2026. Migracja `202609180002_consultations.sql` nie została zastosowana w chmurze. Dalszy rozwój zgodnie z [lokalnym trybem pracy](LOCAL-DEVELOPMENT.md).
 
 ## Przebieg
 
@@ -30,9 +32,9 @@ Aktualizacja po dodaniu [katalogu usług](SERVICES-MODULE.md): nowe zgłoszenie 
 
 ## Sprawdzenie
 
-Lokalna aktualizacja po feedbacku z 10.10.2026: formularz terminu pozwala wskazać prowadzącego i opcjonalnie wspólną salę, z osobną wersją przypisania. Te dane są dostępne tylko zespołowi; opiekun nadal widzi uzgodniony termin, miejsce i wiadomość. Kolizje oraz godziny pracy są sprawdzane dla wybranego prowadzącego i sali przez [kalendarz zespołu](CALENDAR-MODULE.md). Krótsza niż zalecana przerwa wymaga jawnego zaznaczenia potwierdzenia i ponownego zapisu tych samych danych. Zmiana pól unieważnia wcześniejsze potwierdzenie. Błąd lub ostrzeżenie zachowuje cały szkic formularza. Po własnym udanym zapisie prowadzący i sala są zablokowane do odświeżenia formularza; dalsza zmiana terminu zachowuje zapisane przypisanie. Wcześniej przypisana, wyłączona sala może pozostać bez zmian, a nowy wybór obejmuje tylko aktywne sale.
+Opublikowana aktualizacja po feedbacku z 10.10.2026: formularz terminu pozwala wskazać prowadzącego i opcjonalnie wspólną salę, z osobną wersją przypisania. Te dane są dostępne tylko zespołowi; opiekun nadal widzi uzgodniony termin, miejsce i wiadomość. Kolizje oraz godziny pracy są sprawdzane dla wybranego prowadzącego i sali przez [kalendarz zespołu](CALENDAR-MODULE.md). Krótsza niż zalecana przerwa wymaga jawnego zaznaczenia potwierdzenia i ponownego zapisu tych samych danych. Zmiana pól unieważnia wcześniejsze potwierdzenie. Błąd lub ostrzeżenie zachowuje cały szkic formularza. Po własnym udanym zapisie prowadzący i sala są zablokowane do odświeżenia formularza; dalsza zmiana terminu zachowuje zapisane przypisanie. Wcześniej przypisana, wyłączona sala może pozostać bez zmian, a nowy wybór obejmuje tylko aktywne sale.
 
-Test przeglądarkowy tej aktualizacji obejmuje zachowanie szkicu po błędzie, wybór innego prowadzącego i sali, przekazanie wersji przypisania, obowiązkowe potwierdzenie przerwy, zablokowanie starego wyboru po zapisie oraz zachowanie wyłączonej sali. Przeszło także 28 wariantów układu i kontrola ról. Testy akcji sprawdzają podpis potwierdzenia dla tych samych danych i jego odrzucenie po zmianie terminu. To sprawdzenie lokalnych komponentów i granicy akcji; migracja i odbiór całego stosu są osobnymi etapami. Produkcji nie aktualizowano.
+Test przeglądarkowy tej aktualizacji obejmuje zachowanie szkicu po błędzie, wybór innego prowadzącego i sali, przekazanie wersji przypisania, obowiązkowe potwierdzenie przerwy, zablokowanie starego wyboru po zapisie oraz zachowanie wyłączonej sali. Przeszło także 28 wariantów układu i kontrola ról. Testy akcji sprawdzają podpis potwierdzenia dla tych samych danych i jego odrzucenie po zmianie terminu. To sprawdzenie lokalnych komponentów i granicy akcji. Osobne wyniki pełnego lokalnego stosu oraz odczytowej kontroli opublikowanej aplikacji przedstawia [stan produktu](PRODUCT-STATUS.md).
 
 Wynik lokalny z 18.09.2026: **222 testy w 21 plikach zakończone poprawnie**, ESLint i kompilacja z TypeScript poprawne. Test przeglądarkowy konsultacji przeszedł wszystkie 28 wariantów układu i scenariusze formularzy; zrzuty formularzy na komputerze i telefonie sprawdzono wizualnie. Build wykonano z jawnymi lokalnymi adresami i zastępczym publicznym kluczem, bez połączenia z bazą w chmurze.
 

@@ -1,6 +1,8 @@
 # Pakiet PSI FITNESS
 
-Stan 03.10.2026: migracje `202610030005`–`202610030008` zastosowano **wyłącznie lokalnie** po testach PGlite i osobnej bazy PostgreSQL. Podgląd ma 44 migracje oraz panele obu ról, wejście z oferty, terminy, obecności, wspólne rozliczenia, kolejkę pracy, skrzynki, przypomnienia i jawne powiązania zaleceń z pakietem lub spotkaniem. Odbiór niepustej kopii tego modułu pozostaje do przygotowania. Cały uzgodniony produkt nadal jest w budowie.
+Moduł jest dostępny w opublikowanym pilocie. Aktualizacja planowania z 10.10.2026 działa na hostingu; [wydanie i odczytowa kontrola hostingu](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026) opisują stan produkcji. Rozwój nadal korzysta z osobnej lokalnej bazy.
+
+Historyczny stan przed pierwszą publikacją, 03.10.2026: migracje `202610030005`–`202610030008` zastosowano **wyłącznie lokalnie** po testach PGlite i osobnej bazy PostgreSQL. Podgląd ma 44 migracje oraz panele obu ról, wejście z oferty, terminy, obecności, wspólne rozliczenia, kolejkę pracy, skrzynki, przypomnienia i jawne powiązania zaleceń z pakietem lub spotkaniem. Odbiór niepustej kopii tego modułu pozostaje do przygotowania. Cały uzgodniony produkt nadal jest w budowie.
 
 ## Zakres
 
@@ -40,9 +42,9 @@ W kolejce prowadzącej jest jeden wpis na wymagający działania pakiet: zgłosz
 
 Skrzynki obu ról otrzymują wiadomości z niezmiennej historii fitness. Autor nie dostaje powiadomienia o własnym działaniu. Ponowienie tego samego zapisu nie tworzy drugiej wiadomości. Powiadomienia o terminie, obecności i korekcie prowadzą do konkretnego spotkania; wpłata, uzgodnienie i zwrot prowadzą do rozliczenia całego pakietu. Skrzynka przechowuje wyłącznie kategorię i identyfikatory, bez miejsc, notatek i kwot. Wiadomości należą do pierwotnego opiekuna pakietu także po zmianie opiekuna psa; nowy opiekun nie przejmuje dawnej skrzynki i pieniędzy. Prywatne miejsca nadal wymagają bieżącego uprawnienia. Wiadomość i zmiana domeny zatwierdzają się razem. Nie ma zewnętrznej wysyłki. Terminowe wiadomości obsługuje opisana poniżej trwała kolejka przypomnień.
 
-## Planowanie spotkań — aktualizacja lokalna 10.10.2026
+## Planowanie spotkań — opublikowana aktualizacja 10.10.2026
 
-Lokalna aktualizacja planowania z 10.10.2026: termin każdego spotkania ma wybór prowadzącego i opcjonalnej sali, z osobną wersją przypisania. [Kalendarz zespołu](CALENDAR-MODULE.md) sprawdza godziny pracy i kolizje dla tego wyboru. Krótsza niż zalecana przerwa wyświetla ostrzeżenie, zachowuje szkic i wymaga jawnego potwierdzenia tych samych danych przed zapisem. Odrzucony zapis nie podnosi wersji formularza. Po udanym zapisie następne działanie wymaga dotychczasowego wczytania aktualnego stanu. Obca sala wyłączona jest niedostępna do nowego wyboru; wcześniej przypisana wyłączona sala może pozostać bez zmian. Testy granicy akcji obejmują nowy zapis i ostrzeżenie bez potwierdzonej wersji. Odbiór migracji i całego lokalnego stosu pozostaje osobną próbą; produkcji nie aktualizowano.
+Opublikowana aktualizacja planowania z 10.10.2026: termin każdego spotkania ma wybór prowadzącego i opcjonalnej sali, z osobną wersją przypisania. [Kalendarz zespołu](CALENDAR-MODULE.md) sprawdza godziny pracy i kolizje dla tego wyboru. Krótsza niż zalecana przerwa wyświetla ostrzeżenie, zachowuje szkic i wymaga jawnego potwierdzenia tych samych danych przed zapisem. Odrzucony zapis nie podnosi wersji formularza. Po udanym zapisie następne działanie wymaga dotychczasowego wczytania aktualnego stanu. Obca sala wyłączona jest niedostępna do nowego wyboru; wcześniej przypisana wyłączona sala może pozostać bez zmian. Testy granicy akcji obejmują nowy zapis i ostrzeżenie bez potwierdzonej wersji. Lokalny odbiór migracji i pełnego stosu oraz odczytowa kontrola hostingu są osobnymi dowodami, opisanymi w [stanie produktu](PRODUCT-STATUS.md).
 
 ## Przypomnienia każdego spotkania
 

@@ -2,13 +2,27 @@
 
 Aktualizacja: 10.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
 
+## Publikacja aktualizacji po feedbacku — 10.10.2026
+
+Pierwsza iteracja opisana poniżej jest dostępna online. Supabase ma **49 migracji** do `202610100001_calendar_team.sql`; zastosowano ją atomowo po odtworzeniu i sprawdzeniu świeżej kopii obejmującej Auth, Storage oraz historię migracji. Odtworzenie i zapis produkcyjny zachowały zawartość wcześniejszych 68 tabel publicznych poza celowo przebudowaną projekcją `calendar_slots`. Źródłowe terminy, konta, hasła, ustawienia Auth, ceny i postęp testerów pozostały zachowane.
+
+Końcowy odczyt potwierdził `ACTIVE_HEALTHY`, historię 49 migracji i zgodny skrót SQL nowej migracji, zachowane liczby kont i danych oraz hasła, a także aktywny harmonogram przypomnień.
+
+32 istniejące źródła mają jawne historyczne przypisanie `legacy_unassigned`. Projekcja zawiera 11 zajętych przedziałów; migracja nie tworzy sal ani nie odgaduje prowadzących. Zespół przypisuje zastane spotkania świadomie. Harmonogram przypomnień nadal działa co pięć minut, a SMTP, zaproszenia klientów i fizyczne sprzątanie zdjęć pozostają wyłączone.
+
+Pierwszy opublikowany build tego wydania to `dpl_VdWitq7Bg5jfHXwGvv5ZicZKb5oY`, z kodu `28d6fa9`. Alias [psipawer.vercel.app](https://psipawer.vercel.app/login) jest gotowy. Późniejszy push dokumentacji może nadać wydaniu kolejny identyfikator bez zmiany kodu aplikacji.
+
+Odczytowa kontrola hostingu przeszła **40 stron obu ról i dwóch kont opiekunów**, **39 wariantów responsywności** (13 ekranów × 320/390/1440 px) oraz **16 kontroli prywatnego API**. Sprawdzono tydzień i miesiąc, 42-dniowy zakres ze zmianą czasu, wybór prowadzącego i sali, formularz urlopu bez zapisu, filtry oferty obu ról oraz zachowanie treści i powiązania istniejącego szkicu. Nie było błędów skryptów ani konsoli. Nie wykonano zapisów aplikacyjnych; porównanie liczby wierszy i skrótów 16 tabel biznesowych przed i po potwierdziło identyczne dane. Użyto istniejących kont oraz własnych tymczasowych sesji Auth, bez zmiany haseł. To odczytowy sprawdzian hostingu, odrębny od lokalnego odbioru 1017 testów i 45 unikalnych E2E z zapisami. [Obsługa publikacji, kopii i wycofania](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
+
+Dodatkowa odczytowa próba niepustego kalendarza potwierdziła pokrycie wszystkich 32 zastanych źródeł przypisaniami historycznymi, 11 poprawnych zakresów zajętości oraz 12 rzeczywistych zdarzeń zespołu w badanym oknie. Dwa kalendarze opiekunów miały dokładnie własne dozwolone zdarzenia i nie zawierały prywatnych pól. Sprawdzono identyfikatory spotkań, odnośnik oraz miesiąc z wpisami; skróty 13 tabel przed i po były identyczne.
+
 ## Pierwsza lokalna iteracja po feedbacku — 10.10.2026
 
 Kalendarz rozdziela autora, prowadzącego i salę. Ma tydzień oraz miesiąc, filtr prowadzącego, blokady całodniowe, indywidualne godziny i odnośnik do konkretnego spotkania. Prowadzącego i opcjonalną salę wybiera się również przy tworzeniu lub zmianie spaceru, konsultacji, spotkania kursu i fitness. Rzeczywiste nakładanie zajęć tej samej osoby albo wyłącznej sali jest blokowane; krótsza preferowana przerwa wymaga świadomego potwierdzenia. Starsze wpisy pozostają jawnie nieprzypisane do czasu decyzji zespołu.
 
 Edytor planu pokazuje jedno bieżące powiązanie z konsultacją, kursem lub fitness, a jego zmianę rozwija osobno. Wejście ze spotkania wybiera właściwy kontekst dla nowego szkicu; istniejący szkic zachowuje treść, wersję i wcześniejsze powiązanie. Kolejka nazywa kwalifikację psów wprost i wyjaśnia zadania kontaktowe. Oferta ma filtry indywidualne, grupowe, karty i pozostałe usługi.
 
-Migrację `202610100001_calendar_team.sql` zastosowano po prywatnej kopii **tylko w lokalnym Supabase**. Lokalny schemat ma 49 migracji, chmura nadal 48. Nie wdrażano interfejsu ani nie zmieniano cen, kont pilota i danych chmury. Pakiety premium, zewnętrzne integracje i powiadomienia poza aplikacją pozostają dalszym zakresem.
+W czasie lokalnego odbioru, przed publikacją opisaną powyżej, migrację `202610100001_calendar_team.sql` zastosowano po prywatnej kopii **tylko w lokalnym Supabase**. Lokalny schemat miał 49 migracji, a chmura 48. Ten etap nie zmieniał cen, kont pilota ani danych chmury. Pakiety premium, zewnętrzne integracje i powiadomienia poza aplikacją pozostają dalszym zakresem.
 
 Odbiór kodu: **1017/1017 testów w 76 plikach**, TypeScript, ESLint 74 zmienionych plików, formatowanie i lokalna kompilacja. Backend kalendarza przeszedł **50/50 scenariuszy SQL** i **19/19 prób PostgreSQL**, z obserwacją 17 zależności blokad. Sprawdzono również komponenty w prawdziwej przeglądarce: 40 wariantów kalendarza, 44 opieki, 28 konsultacji i 24 oferty, z oceną zrzutów na telefonie i komputerze.
 

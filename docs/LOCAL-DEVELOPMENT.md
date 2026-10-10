@@ -1,16 +1,16 @@
 # Lokalny rozwój produktu
 
-Decyzja użytkownika z 18.09.2026: cały uzgodniony produkt budujemy i dopracowujemy lokalnie. **Nie wdrażamy kolejnych etapów na produkcję i nie stosujemy nowych migracji w bazie w chmurze.** Publikacja dopiero po lokalnym odbiorze i nowej decyzji użytkownika. Nie wykonujemy pushu do gałęzi uruchamiającej automatyczne wdrożenie.
+Rozwój i codzienne testy korzystają z oddzielnego lokalnego Supabase. Decyzja użytkownika z 18.09.2026 wymagała lokalnego odbioru oraz nowej zgody przed publikacją; późniejsze zgody objęły MVP i aktualizację po feedbacku z 10.10.2026. Ta wersja jest opublikowana z 49 migracjami. [Aktualny stan hostingu i operacje](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026). Lokalnych launcherów, testów ani seederów nadal nie kierujemy do chmury; nowe etapy nie są publikowane automatycznie przez sam lokalny odbiór.
 
 ## Lokalny odbiór MVP — 03.10.2026
 
-**Nowsza lokalna iteracja 10.10.2026:** zastosowano `202610100001_calendar_team.sql`, lokalny schemat ma 49 migracji. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Chmura pozostaje na 48 migracjach i poprzednim interfejsie. [Aktualny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
+**Nowsza iteracja 10.10.2026:** lokalny schemat ma 49 migracji do `202610100001_calendar_team.sql`. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Po lokalnym odbiorze i późniejszej zgodzie użytkownika tę samą wersję zastosowano w chmurze; historia produkcyjna również ma 49 migracji. [Lokalny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026) oraz [osobna kontrola publikacji](PRODUCT-STATUS.md#publikacja-aktualizacji-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
 
 Lokalny MVP jest gotowy do wspólnych testów: **971/971 testów w 73 plikach**, **45/45 pełnych E2E** (6,2 minuty), TypeScript i ESLint. Baza ma **48 migracji**; podgląd ma zgodny manifest i odpowiada HTTP 200. [Próba 50 kont](PILOT-LOAD.md) objęła 1050 odczytów opiekunów, 27 prowadzącej, 153 rzeczywiste strony Chrome, 50 zapisów na cztery miejsca i 50 ponowień jednej wpłaty. Lokalny cel p95 HTTP poniżej 2 s został spełniony.
 
 [Kolejka](REMINDERS-MODULE.md#kolejka-50-opiekunów-i-pełne-wycofanie-wielu-odbiorców--03102026) dostarczyła 250 zadań bez duplikatów i cofnęła całe dostarczenie zespołu po błędzie drugiego odbiorcy. [Kopia 48 migracji](LOCAL-BACKUPS.md#bieżący-wynik-03102026) odtworzyła cały schemat, 119 tabel, 15 832 wiersze i zdjęcia, z zachowanym logowaniem i nowymi zapisami przez API.
 
-Końcowy odczyt potwierdził wszystkie wcześniejsze wiersze publiczne, pięć kont, cztery psy, trzy spacery, 17 cen roboczych 100 zł i zajętość. Własne dane prób usunięto. Znacznik przypomnień celowo odzwierciedla rzeczywiste uruchomienia. Godziny są nadal wyłączone i przerwy zerowe. [Zakres i przygotowania do live](PRODUCT-STATUS.md#przed-publikacją-i-prawdziwymi-klientami) rozdzielają lokalny odbiór od przyszłego hostingu, poczty, harmonogramu i kopii poza komputerem.
+Końcowy odczyt potwierdził wszystkie wcześniejsze wiersze publiczne, pięć kont, cztery psy, trzy spacery, 17 cen roboczych 100 zł i zajętość. Własne dane prób usunięto. Znacznik przypomnień celowo odzwierciedla rzeczywiste uruchomienia. Godziny są nadal wyłączone i przerwy zerowe. [Zakres i przygotowania do live](PRODUCT-STATUS.md#przed-dołączeniem-prawdziwych-klientów) rozdzielają lokalny odbiór od przyszłego hostingu, poczty, harmonogramu i kopii poza komputerem.
 
 ## Wcześniejsze etapy
 

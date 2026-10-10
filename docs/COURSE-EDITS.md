@@ -1,6 +1,8 @@
 # Edycja cyklu i korekty obecności
 
-Implementacja lokalna, 03.10.2026. Migrację `202610030003_course_edits.sql` zastosowano wyłącznie w lokalnym Supabase.
+Moduł jest dostępny w opublikowanym pilocie. Aktualizacja planowania z 10.10.2026 działa na hostingu; [wydanie i odczytowa kontrola hostingu](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026) opisują kontrolę produkcji.
+
+Historyczny stan przed pierwszą publikacją: implementacja lokalna, 03.10.2026. Migrację `202610030003_course_edits.sql` zastosowano wyłącznie w lokalnym Supabase.
 
 ## Ustawienia cyklu
 
@@ -14,9 +16,9 @@ Każdy zapis ma identyfikator i własne potwierdzenie w `course_settings_receipt
 
 Starsza karta nie nadpisuje nowej nazwy ani limitu; zachowuje wszystkie wpisane pola. Potwierdzenie poprzedniego zapisu znika po zmianie pól i podczas zapisu. Odnośnik **Odśwież dane** pobiera nową stronę i świeże wersje formularzy. Samo odświeżenie danych po innej akcji nie podnosi wersji edytora z niezapisanymi zmianami.
 
-## Planowanie spotkań — aktualizacja lokalna 10.10.2026
+## Planowanie spotkań — opublikowana aktualizacja 10.10.2026
 
-Lokalna aktualizacja planowania z 10.10.2026: przy tworzeniu cyklu prowadząca wybiera prowadzącego i opcjonalnie salę dla wszystkich nowych spotkań. Edytor pojedynczego spotkania pozwala później zmienić jego przypisanie; każde spotkanie ma osobną wersję. Publikacja zachowuje przypisania poszczególnych spotkań. Wspólny [kalendarz zespołu](CALENDAR-MODULE.md) sprawdza kolizje i godziny pracy. Ostrzeżenie o zbyt krótkiej zalecanej przerwie wymaga jawnego potwierdzenia niezmienionych danych, bez automatycznej zmiany wersji po odrzuconym zapisie. Formularz zachowuje szkic; po własnym udanym zapisie ponowna zmiana prowadzącego lub sali wymaga odświeżenia formularza. Testy akcji obejmują nowy zapis i publikację z zachowaniem przypisań. Odbiór lokalnej migracji i całego stosu jest osobnym etapem; produkcji nie aktualizowano.
+Opublikowana aktualizacja planowania z 10.10.2026: przy tworzeniu cyklu prowadząca wybiera prowadzącego i opcjonalnie salę dla wszystkich nowych spotkań. Edytor pojedynczego spotkania pozwala później zmienić jego przypisanie; każde spotkanie ma osobną wersję. Publikacja zachowuje przypisania poszczególnych spotkań. Wspólny [kalendarz zespołu](CALENDAR-MODULE.md) sprawdza kolizje i godziny pracy. Ostrzeżenie o zbyt krótkiej zalecanej przerwie wymaga jawnego potwierdzenia niezmienionych danych, bez automatycznej zmiany wersji po odrzuconym zapisie. Formularz zachowuje szkic; po własnym udanym zapisie ponowna zmiana prowadzącego lub sali wymaga odświeżenia formularza. Testy akcji obejmują nowy zapis i publikację z zachowaniem przypisań. Lokalny odbiór migracji i pełnego stosu oraz odczytowa kontrola hostingu są osobnymi dowodami, opisanymi w [stanie produktu](PRODUCT-STATUS.md).
 
 ## Obecność po zakończeniu
 

@@ -4,7 +4,7 @@ Aplikacja do organizacji spacerów socjalizacyjnych i pracy behawiorysty. Stos: 
 
 ## MVP online do wspólnych testów
 
-Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login), na Vercel i Supabase we Frankfurcie. Baza ma **48 migracji** do `202610030012`. Przed aktualizacją wykonano kopię chmury i odtworzono ją na oddzielnej lokalnej bazie, następnie sprawdzono 35 brakujących migracji. Dotychczasowe konta administratora i behawiorystki zachowano.
+Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login), na Vercel i Supabase we Frankfurcie. Aktualizacja po feedbacku z 10.10.2026 jest opublikowana; baza ma **49 migracji** do `202610100001`. Przed tą zmianą wykonano świeżą kopię chmury z Auth, Storage i historią migracji, odtworzono ją w oddzielnej lokalnej bazie oraz sprawdzono nową migrację. Konta, hasła, terminy, ceny i postęp testerów zostały zachowane. [Przebieg publikacji i jej ograniczenia](docs/VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
 
 Pilot obejmuje prowadzącą, administratora i **dwa fikcyjne konta opiekunów**. [Scenariusze testów](docs/PILOT-TEST-SCENARIOS.md) obejmują profile, spacery, konsultacje, kursy, fitness, zalecenia, rozliczenia, karty, społeczność i skrzynki. Hasła testowe są przekazywane prywatnie, poza repozytorium. Wszystkie dane oznaczone DEMO są fikcyjne; wdrożenia nie resetują postępu testerów.
 
@@ -16,11 +16,11 @@ Lokalny odbiór 03.10.2026 objął **971 testów**, **45 pełnych scenariuszy ob
 
 ## Moduły aplikacji
 
-### Lokalna iteracja po feedbacku — 10.10.2026
+### Opublikowana aktualizacja po feedbacku — 10.10.2026
 
-Lokalny podgląd ma kalendarz tygodnia i miesiąca, osobny wybór prowadzącego oraz sali, całodniowe blokady i godziny pracy każdego członka zespołu. Faktyczne kolizje pozostają blokowane; krótsza preferowana przerwa wymaga potwierdzenia. Plany opieki pokazują jedno bieżące powiązanie i rozwijany wybór jego zmiany, a oferta ma filtry rodzaju zajęć. [Szczegóły kalendarza](docs/CALENDAR-MODULE.md), [opieki](docs/CARE-MODULE.md) i [oferty](docs/SERVICES-MODULE.md).
+Opublikowana aplikacja ma kalendarz tygodnia i miesiąca, osobny wybór prowadzącego oraz sali, całodniowe blokady i godziny pracy każdego członka zespołu. Faktyczne kolizje pozostają blokowane; krótsza preferowana przerwa wymaga potwierdzenia. Plany opieki pokazują jedno bieżące powiązanie i rozwijany wybór jego zmiany, a oferta ma filtry rodzaju zajęć. [Szczegóły kalendarza](docs/CALENDAR-MODULE.md), [opieki](docs/CARE-MODULE.md) i [oferty](docs/SERVICES-MODULE.md).
 
-Nową migrację `202610100001_calendar_team.sql` zastosowano **wyłącznie lokalnie**. Lokalna baza ma 49 migracji; opublikowany pilot nadal ma 48 i poprzedni interfejs. Ta iteracja nie zawiera wdrożenia ani resetu danych.
+Migrację `202610100001_calendar_team.sql` zastosowano lokalnie i atomowo w chmurze. Starsze terminy są jawnie nieprzypisane; prowadzących i sal nie odgadywano. Lokalny odbiór obejmuje 1017 testów oraz 45 unikalnych scenariuszy obu ról w dwóch przebiegach. Odczytowa kontrola hostingu objęła 40 stron obu ról i dwóch opiekunów, 39 wariantów responsywności oraz 16 kontroli prywatnego API, bez błędów skryptów lub konsoli i bez zapisów w modułach. [Aktualny stan i wyniki](docs/PRODUCT-STATUS.md).
 
 ### Plany pracy i postępy
 
@@ -126,7 +126,7 @@ Bez konfiguracji Supabase dostępny jest tylko `/demo` oraz informacja o braku k
 
 ## Baza danych i migracje
 
-**Pilot ma już komplet 48 migracji.** Kolejne zmiany chmury wykonuj po porównaniu historii i kopii. Do rozwoju używaj poleceń lokalnych opisanych w [LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md).
+**Pilot ma komplet 49 migracji do `202610100001_calendar_team.sql`.** Kolejne zmiany chmury wykonuj po porównaniu historii i kopii. Do rozwoju używaj poleceń lokalnych opisanych w [LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md).
 
 Użyj projektu Supabase przeznaczonego dla tej aplikacji. Dla istniejącej bazy sprawdź historię migracji i kopię bezpieczeństwa przed aktualizacją. Zastosuj wszystkie brakujące pliki z `supabase/migrations/` w kolejności nazw; nie wykonuj ponownie migracji już zapisanej w historii.
 

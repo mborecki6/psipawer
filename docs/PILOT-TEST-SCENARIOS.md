@@ -4,9 +4,9 @@ Wersja testowa działa pod [psipawer.vercel.app](https://psipawer.vercel.app/log
 
 ## Konta i sposób testowania
 
-**Lokalna iteracja 10.10.2026 nie jest jeszcze opublikowana.** Nowy kalendarz zespołu, miesiąc, kontekst planów i filtry oferty sprawdzamy na `http://localhost:3000`, z oddzielnymi kontami lokalnego Supabase. Konta pilota opisane poniżej dotyczą wyłącznie chmury.
+**Aktualizacja po feedbacku z 10.10.2026 jest opublikowana.** Nowy kalendarz zespołu, miesiąc, kontekst planów i filtry oferty są dostępne na [psipawer.vercel.app](https://psipawer.vercel.app/login). Chmura ma 49 migracji; dotychczasowe konta i postęp testerów są zachowane. Konta opisane poniżej dotyczą chmury; lokalny rozwój nadal korzysta z oddzielnego Supabase. [Wyniki kontroli wydania](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
 
-Przy lokalnym odbiorze: wybierz prowadzącego i salę nowego spotkania, sprawdź równoległy termin innej osoby, odrzucenie rzeczywistej kolizji, potwierdzenie krótszej przerwy, własne godziny oraz całodniowy urlop. W miesiącu przejdź do wybranego dnia. Z konsultacji, kursu i fitness otwórz zalecenia i sprawdź kontekst nowego szkicu; istniejący szkic z innym powiązaniem powinien wymagać jawnej zmiany. W ofercie przełącz filtry indywidualne/grupowe/karty. Starsze wpisy kalendarza pozostają do świadomego przypisania zespołu.
+Przy odbiorze tej wersji: wybierz prowadzącego i opcjonalnie salę nowego spotkania, sprawdź równoległy termin innej osoby, odrzucenie rzeczywistej kolizji, potwierdzenie krótszej przerwy, własne godziny oraz całodniowy urlop. Sale dodaje się świadomie w ustawieniach; migracja nie tworzy ich automatycznie. W miesiącu przejdź do wybranego dnia. Z konsultacji, kursu i fitness otwórz zalecenia i sprawdź kontekst nowego szkicu; istniejący szkic z innym powiązaniem powinien wymagać jawnej zmiany. W ofercie przełącz filtry indywidualne/grupowe/karty. Starsze wpisy kalendarza pozostają do świadomego przypisania zespołu i do tego czasu mają wspólną zajętość.
 
 Prowadząca korzysta z dotychczasowego konta `asiakostrzanowska@gmail.com`, administrator z `mborecki6+1@gmail.com`. Hasła tych kont pozostają bez zmian. Dwa oddzielne konta opiekunów to `demo.opiekun@psipawer.test` i `demo.opiekun2@psipawer.test`. Wygenerowane hasła oraz kod fikcyjnej karty przekazujemy w prywatnym pliku, poza repozytorium i wdrożeniem.
 
