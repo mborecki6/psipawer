@@ -6,6 +6,8 @@ export function reportDataReadError(
   operation:
     | "calendar.next"
     | "calendar.settings"
+    | "calendar.setup"
+    | "calendar.staff_preferences"
     | "work.queue"
     | "work.items"
     | "work.counts"

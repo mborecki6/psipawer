@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import type { ActionState } from "@/components/action-form";
+import { calendarWrite, calendarWarning } from "../calendar/write";
 import {
   fitnessPackageSchema,
   fitnessRequestSchema,
@@ -11,6 +12,12 @@ import {
 } from "./schemas";
 export type FitnessActionState = ActionState & { version?: number };
 const allowed = new Set([
+  "Sprawdź prowadzącego i miejsce zajęć.",
+  "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
+  "Wybierz aktywnego członka zespołu.",
+  "Wybierz aktywne miejsce.",
+  "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
+  "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
   "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
   "Oferta zmieniła się. Odśwież formularz i sprawdź cenę.",
   "Ten pakiet nie jest dostępny do zgłoszenia.",
@@ -114,14 +121,21 @@ export async function saveFitnessSession(
     };
   const p = parsed.data;
   try {
-    const { data, error } = await db.rpc("save_fitness_session", {
-      p_id: p.id,
-      p_expected_version: p.expected_version,
-      p_starts_at: p.starts_at,
-      p_location: p.location,
-      p_note: p.note,
-      p_request_id: p.request_id,
-    });
+    const { data, error } = await calendarWrite(
+      db,
+      "save_fitness_session",
+      {
+        p_id: p.id,
+        p_expected_version: p.expected_version,
+        p_starts_at: p.starts_at,
+        p_location: p.location,
+        p_note: p.note,
+        p_request_id: p.request_id,
+      },
+      form,
+    );
+    const warning = calendarWarning(error);
+    if (warning) return warning;
     if (error || !Number.isInteger(data) || data <= p.expected_version)
       return failure(error?.message);
     refresh();

@@ -1,11 +1,27 @@
 import { getServices, getService } from "./queries";
 import { ServicesView, ServiceDetailView } from "./views";
-export async function AdminServicesPage() {
-  return <ServicesView services={(await getServices(true)).services} admin />;
-}
-export async function ClientServicesPage() {
+import { serviceFilter } from "./catalogue";
+type CataloguePageProps = {
+  searchParams: Promise<{ category?: string | string[] }>;
+};
+export async function AdminServicesPage({ searchParams }: CataloguePageProps) {
+  const filter = serviceFilter((await searchParams).category);
   return (
-    <ServicesView services={(await getServices()).services} admin={false} />
+    <ServicesView
+      services={(await getServices(true)).services}
+      admin
+      filter={filter}
+    />
+  );
+}
+export async function ClientServicesPage({ searchParams }: CataloguePageProps) {
+  const filter = serviceFilter((await searchParams).category);
+  return (
+    <ServicesView
+      services={(await getServices()).services}
+      admin={false}
+      filter={filter}
+    />
   );
 }
 export async function ServicePage({

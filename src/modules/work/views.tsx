@@ -19,6 +19,12 @@ function WorkRow({ item, today }: { item: WorkItem; today: string }) {
     ["followups", "fitness"].includes(item.kind) &&
     item.due_on !== null &&
     item.due_on < today;
+  const title =
+    item.kind === "profiles"
+      ? item.title === "Nowy profil do oceny"
+        ? "Nowy pies do kwalifikacji"
+        : "Kwalifikacja do ponownego sprawdzenia"
+      : item.title;
   return (
     <Link className={styles.row} href={workHref(item)}>
       <div className={`${styles.mark} ${overdue ? styles.overdue : ""}`}>
@@ -32,7 +38,7 @@ function WorkRow({ item, today }: { item: WorkItem; today: string }) {
             item.due_on === today && <strong>Na dziś</strong>}
         </div>
         <h3>
-          {item.dog_name} · {item.title}
+          {item.dog_name} · {title}
         </h3>
         <p>
           {item.due_on
@@ -105,8 +111,8 @@ export function WorkQueueView({
         </span>
         <h2>Sprawy do obsłużenia</h2>
         <p className="muted">
-          Zgłoszenia, odpowiedzi i kontakty kontrolne. Obsłuż sprawę w jej
-          karcie, a zniknie z tej listy.
+          Zgłoszenia, kwalifikacje psów, odpowiedzi i kontakty kontrolne. Obsłuż
+          sprawę w jej karcie, a zniknie z tej listy.
         </p>
       </header>
       <nav className={styles.filters} aria-label="Rodzaj sprawy">
@@ -130,6 +136,32 @@ export function WorkQueueView({
         ))}
       </nav>
       <article className="card pad">
+        {filter === "profiles" && (
+          <p className="muted">
+            Sprawdź informacje o psie i zdecyduj, czy może bezpiecznie brać
+            udział w zajęciach grupowych. To kwalifikacja psa do zajęć.
+          </p>
+        )}
+        {filter === "followups" && (
+          <p className="muted">
+            To zadania dla prowadzącej: skontaktuj się z opiekunem i sprawdź
+            postępy. Termin przypomina zespołowi o kontakcie w aplikacji; nie
+            wysyła opiekunowi prośby o umówienie kolejnej wizyty.
+          </p>
+        )}
+        {filter === "walks" && (
+          <p className="muted">
+            Zgłoszenia na przyszłe spacery oczekujące na Twoją decyzję. Po
+            przyjęciu lub odmowie znikają z tej kolejki; pozostają w karcie
+            spaceru.
+          </p>
+        )}
+        {filter === "progress" && (
+          <p className="muted">
+            Nowe odpowiedzi opiekunów do opublikowanych zaleceń. Oznacz wpis
+            jako przeczytany po jego sprawdzeniu, aby zamknąć sprawę w kolejce.
+          </p>
+        )}
         <div className={styles.list}>
           {items.map((item) => (
             <WorkRow key={item.kind + item.id} item={item} today={today} />
@@ -204,6 +236,10 @@ export function FollowUpView({
         <p className="muted">
           Plan: {item.care_plan_versions.title} · wersja{" "}
           {item.care_plan_versions.revision}
+        </p>
+        <p className="muted">
+          Zadanie dla prowadzącej na wskazany dzień. Skontaktuj się z opiekunem
+          i zapisz ustalenia; termin nie rezerwuje wizyty w kalendarzu.
         </p>
         <div className={styles.links}>
           <Link
@@ -287,7 +323,8 @@ export function FollowUpArchiveView({
       <header className={styles.header}>
         <h2>Kontakty kontrolne i historia</h2>
         <p className="muted">
-          Zaplanowane, zakończone i zastąpione przez kolejne wersje planu.
+          Zadania kontaktowe dla prowadzącej: zaplanowane, zakończone i
+          zastąpione przez kolejne wersje planu.
         </p>
         {dogId && (
           <Link className="ghost-button" href="/admin/work/follow-ups">

@@ -101,6 +101,9 @@ test("library material → personal plan → later material edits and stale card
       .fill(staleBody);
     await staff.goto(`/admin/dogs/${dog}/care`);
     const planForm = await careEditor(staff);
+    await expect(
+      planForm.getByRole("region", { name: "Powiązanie planu", exact: true }),
+    ).toContainText("Ogólny plan pracy");
     const followUp = careDay(14);
     await planForm
       .getByLabel("Termin kontaktu kontrolnego (opcjonalnie)")

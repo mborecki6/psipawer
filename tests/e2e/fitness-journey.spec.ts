@@ -9,6 +9,7 @@ import {
   login,
 } from "./local-fixtures";
 import { warsawDateTimeInput } from "../../src/lib/time";
+import { careEditor, careSourcePicker } from "./care-journey";
 test.use({ trace: "off" });
 const service = "60000000-0000-4000-8000-000000000006";
 async function fixtures(baseURL: string | undefined) {
@@ -882,6 +883,17 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
       .getByText("Przygotuj zalecenia po spotkaniu fitness", { exact: true })
       .click();
     await carePanel.getByRole("link", { name: /Spotkanie 1 ·/ }).click();
+    const meetingCare = await careEditor(staffPage);
+    await expect(
+      meetingCare.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Spotkanie 1");
+    await expect(
+      meetingCare.getByLabel("Pakiet fitness, którego dotyczą zalecenia"),
+    ).toBeHidden();
+    await careSourcePicker(meetingCare);
     await expect(
       staffPage.getByLabel("Pakiet fitness, którego dotyczą zalecenia"),
     ).toHaveValue(id);
@@ -953,6 +965,14 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     await carePanel
       .getByRole("link", { name: "Otwórz szkic zaleceń fitness", exact: true })
       .click();
+    const completedCare = await careEditor(staffPage);
+    await expect(
+      completedCare.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Spotkanie 1");
+    await careSourcePicker(completedCare);
     await expect(
       staffPage.getByLabel("Zalecenia dla opiekuna", { exact: true }),
     ).toHaveValue(draft);
@@ -1025,6 +1045,20 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
         { exact: true },
       ),
     ).toBeVisible();
+    const packageCare = await careEditor(staffPage);
+    await expect(
+      packageCare.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Spotkanie 1");
+    await expect(
+      packageCare.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    ).toHaveValue(published);
+    const savedVersion = await packageCare
+      .locator('input[name="expected_version"]')
+      .inputValue();
+    await careSourcePicker(packageCare);
     await expect(staffPage.getByLabel("Zakres zaleceń fitness")).toHaveValue(
       meeting.id,
     );
@@ -1037,6 +1071,18 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     await expect(staffPage.getByLabel("Zakres zaleceń fitness")).toHaveValue(
       "",
     );
+    await expect(
+      packageCare.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Plan całego pakietu");
+    await expect(
+      packageCare.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    ).toHaveValue(published);
+    await expect(
+      packageCare.locator('input[name="expected_version"]'),
+    ).toHaveValue(savedVersion);
     await staffPage
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Plan całego pakietu fitness");

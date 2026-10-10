@@ -148,6 +148,9 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       .replace(" ", "T");
     const location = "Fikcyjna rozmowa do próby historycznej kwoty";
     const scheduleNote = "Termin uzgodniony przed zapisaniem kwoty";
+    await staff
+      .getByLabel("Prowadzący", { exact: true })
+      .selectOption(leader.id);
     await staff.getByLabel("Termin (czas polski)").fill(input);
     await staff.getByLabel("Forma spotkania").selectOption("online");
     await staff.getByLabel("Miejsce lub instrukcja połączenia").fill(location);
@@ -295,6 +298,9 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     ).toEqual([]);
 
     await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(input);
+    await expect(staff.getByLabel("Prowadzący", { exact: true })).toHaveValue(
+      leader.id,
+    );
     await expect(staff.getByLabel("Forma spotkania")).toHaveValue("online");
     await expect(
       staff.getByLabel("Miejsce lub instrukcja połączenia"),
@@ -308,6 +314,16 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     await expect(
       staff.getByRole("status").filter({ hasText: "Termin zapisany" }),
     ).toBeVisible();
+    expect(
+      await checked(
+        db
+          .from("calendar_assignments")
+          .select("assigned_staff_id")
+          .eq("kind", "consultation")
+          .eq("appointment_id", id)
+          .single(),
+      ),
+    ).toEqual({ assigned_staff_id: leader.id });
     const balance = () =>
       checked(
         ownDb

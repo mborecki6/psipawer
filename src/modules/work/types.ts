@@ -2,7 +2,7 @@ export const workKinds = {
   followups: "Kontakty kontrolne",
   consultations: "Konsultacje",
   progress: "Odpowiedzi o postępach",
-  profiles: "Profile do oceny",
+  profiles: "Psy do kwalifikacji",
   walks: "Zapisy na spacery",
   fitness: "PSI FITNESS",
 };

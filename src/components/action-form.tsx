@@ -9,11 +9,17 @@ import {
   type InputHTMLAttributes,
 } from "react";
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { CalendarWarning } from "@/modules/calendar/warning";
 const FieldErrors = createContext<Record<string, string[]>>({});
 export type ActionState = {
   error?: string;
   success?: string;
   fields?: Record<string, string[]>;
+  calendarWarning?: {
+    message: string;
+    signature: string;
+    details?: string[];
+  };
 };
 export type FormAction = (
   previous: ActionState,
@@ -46,6 +52,7 @@ export function ActionForm({
       // application error. Cancel that reset so corrections don't erase edits.
       keepValuesOnReset.current = Boolean(
         result.error ||
+        result.calendarWarning ||
         Object.values(result.fields || {}).some((errors) => errors.length),
       );
       return result;
@@ -112,6 +119,10 @@ export function ActionForm({
           </div>
         </div>
       )}
+      <CalendarWarning
+        warning={state.calendarWarning}
+        pending={pending || disabled}
+      />
       <div aria-live="polite" aria-atomic="true" className="form-status">
         {state.success && !hasError && (
           <div role="status" className="alert green form-feedback">

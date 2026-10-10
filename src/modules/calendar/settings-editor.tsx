@@ -2,7 +2,11 @@
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
-import { saveCalendarSettings, type BlockState } from "./actions";
+import {
+  saveCalendarSettings,
+  saveCalendarStaffSettings,
+  type BlockState,
+} from "./actions";
 import type { CalendarSettings } from "./types";
 import styles from "./calendar.module.css";
 
@@ -20,8 +24,10 @@ function timeLabel(minutes: number) {
 }
 export function CalendarSettingsEditor({
   initial,
+  staffId,
 }: {
   initial: CalendarSettings;
+  staffId?: string | null;
 }) {
   const hydrated = useHydrated();
   const form = usePersistentForm();
@@ -34,7 +40,9 @@ export function CalendarSettingsEditor({
   });
   const [state, action, pending] = useActionState(
     async (previous: BlockState, form: FormData) => {
-      const next = await saveCalendarSettings(previous, form);
+      const next = staffId
+        ? await saveCalendarStaffSettings(previous, form)
+        : await saveCalendarSettings(previous, form);
       return { ...next, version: next.version ?? previous.version };
     },
     { version: initial.version },
@@ -56,12 +64,42 @@ export function CalendarSettingsEditor({
         value={String(values.hours_enabled)}
       />
       <input type="hidden" name="week" value={JSON.stringify(values.week)} />
-      <fieldset className={styles.fields} disabled={!hydrated || pending}>
+      {staffId && (
+        <>
+          <input type="hidden" name="staff_id" value={staffId} />
+          <input
+            type="hidden"
+            name="use_default"
+            value={String(Boolean(values.use_default))}
+          />
+          <label className={styles.dayToggle}>
+            <input
+              type="checkbox"
+              checked={Boolean(values.use_default)}
+              disabled={!hydrated || pending}
+              onChange={(event) =>
+                setValues((v) => ({ ...v, use_default: event.target.checked }))
+              }
+            />
+            Korzystaj z domyślnego rytmu zespołu
+          </label>
+          {values.use_default && (
+            <p className="muted">
+              Godziny i przerwy tej osoby podążają za ustawieniami domyślnymi.
+              Wyłącz tę opcję, aby ustalić indywidualny tydzień.
+            </p>
+          )}
+        </>
+      )}
+      <fieldset
+        className={styles.fields}
+        disabled={!hydrated || pending}
+        hidden={Boolean(staffId && values.use_default)}
+      >
         <legend className="sr-only">Godziny pracy i przerwy</legend>
         <p className="muted">
-          Przerwy rezerwują czas na przygotowanie lub dojazd przy spacerach,
-          konsultacjach, kursach i fitness. Wpisane spotkania zachowują swoją
-          godzinę.
+          Przerwy określają zalecany czas na przygotowanie lub dojazd. Krótsza
+          przerwa wywoła ostrzeżenie z możliwością potwierdzenia terminu.
         </p>
         {(["before_minutes", "after_minutes"] as const).map((key) => (
           <div className="field" key={key}>
@@ -95,10 +133,15 @@ export function CalendarSettingsEditor({
           Pilnuj godzin pracy
         </label>
         <p className="muted">
-          Stały tydzień w czasie polskim. Całe spotkanie wraz z przerwami musi
-          zmieścić się w godzinach jednego dnia. Urlop lub wyjątkową przerwę
-          dodaj jako blokadę czasu.
+          Stały tydzień w czasie polskim. Przy włączonej kontroli spotkanie musi
+          zmieścić się w godzinach jednego dnia. Urlop dodaj jako blokadę czasu.
         </p>
+        {!values.hours_enabled && (
+          <p className="alert yellow">
+            Kontrola godzin jest wyłączona. Zaznaczone dni wolne i godziny są
+            propozycją — nie ograniczają umawiania zajęć.
+          </p>
+        )}
         <div className={styles.workingWeek}>
           {values.week.map((day) => (
             <div key={day.weekday} className={styles.workingDay}>
@@ -157,7 +200,11 @@ export function CalendarSettingsEditor({
                   ))}
                 </div>
               ) : (
-                <small className="muted">Dzień wolny</small>
+                <small className="muted">
+                  {values.hours_enabled
+                    ? "Dzień wolny — nowe spotkania będą blokowane"
+                    : "Proponowany dzień wolny · kontrola wyłączona"}
+                </small>
               )}
             </div>
           ))}

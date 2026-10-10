@@ -3,13 +3,14 @@ import { notFound } from "next/navigation";
 import { NewWalk } from "@/components/walks";
 import { requireSession } from "@/lib/auth/session";
 import { uuid } from "@/lib/validation/schemas";
+import { getBookingChoices } from "@/modules/calendar/booking-queries";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { db } = await requireSession("admin");
+  const { db, user } = await requireSession("admin");
   const { id } = await params;
   if (!uuid.safeParse(id).success) notFound();
   const { data: walk, error } = await db
@@ -35,6 +36,7 @@ export default async function Page({
   const [
     { data: location, error: locationError },
     { count, error: countError },
+    booking,
   ] = await Promise.all([
     db
       .from("walk_private_details")
@@ -45,6 +47,7 @@ export default async function Page({
       .from("walk_registrations")
       .select("id", { count: "exact", head: true })
       .eq("walk_id", id),
+    getBookingChoices(db, user.id, { kind: "walk", ids: [id] }),
   ]);
   if (locationError || countError)
     throw new Error("Nie udało się odczytać szczegółów spaceru.");
@@ -55,6 +58,7 @@ export default async function Page({
       </Link>
       <NewWalk
         editing
+        booking={booking}
         hasRegistrations={Boolean(count)}
         initial={{ ...walk, ...location }}
       />

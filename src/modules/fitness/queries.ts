@@ -2,6 +2,7 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/session";
+import { getBookingChoices } from "@/modules/calendar/booking-queries";
 import { allRows } from "@/lib/data/queries";
 import { getServices } from "@/modules/services/queries";
 import type { PaymentRecord } from "@/lib/finance";
@@ -59,7 +60,7 @@ export async function getFitnessRequestData() {
 }
 export async function getFitnessPackage(id: string, historyPage: number) {
   if (!z.uuid().safeParse(id).success) notFound();
-  const { db, role } = await requireSession();
+  const { db, role, user } = await requireSession();
   const { data: pack, error } = await db
     .from("fitness_packages")
     .select(columns)
@@ -114,7 +115,15 @@ export async function getFitnessPackage(id: string, historyPage: number) {
     throw new Error(
       "Nie udało się pobrać spotkań, historii lub rozliczenia fitness.",
     );
+  const booking =
+    role === "admin"
+      ? await getBookingChoices(db, user.id, {
+          kind: "fitness",
+          ids: sessions.data.map((s) => s.id),
+        })
+      : undefined;
   return {
+    ...(booking ? { booking } : {}),
     role,
     pack: pack as unknown as FitnessPackage,
     sessions: sessions.data as unknown as FitnessSession[],

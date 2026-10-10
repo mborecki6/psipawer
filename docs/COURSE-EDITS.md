@@ -14,6 +14,10 @@ Każdy zapis ma identyfikator i własne potwierdzenie w `course_settings_receipt
 
 Starsza karta nie nadpisuje nowej nazwy ani limitu; zachowuje wszystkie wpisane pola. Potwierdzenie poprzedniego zapisu znika po zmianie pól i podczas zapisu. Odnośnik **Odśwież dane** pobiera nową stronę i świeże wersje formularzy. Samo odświeżenie danych po innej akcji nie podnosi wersji edytora z niezapisanymi zmianami.
 
+## Planowanie spotkań — aktualizacja lokalna 10.10.2026
+
+Lokalna aktualizacja planowania z 10.10.2026: przy tworzeniu cyklu prowadząca wybiera prowadzącego i opcjonalnie salę dla wszystkich nowych spotkań. Edytor pojedynczego spotkania pozwala później zmienić jego przypisanie; każde spotkanie ma osobną wersję. Publikacja zachowuje przypisania poszczególnych spotkań. Wspólny [kalendarz zespołu](CALENDAR-MODULE.md) sprawdza kolizje i godziny pracy. Ostrzeżenie o zbyt krótkiej zalecanej przerwie wymaga jawnego potwierdzenia niezmienionych danych, bez automatycznej zmiany wersji po odrzuconym zapisie. Formularz zachowuje szkic; po własnym udanym zapisie ponowna zmiana prowadzącego lub sali wymaga odświeżenia formularza. Testy akcji obejmują nowy zapis i publikację z zachowaniem przypisań. Odbiór lokalnej migracji i całego stosu jest osobnym etapem; produkcji nie aktualizowano.
+
 ## Obecność po zakończeniu
 
 Przy zakończonym spotkaniu prowadząca otwiera **Obecności uczestników**. Istniejące wpisy można skorygować na obecny, nieobecny lub usprawiedliwiony, z wymaganym powodem. Korekta działa także po zakończeniu całego cyklu i dla historycznie zapisanego uczestnika, który później zrezygnował. Nie tworzy obecności, której wcześniej nie zapisano, i nie dotyczy odwołanego spotkania.

@@ -1,8 +1,8 @@
-import { CalendarPage } from "@/modules/calendar/pages";
+import { CalendarPage, type CalendarSearch } from "@/modules/calendar/pages";
 export default function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<CalendarSearch>;
 }) {
   return <CalendarPage admin searchParams={searchParams} />;
 }

@@ -4,7 +4,9 @@ Moduł działa w opublikowanym pilocie od 06.10.2026. Migracje `202609190002_wor
 
 ## Proces
 
-Panel **Do zrobienia** (`/admin/work`), dostępny z pulpitu i sekcji **Zajęcia**, zbiera sześć rodzajów spraw: kontakty kontrolne, nowe zgłoszenia konsultacji, nieprzeczytane odpowiedzi o postępach, profile psów do oceny, oczekujące zgłoszenia na przyszłe spacery i pakiety PSI FITNESS wymagające działania. Każda sprawa prowadzi bezpośrednio do miejsca obsługi. Odczyt listy niczego nie oznacza jako zakończone; zmiana w źródłowym module usuwa rozwiązaną sprawę z kolejki.
+Panel **Do zrobienia** (`/admin/work`), dostępny z pulpitu i sekcji **Zajęcia**, zbiera sześć rodzajów spraw: kontakty kontrolne, nowe zgłoszenia konsultacji, nieprzeczytane odpowiedzi o postępach, psy wymagające kwalifikacji, oczekujące zgłoszenia na przyszłe spacery i pakiety PSI FITNESS wymagające działania. Każda sprawa prowadzi bezpośrednio do miejsca obsługi. Odczyt listy niczego nie oznacza jako zakończone; zmiana w źródłowym module usuwa rozwiązaną sprawę z kolejki.
+
+Lokalna iteracja po feedbacku z 10.10.2026 używa etykiety **Psy do kwalifikacji**. Wyjaśnienie tego filtra dotyczy sprawdzenia bezpieczeństwa udziału psa w zajęciach grupowych. Filtr kontaktów i karta zadania wyraźnie opisują działanie prowadzącej, a nie automatyczną prośbę do opiekuna o rezerwację. Filtr spacerów obejmuje zgłoszenia na przyszłe wydarzenia oczekujące na decyzję; przyjęte i odrzucone pozostają w karcie spaceru. To lokalne zmiany interfejsu, bez migracji i bez zmiany sposobu wysyłania przypomnień.
 
 Kontakty po terminie oraz na dziś pojawiają się przed pozostałymi sprawami. Kontakty na późniejsze dni są za bieżącymi zgłoszeniami. Listę można filtrować; ma po 20 pozycji na stronę. Liczniki dotyczą całej kolejki, także jeśli odpowiedzi jest więcej niż limit jednej odpowiedzi API. Pulpit pokazuje pierwsze cztery sprawy i odsyła do pełnej listy.
 

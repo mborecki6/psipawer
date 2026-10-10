@@ -18,6 +18,20 @@ export const blockSchema = z
     title: z.string().trim().min(3).max(160),
     starts_at: datetime,
     ends_at: datetime,
+    assigned_staff_id: z
+      .union([z.uuid(), z.literal("")])
+      .optional()
+      .transform((value) => value || null),
+    resource_id: z
+      .union([z.uuid(), z.literal("")])
+      .optional()
+      .transform((value) => value || null),
+    expected_assignment_version: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(2147483646)
+      .default(0),
   })
   .refine(
     (v) =>
@@ -31,6 +45,24 @@ export const blockSchema = z
 export const cancelBlockSchema = z.object({
   id: z.uuid(),
   expected_version: z.coerce.number().int().min(1).max(2147483646),
+});
+export const calendarAssignmentSchema = z.object({
+  kind: z.enum(["walk", "consultation", "block", "course", "fitness"]),
+  appointment_id: z.uuid(),
+  expected_version: z.coerce.number().int().min(1).max(2147483646),
+  assigned_staff_id: z
+    .union([z.uuid(), z.literal("")])
+    .transform((value) => value || null),
+  resource_id: z
+    .union([z.uuid(), z.literal("")])
+    .transform((value) => value || null),
+});
+export const calendarResourceSchema = z.object({
+  id: z.uuid(),
+  expected_version: z.coerce.number().int().min(0).max(2147483646),
+  name: z.string().trim().min(3).max(160),
+  exclusive: z.enum(["true", "false"]).transform((value) => value === "true"),
+  active: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
 
 const workingDay = z
@@ -77,3 +109,11 @@ export const calendarSettingsSchema = z
       ),
   })
   .refine((v) => !v.hours_enabled || v.week.some((d) => d.enabled));
+export const calendarStaffSettingsSchema = calendarSettingsSchema.and(
+  z.object({
+    staff_id: z.uuid(),
+    use_default: z
+      .enum(["true", "false"])
+      .transform((value) => value === "true"),
+  }),
+);

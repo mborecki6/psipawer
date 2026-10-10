@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { dateLabel } from "@/lib/domain";
 import type { Appointment } from "./types";
+import { calendarAppointmentHref } from "./dates";
 export function NextAppointment({
   appointment,
   admin,
@@ -29,6 +30,12 @@ export function NextAppointment({
         {appointment?.location && (
           <p style={{ overflowWrap: "anywhere" }}>{appointment.location}</p>
         )}
+        {admin && appointment?.assigned_staff_name && (
+          <p>
+            Prowadzący: {appointment.assigned_staff_name}
+            {appointment.resource_name ? ` · ${appointment.resource_name}` : ""}
+          </p>
+        )}
         <div className="hero-actions">
           {appointment && (
             <Link
@@ -40,7 +47,11 @@ export function NextAppointment({
           )}
           <Link
             className={appointment ? "ghost-button" : "primary-button"}
-            href={`${base}/calendar`}
+            href={
+              appointment
+                ? calendarAppointmentHref(base, appointment)
+                : `${base}/calendar`
+            }
           >
             Otwórz kalendarz →
           </Link>

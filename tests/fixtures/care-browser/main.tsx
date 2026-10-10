@@ -9,6 +9,8 @@ import type {
   CarePlan,
   CareProgress,
   CareTemplate,
+  CareCourse,
+  CareFitness,
 } from "@/modules/care/types";
 import "@/app/globals.css";
 
@@ -66,7 +68,48 @@ const meetings = [
     status: "scheduled" as const,
   },
 ];
-if (search.has("meeting")) plan.consultation_id = meetings[0].id;
+const course: CareCourse = {
+  id: "81000000-0000-4000-8000-000000000001",
+  course_id: "81000000-0000-4000-8000-000000000002",
+  title: "Kurs spokojnych spacerów",
+  sessions: [
+    {
+      id: "81000000-0000-4000-8000-000000000003",
+      ordinal: 1,
+      starts_at: "2026-09-18T10:00:00Z",
+      status: "completed",
+    },
+    {
+      id: "81000000-0000-4000-8000-000000000004",
+      ordinal: 2,
+      starts_at: "2026-10-01T10:00:00Z",
+      status: "scheduled",
+    },
+  ],
+};
+const fitness: CareFitness = {
+  id: "82000000-0000-4000-8000-000000000001",
+  title: "PSI FITNESS — pakiet 4 spotkań",
+  sessions: [
+    {
+      id: "82000000-0000-4000-8000-000000000002",
+      ordinal: 1,
+      starts_at: "2026-09-18T10:00:00Z",
+      status: "completed",
+    },
+    {
+      id: "82000000-0000-4000-8000-000000000003",
+      ordinal: 2,
+      starts_at: "2026-10-01T10:00:00Z",
+      status: "scheduled",
+    },
+  ],
+};
+if (search.get("long") === "1")
+  fitness.title = "Długi tytuł pakietu fitness ".repeat(8);
+if (search.has("meeting") || search.get("saved") === "consultation")
+  plan.consultation_id = meetings[0].id;
+if (search.get("saved") === "course") plan.course_enrollment_id = course.id;
 const requested =
   search.get("meeting") === "scheduled"
     ? meetings[1]
@@ -134,6 +177,24 @@ createRoot(document.getElementById("root")!).render(
           role={role}
           consultations={meetings}
           requestedConsultation={requested}
+          courses={[course]}
+          requestedCourse={search.has("course") ? course : null}
+          requestedSession={
+            search.get("course") === "scheduled"
+              ? course.sessions[1].id
+              : search.get("course") === "completed"
+                ? course.sessions[0].id
+                : undefined
+          }
+          fitness={[fitness]}
+          requestedFitness={search.has("fitness") ? fitness : null}
+          requestedFitnessSession={
+            search.get("fitness") === "scheduled"
+              ? fitness.sessions[1].id
+              : search.get("fitness") === "completed"
+                ? fitness.sessions[0].id
+                : undefined
+          }
           dog={dog}
           latest={empty ? null : plan}
           draft={

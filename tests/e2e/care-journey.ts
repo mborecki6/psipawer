@@ -1,4 +1,9 @@
-import { expect, type Browser, type Page } from "@playwright/test";
+import {
+  expect,
+  type Browser,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import {
   account,
   checked,
@@ -121,14 +126,28 @@ export async function careFixture(
 }
 
 export async function careEditor(page: Page) {
-  const disclosure = page.locator("#szkic details");
+  // The editor and its source picker have separate disclosure controls.
+  const disclosure = page.locator("#szkic > details");
   if (
     !(await disclosure.evaluate(
       (element) => (element as HTMLDetailsElement).open,
     ))
   )
-    await disclosure.locator("summary").click();
+    await disclosure.locator(":scope > summary").click();
   return page.locator("#szkic form");
+}
+
+export async function careSourcePicker(form: Locator) {
+  const disclosure = form.locator("details").filter({
+    hasText: "Zmień powiązanie planu",
+  });
+  if (
+    !(await disclosure.evaluate(
+      (element) => (element as HTMLDetailsElement).open,
+    ))
+  )
+    await disclosure.locator(":scope > summary").click();
+  return disclosure;
 }
 
 export async function publishCarePlan(

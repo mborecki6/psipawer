@@ -1,5 +1,9 @@
 # Plany pracy i postępy — pierwszy etap MVP
 
+Aktualizacja lokalna 10.10.2026 po feedbacku behawiorystki: edytor pokazuje jedno czytelne powiązanie bieżącego planu. Wejście z konsultacji, kursu lub fitness wybiera to źródło tylko wtedy, gdy pies nie ma zapisanego szkicu. Inny istniejący szkic zachowuje treść, źródło i wersję; przepięcie wymaga jawnego przycisku. Przełączenie między kategoriami usług w zwiniętej sekcji „Zmień powiązanie planu” jedynie przegląda dostępne usługi, a dopiero wskazanie konkretnej usługi zmienia powiązanie. Wybranie „Ogólny plan pracy” jawnie usuwa powiązanie. Nadal można wybrać cały kurs/pakiet albo pojedyncze spotkanie. Zalecenia po spotkaniu pozostają dostępne do publikacji dopiero po jego zakończeniu. Model jednego szkicu dla psa i reguły serwerowe są bez zmian; ta iteracja nie wymaga migracji.
+
+Test przeglądarkowy na fikcyjnych danych obejmuje kontekst konsultacji, kursu i fitness, przepięcie istniejącego szkicu z zachowaniem tekstu i wersji, błąd oraz ponowienie zapisu, przejście między całym cyklem i pojedynczym spotkaniem oraz 44 warianty układu. Nie łączy się z bazą ani produkcją. Lokalna aktualizacja nie jest wdrożeniem.
+
 Stan: implementacja lokalna, aktualizacja 02.10.2026. Moduł wymaga wszystkich migracji w kolejności, w tym bazowej `202609180001_care_plans.sql` oraz `202610020007_care_template_retries.sql`. Poprawkę ponowień zastosowano wyłącznie lokalnie. Nie zmieniano bazy w chmurze ani wdrożenia aplikacji.
 
 Aktualizacja 03.10.2026: [zalecenia fitness](FITNESS-MODULE.md#zalecenia-całego-pakietu-i-po-spotkaniu) zachowują jawny pakiet i opcjonalne spotkanie. Prowadząca może przygotować szkic przed umówionym spotkaniem, opublikować go po zakończeniu i osobno wybrać plan całego pakietu. Wejście z innego źródła nie zmienia zapisanego szkicu; wcześniejsze publikacje zachowują własny kontekst. Migracja `202610030008` jest zastosowana wyłącznie lokalnie. Dotychczasowe plany, odpowiedzi, powiadomienia i kontakty kontrolne korzystają z tego samego modułu.
@@ -23,13 +27,13 @@ Kod znajduje się w `src/modules/care/`. Strony Next.js są cienkimi punktami we
 
 `care_practices` ma celowo ograniczenie do jednej praktyki. Nowe rekordy wskazują praktykę, ale uprawnienia zespołu nadal korzystają z istniejącego globalnego `admin`. Nie jest to gotowy model wielu niezależnych praktyk. Ograniczenie można zdjąć dopiero wraz z pełną migracją ról, danych i dostępu do plików.
 
-| Tabela | Własność i widoczność |
-| --- | --- |
-| `care_templates` | Biblioteka praktyki, dostępna tylko prowadzącym |
-| `care_drafts` | Jeden edytowany szkic dla psa, tylko dla prowadzących |
-| `care_plan_versions` | Niezmienne publikacje, dostępne prowadzącym i właściwemu opiekunowi |
-| `care_progress` | Odpowiedzi opiekuna, widoczne dla autora nadal opiekującego się psem oraz prowadzących |
-| `care_events` | Trwały zapis zdarzeń publikacji i odpowiedzi, bez treści dokumentów i bez odczytu przez sesję użytkownika |
+| Tabela               | Własność i widoczność                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `care_templates`     | Biblioteka praktyki, dostępna tylko prowadzącym                                                           |
+| `care_drafts`        | Jeden edytowany szkic dla psa, tylko dla prowadzących                                                     |
+| `care_plan_versions` | Niezmienne publikacje, dostępne prowadzącym i właściwemu opiekunowi                                       |
+| `care_progress`      | Odpowiedzi opiekuna, widoczne dla autora nadal opiekującego się psem oraz prowadzących                    |
+| `care_events`        | Trwały zapis zdarzeń publikacji i odpowiedzi, bez treści dokumentów i bez odczytu przez sesję użytkownika |
 
 Zapisy przechodzą przez kontrolowane funkcje SQL. Konto aplikacyjne nie może bezpośrednio edytować tabel modułu. Funkcje sprawdzają uprawnienia niezależnie od formularzy. Publikacja blokuje rekord psa i sprawdza wersję szkicu, a zapis zdarzenia jest częścią tej samej transakcji. Ponowienie tej samej publikacji lub odpowiedzi nie tworzy kolejnego zdarzenia.
 

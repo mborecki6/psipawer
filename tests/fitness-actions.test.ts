@@ -119,13 +119,18 @@ it("converts the Warsaw date and strips forged duration/price when scheduling", 
     ).version,
   ).toBe(4);
   expect(mocks.session).toHaveBeenCalledWith("admin");
-  expect(mocks.rpc).toHaveBeenCalledWith("save_fitness_session", {
-    p_id: id,
-    p_expected_version: 3,
-    p_starts_at: "2028-01-15T13:00:00.000Z",
-    p_location: "Próbny park",
-    p_note: "Uzgodniona zmiana",
-    p_request_id: key,
+  expect(mocks.rpc).toHaveBeenCalledWith("calendar_write", {
+    p_operation: "save_fitness_session",
+    p_assignment: null,
+    p_confirm_short_break: false,
+    p_arguments: {
+      p_id: id,
+      p_expected_version: 3,
+      p_starts_at: "2028-01-15T13:00:00.000Z",
+      p_location: "Próbny park",
+      p_note: "Uzgodniona zmiana",
+      p_request_id: key,
+    },
   });
 });
 it("rejects DST gaps, invalid points, malformed UUIDs and missing versions", async () => {
@@ -137,6 +142,24 @@ it("rejects DST gaps, invalid points, malformed UUIDs and missing versions", asy
   ])
     expect((await saveFitnessSession({}, form(values))).error).toBeTruthy();
   expect(mocks.rpc).not.toHaveBeenCalled();
+});
+it("returns a short-break warning without acknowledging a fitness version or refreshing data", async () => {
+  mocks.rpc.mockResolvedValueOnce({
+    data: null,
+    error: {
+      message: "Short break",
+      hint: "CALENDAR_SHORT_BREAK",
+      details: "[]",
+    },
+  });
+  const warning = await saveFitnessSession(
+    {},
+    form({ starts_at: "2028-01-15T14:00", location: "Park próbny" }),
+  );
+  expect(warning.calendarWarning?.signature).toMatch(/^[a-f0-9]{64}$/);
+  expect(warning.version).toBeUndefined();
+  expect(warning.error).toBeUndefined();
+  expect(mocks.refresh).not.toHaveBeenCalled();
 });
 it.each(["present", "absent", "excused"])(
   "completes explicitly with attendance %s",

@@ -130,6 +130,66 @@ try {
   await expect(
     page.getByRole("link", { name: "Wybierz spotkanie →" }),
   ).toHaveCount(2);
+  for (const role of ["admin", "client"]) {
+    await page.goto(`${base}/?role=${role}`);
+    const forms = page.getByRole("navigation", { name: "Forma usług" });
+    await forms.getByRole("link", { name: /^Indywidualne/ }).click();
+    await expect(page).toHaveURL(/category=individual/);
+    await expect(
+      forms.getByRole("link", { name: /^Indywidualne/ }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      page.getByRole("heading", {
+        name: "Psie Przedszkole — indywidualne",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "PSI FITNESS — pakiet 4 spotkań",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Psie Przedszkole — grupowe",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await forms.getByRole("link", { name: /^Grupowe/ }).click();
+    await expect(
+      page.getByRole("heading", {
+        name: "Psie Przedszkole — grupowe",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Psie Przedszkole — indywidualne",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page.goBack();
+    await expect(
+      forms.getByRole("link", { name: /^Indywidualne/ }),
+    ).toHaveAttribute("aria-current", "page");
+    await forms.getByRole("link", { name: /^Karty podarunkowe/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Karta podarunkowa", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator("article.card")).toHaveCount(1);
+    await forms.getByRole("link", { name: /^Pozostałe/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Pakiet do uzgodnienia", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator("article.card")).toHaveCount(1);
+    await forms.getByRole("link", { name: /^Wszystkie/ }).click();
+    await expect(page.locator("article.card")).toHaveCount(8);
+  }
+  await page.goto(`${base}/?category=unexpected`);
+  await expect(page.locator("article.card")).toHaveCount(8);
+  await page.goto(`${base}/?category=individual&category=group`);
+  await expect(page.locator("article.card")).toHaveCount(8);
   await page.goto(`${base}/?view=walk`);
   await expect(
     page.getByLabel("Cena za psa (zł)", { exact: true }),
@@ -192,7 +252,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Services UI: editor recovery, version acknowledgement, role controls, walk price defaults and 24 responsive scenarios passed.",
+    "Services UI: editor recovery, version acknowledgement, role controls, catalogue form filters with back navigation, walk price defaults and 24 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

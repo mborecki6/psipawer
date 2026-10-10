@@ -4,6 +4,8 @@ Decyzja użytkownika z 18.09.2026: cały uzgodniony produkt budujemy i dopracowu
 
 ## Lokalny odbiór MVP — 03.10.2026
 
+**Nowsza lokalna iteracja 10.10.2026:** zastosowano `202610100001_calendar_team.sql`, lokalny schemat ma 49 migracji. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Chmura pozostaje na 48 migracjach i poprzednim interfejsie. [Aktualny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
+
 Lokalny MVP jest gotowy do wspólnych testów: **971/971 testów w 73 plikach**, **45/45 pełnych E2E** (6,2 minuty), TypeScript i ESLint. Baza ma **48 migracji**; podgląd ma zgodny manifest i odpowiada HTTP 200. [Próba 50 kont](PILOT-LOAD.md) objęła 1050 odczytów opiekunów, 27 prowadzącej, 153 rzeczywiste strony Chrome, 50 zapisów na cztery miejsca i 50 ponowień jednej wpłaty. Lokalny cel p95 HTTP poniżej 2 s został spełniony.
 
 [Kolejka](REMINDERS-MODULE.md#kolejka-50-opiekunów-i-pełne-wycofanie-wielu-odbiorców--03102026) dostarczyła 250 zadań bez duplikatów i cofnęła całe dostarczenie zespołu po błędzie drugiego odbiorcy. [Kopia 48 migracji](LOCAL-BACKUPS.md#bieżący-wynik-03102026) odtworzyła cały schemat, 119 tabel, 15 832 wiersze i zdjęcia, z zachowanym logowaniem i nowymi zapisami przez API.

@@ -21,6 +21,8 @@ import { usePersistentForm } from "@/components/use-persistent-form";
 import { useHydrated } from "@/components/use-hydrated";
 import styles from "./care.module.css";
 
+type SourceKind = "general" | "consultation" | "course" | "fitness";
+
 export function CareEditorDisclosure({
   initiallyOpen,
   openForConsultation,
@@ -105,6 +107,39 @@ export function CareEditor({
   const selectedFitnessSession = selectedFitness?.sessions.find(
     (s) => s.id === fitnessSessionId,
   );
+  const [sourceKind, setSourceKind] = useState<SourceKind>(
+    consultationId
+      ? "consultation"
+      : courseId
+        ? "course"
+        : fitnessId
+          ? "fitness"
+          : "general",
+  );
+  const sourceTitle = consultationId
+    ? `Konsultacja · ${selected?.service_name || "Poprzednie spotkanie"}`
+    : courseId
+      ? `Kurs · ${selectedCourse?.title || "Poprzedni kurs"}`
+      : fitnessId
+        ? `Fitness · ${selectedFitness?.title || "Poprzedni pakiet"}`
+        : "Ogólny plan pracy";
+  const sourceScope = consultationId
+    ? selected?.starts_at
+      ? dateLabel(selected.starts_at)
+      : "Zalecenia po konsultacji"
+    : courseId
+      ? sessionId
+        ? selectedSession
+          ? `Spotkanie ${selectedSession.ordinal} · ${dateLabel(selectedSession.starts_at)}`
+          : "Poprzednie spotkanie kursu"
+        : "Plan całego kursu"
+      : fitnessId
+        ? fitnessSessionId
+          ? selectedFitnessSession
+            ? `Spotkanie ${selectedFitnessSession.ordinal}${selectedFitnessSession.starts_at ? ` · ${dateLabel(selectedFitnessSession.starts_at)}` : ""}`
+            : "Poprzednie spotkanie fitness"
+          : "Plan całego pakietu"
+        : "Zalecenia dla psa bez przypisania do konkretnej usługi.";
   const cannotPublish =
     (Boolean(consultationId) && selected?.status !== "completed") ||
     (Boolean(courseId) &&
@@ -157,9 +192,25 @@ export function CareEditor({
         value={state.version ?? initialVersion}
       />
       <fieldset disabled={!hydrated || pending} className={styles.fields}>
+        {/* The actual binding is submitted even when its picker is collapsed
+            or another category is being browsed. Browsing never rebinds work. */}
+        <input type="hidden" name="consultation_id" value={consultationId} />
+        <input type="hidden" name="course_enrollment_id" value={courseId} />
+        <input type="hidden" name="course_session_id" value={sessionId} />
+        <input type="hidden" name="fitness_package_id" value={fitnessId} />
+        <input
+          type="hidden"
+          name="fitness_session_id"
+          value={fitnessSessionId}
+        />
+        <section className={styles.sourceContext} aria-label="Powiązanie planu">
+          <span className={styles.sourceLabel}>Zalecenia dotyczą</span>
+          <strong>{sourceTitle}</strong>
+          <p>{sourceScope}</p>
+        </section>
         {requestedConsultation &&
           consultationId !== requestedConsultation.id && (
-            <div className="alert">
+            <div className={`alert ${styles.sourceWarning}`}>
               <p>
                 Otwarty szkic ma inne powiązanie. Jego treść pozostaje
                 zachowana. Możesz świadomie przypisać ją do spotkania:{" "}
@@ -177,6 +228,7 @@ export function CareEditor({
                   setSessionId("");
                   setFitnessId("");
                   setFitnessSessionId("");
+                  setSourceKind("consultation");
                   setDirty(true);
                 }}
               >
@@ -187,7 +239,7 @@ export function CareEditor({
         {requestedCourse &&
           (courseId !== requestedCourse.id ||
             sessionId !== (requestedSession || "")) && (
-            <div className="alert">
+            <div className={`alert ${styles.sourceWarning}`}>
               <p>
                 Otwarty szkic ma inne powiązanie. Zachowasz treść i możesz
                 przypisać ją do kursu: {requestedCourse.title}
@@ -205,6 +257,7 @@ export function CareEditor({
                   setSessionId(requestedSession || "");
                   setFitnessId("");
                   setFitnessSessionId("");
+                  setSourceKind("course");
                   setDirty(true);
                 }}
               >
@@ -215,7 +268,7 @@ export function CareEditor({
         {requestedFitness &&
           (fitnessId !== requestedFitness.id ||
             fitnessSessionId !== (requestedFitnessSession || "")) && (
-            <div className="alert">
+            <div className={`alert ${styles.sourceWarning}`}>
               <p>
                 Otwarty szkic ma inne powiązanie. Zachowasz treść i możesz
                 przypisać ją do pakietu: {requestedFitness.title}
@@ -233,6 +286,7 @@ export function CareEditor({
                   setSessionId("");
                   setFitnessId(requestedFitness.id);
                   setFitnessSessionId(requestedFitnessSession || "");
+                  setSourceKind("fitness");
                   setDirty(true);
                 }}
               >
@@ -240,198 +294,247 @@ export function CareEditor({
               </button>
             </div>
           )}
-        <label className="field">
-          <span>Konsultacja, której dotyczą zalecenia</span>
-          <select
-            name="consultation_id"
-            value={consultationId}
-            onChange={(event) => {
-              setConsultationId(event.target.value);
-              if (event.target.value) {
-                setCourseId("");
-                setSessionId("");
-                setFitnessId("");
-                setFitnessSessionId("");
-              }
-              setDirty(true);
-            }}
-          >
-            <option value="">Bez powiązania z konsultacją</option>
-            {consultationId && !selected && (
-              <option value={consultationId}>
-                Poprzednie powiązanie — wybierz dostępną konsultację
-              </option>
-            )}
-            {consultations
-              .filter(
-                (c) =>
-                  c.status === "scheduled" ||
-                  c.status === "completed" ||
-                  c.id === consultationId,
-              )
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.service_name || "Konsultacja"}
-                  {c.starts_at ? ` · ${dateLabel(c.starts_at)}` : ""}
-                  {c.status === "completed"
-                    ? " · zakończona"
-                    : c.status === "scheduled"
-                      ? " · umówiona"
-                      : " · niedostępna"}
-                </option>
-              ))}
-          </select>
-          <small>
-            Wybierz jedno powiązanie. Dla ogólnego planu pozostaw wszystkie
-            wybory puste.
-          </small>
-        </label>
-        {(courses.length > 0 || courseId) && (
-          <>
+        <details className={styles.sourcePicker}>
+          <summary>Zmień powiązanie planu</summary>
+          <div className={styles.fields}>
+            <p className="muted">
+              Wybierz rodzaj usługi, a potem konkretne spotkanie, kurs lub
+              pakiet. Dopiero wybór usługi zmieni powiązanie; treść pozostanie w
+              formularzu.
+            </p>
             <label className="field">
-              <span>Kurs, którego dotyczą zalecenia</span>
+              <span>Rodzaj powiązania</span>
               <select
-                name="course_enrollment_id"
-                value={courseId}
+                value={sourceKind}
                 onChange={(event) => {
-                  setCourseId(event.target.value);
-                  setSessionId("");
-                  if (event.target.value) {
-                    setConsultationId("");
-                    setFitnessId("");
-                    setFitnessSessionId("");
-                  }
-                  setDirty(true);
-                }}
-              >
-                <option value="">Bez powiązania z kursem</option>
-                {courseId && !selectedCourse && (
-                  <option value={courseId}>
-                    Poprzedni kurs — wybierz dostępne powiązanie
-                  </option>
-                )}
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              <small>
-                Wybierz jedno powiązanie. Pozostaw wybory puste dla ogólnego
-                planu.
-              </small>
-            </label>
-            {courseId && (
-              <label className="field">
-                <span>Zakres zaleceń kursowych</span>
-                <select
-                  name="course_session_id"
-                  value={sessionId}
-                  onChange={(event) => {
-                    setSessionId(event.target.value);
-                    setDirty(true);
-                  }}
-                >
-                  <option value="">Cały kurs — plan pracy</option>
-                  {sessionId && !selectedSession && (
-                    <option value={sessionId}>
-                      Poprzednie spotkanie — wybierz dostępne powiązanie
-                    </option>
-                  )}
-                  {(selectedCourse?.sessions || [])
-                    .filter(
-                      (s) => s.status !== "cancelled" || s.id === sessionId,
-                    )
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        Spotkanie {s.ordinal} · {dateLabel(s.starts_at)} ·{" "}
-                        {s.status === "completed"
-                          ? "zakończone"
-                          : s.status === "scheduled"
-                            ? "zaplanowane"
-                            : "odwołane"}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            )}
-          </>
-        )}
-        {(fitness.length > 0 || fitnessId) && (
-          <>
-            <label className="field">
-              <span>Pakiet fitness, którego dotyczą zalecenia</span>
-              <select
-                name="fitness_package_id"
-                value={fitnessId}
-                onChange={(event) => {
-                  setFitnessId(event.target.value);
-                  setFitnessSessionId("");
-                  if (event.target.value) {
+                  const kind = event.target.value as SourceKind;
+                  setSourceKind(kind);
+                  if (kind === "general") {
                     setConsultationId("");
                     setCourseId("");
                     setSessionId("");
+                    setFitnessId("");
+                    setFitnessSessionId("");
+                    setDirty(true);
                   }
-                  setDirty(true);
                 }}
               >
-                <option value="">Bez powiązania z fitness</option>
-                {fitnessId && !selectedFitness && (
-                  <option value={fitnessId}>
-                    Poprzedni pakiet — wybierz dostępne powiązanie
-                  </option>
-                )}
-                {fitness.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
+                <option value="general">Ogólny plan pracy</option>
+                <option
+                  value="consultation"
+                  disabled={
+                    !consultationId &&
+                    !consultations.some((c) =>
+                      ["scheduled", "completed"].includes(c.status),
+                    )
+                  }
+                >
+                  Konsultacja
+                </option>
+                <option
+                  value="course"
+                  disabled={!courseId && courses.length === 0}
+                >
+                  Kurs
+                </option>
+                <option
+                  value="fitness"
+                  disabled={!fitnessId && fitness.length === 0}
+                >
+                  Pakiet fitness
+                </option>
               </select>
-              <small>
-                Plan może dotyczyć całego pakietu albo jednego spotkania.
-              </small>
             </label>
-            {fitnessId && (
+            {sourceKind === "consultation" && (
               <label className="field">
-                <span>Zakres zaleceń fitness</span>
+                <span>Konsultacja, której dotyczą zalecenia</span>
                 <select
-                  name="fitness_session_id"
-                  value={fitnessSessionId}
+                  value={consultationId}
                   onChange={(event) => {
-                    setFitnessSessionId(event.target.value);
+                    setConsultationId(event.target.value);
+                    if (event.target.value) {
+                      setCourseId("");
+                      setSessionId("");
+                      setFitnessId("");
+                      setFitnessSessionId("");
+                    }
                     setDirty(true);
                   }}
                 >
-                  <option value="">Cały pakiet — plan pracy</option>
-                  {fitnessSessionId && !selectedFitnessSession && (
-                    <option value={fitnessSessionId}>
-                      Poprzednie spotkanie — wybierz dostępne powiązanie
+                  <option value="" disabled>
+                    Wybierz konsultację…
+                  </option>
+                  {consultationId && !selected && (
+                    <option value={consultationId}>
+                      Poprzednie powiązanie — wybierz dostępną konsultację
                     </option>
                   )}
-                  {(selectedFitness?.sessions || [])
+                  {consultations
                     .filter(
-                      (s) =>
-                        ["scheduled", "completed"].includes(s.status) ||
-                        s.id === fitnessSessionId,
+                      (c) =>
+                        c.status === "scheduled" ||
+                        c.status === "completed" ||
+                        c.id === consultationId,
                     )
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        Spotkanie {s.ordinal}
-                        {s.starts_at
-                          ? ` · ${dateLabel(s.starts_at)}`
-                          : ""} ·{" "}
-                        {s.status === "completed"
-                          ? "zakończone"
-                          : s.status === "scheduled"
-                            ? "umówione"
-                            : "niedostępne"}
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.service_name || "Konsultacja"}
+                        {c.starts_at ? ` · ${dateLabel(c.starts_at)}` : ""}
+                        {c.status === "completed"
+                          ? " · zakończona"
+                          : c.status === "scheduled"
+                            ? " · umówiona"
+                            : " · niedostępna"}
                       </option>
                     ))}
                 </select>
               </label>
             )}
-          </>
-        )}
+            {sourceKind === "course" && (
+              <>
+                <label className="field">
+                  <span>Kurs, którego dotyczą zalecenia</span>
+                  <select
+                    value={courseId}
+                    onChange={(event) => {
+                      setCourseId(event.target.value);
+                      setSessionId("");
+                      if (event.target.value) {
+                        setConsultationId("");
+                        setFitnessId("");
+                        setFitnessSessionId("");
+                      }
+                      setDirty(true);
+                    }}
+                  >
+                    <option value="" disabled>
+                      Wybierz kurs…
+                    </option>
+                    {courseId && !selectedCourse && (
+                      <option value={courseId}>
+                        Poprzedni kurs — wybierz dostępne powiązanie
+                      </option>
+                    )}
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {courseId && (
+                  <label className="field">
+                    <span>Zakres zaleceń kursowych</span>
+                    <select
+                      value={sessionId}
+                      onChange={(event) => {
+                        setSessionId(event.target.value);
+                        setDirty(true);
+                      }}
+                    >
+                      <option value="">Cały kurs — plan pracy</option>
+                      {sessionId && !selectedSession && (
+                        <option value={sessionId}>
+                          Poprzednie spotkanie — wybierz dostępne powiązanie
+                        </option>
+                      )}
+                      {(selectedCourse?.sessions || [])
+                        .filter(
+                          (s) => s.status !== "cancelled" || s.id === sessionId,
+                        )
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            Spotkanie {s.ordinal} · {dateLabel(s.starts_at)} ·{" "}
+                            {s.status === "completed"
+                              ? "zakończone"
+                              : s.status === "scheduled"
+                                ? "zaplanowane"
+                                : "odwołane"}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+              </>
+            )}
+            {sourceKind === "fitness" && (
+              <>
+                <label className="field">
+                  <span>Pakiet fitness, którego dotyczą zalecenia</span>
+                  <select
+                    value={fitnessId}
+                    onChange={(event) => {
+                      setFitnessId(event.target.value);
+                      setFitnessSessionId("");
+                      if (event.target.value) {
+                        setConsultationId("");
+                        setCourseId("");
+                        setSessionId("");
+                      }
+                      setDirty(true);
+                    }}
+                  >
+                    <option value="" disabled>
+                      Wybierz pakiet fitness…
+                    </option>
+                    {fitnessId && !selectedFitness && (
+                      <option value={fitnessId}>
+                        Poprzedni pakiet — wybierz dostępne powiązanie
+                      </option>
+                    )}
+                    {fitness.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Plan może dotyczyć całego pakietu albo jednego spotkania.
+                  </small>
+                </label>
+                {fitnessId && (
+                  <label className="field">
+                    <span>Zakres zaleceń fitness</span>
+                    <select
+                      value={fitnessSessionId}
+                      onChange={(event) => {
+                        setFitnessSessionId(event.target.value);
+                        setDirty(true);
+                      }}
+                    >
+                      <option value="">Cały pakiet — plan pracy</option>
+                      {fitnessSessionId && !selectedFitnessSession && (
+                        <option value={fitnessSessionId}>
+                          Poprzednie spotkanie — wybierz dostępne powiązanie
+                        </option>
+                      )}
+                      {(selectedFitness?.sessions || [])
+                        .filter(
+                          (s) =>
+                            ["scheduled", "completed"].includes(s.status) ||
+                            s.id === fitnessSessionId,
+                        )
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            Spotkanie {s.ordinal}
+                            {s.starts_at
+                              ? ` · ${dateLabel(s.starts_at)}`
+                              : ""}{" "}
+                            ·{" "}
+                            {s.status === "completed"
+                              ? "zakończone"
+                              : s.status === "scheduled"
+                                ? "umówione"
+                                : "niedostępne"}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+              </>
+            )}
+          </div>
+        </details>
         {cannotPublish && (
           <p className="alert">
             {fitnessId

@@ -5,7 +5,12 @@ import {
   literal as q,
   waitForLock,
 } from "../helpers/local-postgres.mjs";
-import { careEditor, careFixture, careScreenshot } from "./care-journey";
+import {
+  careEditor,
+  careFixture,
+  careScreenshot,
+  careSourcePicker,
+} from "./care-journey";
 import {
   account,
   checked,
@@ -46,6 +51,13 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       .click();
     const form = await careEditor(f.staff);
     await expect(
+      form.getByRole("region", { name: "Powiązanie planu", exact: true }),
+    ).toContainText("Plan całego kursu");
+    await expect(
+      form.getByLabel("Kurs, którego dotyczą zalecenia"),
+    ).toBeHidden();
+    await careSourcePicker(form);
+    await expect(
       form.getByLabel("Kurs, którego dotyczą zalecenia"),
     ).toHaveValue(cycle.enrollment);
     await expect(form.getByLabel("Zakres zaleceń kursowych")).toHaveValue("");
@@ -83,6 +95,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       `/admin/dogs/${f.dog}/care?enrollment=${cycle.enrollment}`,
     );
     const staleForm = await careEditor(stale);
+    await careSourcePicker(staleForm);
     await staleForm
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Moja starsza karta");
@@ -121,6 +134,22 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     const meetingForm = await careEditor(f.staff);
     // Opening another source must preserve the saved whole-cycle draft.
     await expect(
+      meetingForm.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Plan całego kursu");
+    const savedBody = await meetingForm
+      .getByLabel("Zalecenia dla opiekuna", { exact: true })
+      .inputValue();
+    const savedVersion = await meetingForm
+      .locator('input[name="expected_version"]')
+      .inputValue();
+    expect(savedBody).toBe(
+      "Ćwicz trzy spokojne podejścia. Zakończ przed zmęczeniem psa.",
+    );
+    await careSourcePicker(meetingForm);
+    await expect(
       meetingForm.getByLabel("Zakres zaleceń kursowych"),
     ).toHaveValue("");
     await meetingForm
@@ -132,6 +161,18 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     await expect(
       meetingForm.getByLabel("Zakres zaleceń kursowych"),
     ).toHaveValue(cycle.sessions[0].id);
+    await expect(
+      meetingForm.getByRole("region", {
+        name: "Powiązanie planu",
+        exact: true,
+      }),
+    ).toContainText("Spotkanie 1");
+    await expect(
+      meetingForm.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    ).toHaveValue(savedBody);
+    await expect(
+      meetingForm.locator('input[name="expected_version"]'),
+    ).toHaveValue(savedVersion);
     await expect(
       meetingForm.getByRole("button", {
         name: "Opublikuj dla opiekuna",
@@ -200,6 +241,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       .getByRole("link", { name: "Otwórz szkic zaleceń", exact: true })
       .click();
     const completedForm = await careEditor(f.staff);
+    await careSourcePicker(completedForm);
     await expect(
       completedForm.getByLabel("Zakres zaleceń kursowych"),
     ).toHaveValue(cycle.sessions[0].id);

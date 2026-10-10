@@ -63,11 +63,16 @@ afterAll(async () => {
 });
 const meeting = "80000000-0000-4000-8000-000000000001";
 const another = "80000000-0000-4000-8000-000000000002";
-async function consultation(status = "completed", id = meeting, dogId = dog) {
+async function consultation(
+  status = "completed",
+  id = meeting,
+  dogId = dog,
+  hoursAgo = 48,
+) {
   await db.query(
     `insert into public.consultations(id,practice_id,dog_id,requested_by,topic,status,starts_at,duration_minutes,meeting_mode,location)
-    values($1,'00000000-0000-4000-8000-000000000001',$2,$3,'Spotkanie testowe',$4,now()-interval '2 hours',60,'in_person','Miejsce testowe')`,
-    [id, dogId, owner, status],
+    values($1,'00000000-0000-4000-8000-000000000001',$2,$3,'Spotkanie testowe',$4,now()-$5::integer*interval '1 hour',60,'in_person','Miejsce testowe')`,
+    [id, dogId, owner, status, hoursAgo],
   );
 }
 async function save(
@@ -190,7 +195,7 @@ describe("consultation → private draft → publication", () => {
   });
   it("retains every published association when the draft moves to a subsequent meeting", async () => {
     await consultation();
-    await consultation("completed", another);
+    await consultation("completed", another, dog, 24);
     await save();
     await save(1, true, another);
     await save(2, true, null);
@@ -213,7 +218,7 @@ describe("consultation → private draft → publication", () => {
   });
   it("recognizes a retry only when text AND the consultation match", async () => {
     await consultation();
-    await consultation("completed", another);
+    await consultation("completed", another, dog, 24);
     const first = await save();
     expect(await save()).toEqual(first);
     await expect(save(0, true, another)).rejects.toThrow("Plan zmienił się");

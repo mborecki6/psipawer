@@ -23,6 +23,9 @@ import {
   type CourseActionState,
 } from "./actions";
 import styles from "./courses.module.css";
+import { CalendarWarning } from "@/modules/calendar/warning";
+import { BookingChoice } from "@/modules/calendar/booking-choice";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 type Action = (
   state: CourseActionState,
   form: FormData,
@@ -57,12 +60,15 @@ function useCourseForm(action: Action, version: number) {
 function Feedback({
   state,
   error,
+  pending = false,
 }: {
   state: CourseActionState;
   error: React.RefObject<HTMLDivElement | null>;
+  pending?: boolean;
 }) {
   return (
     <>
+      <CalendarWarning warning={state.calendarWarning} pending={pending} />
       {state.error && (
         <div ref={error} role="alert" tabIndex={-1} className="alert red">
           {state.error}
@@ -97,10 +103,12 @@ export function CourseCreateForm({
   services,
   id,
   serviceId,
+  booking,
 }: {
   services: Service[];
   id: string;
   serviceId?: string;
+  booking?: BookingChoices;
 }) {
   const [original] = useState({ services, id });
   const first =
@@ -130,6 +138,13 @@ export function CourseCreateForm({
     >
       <input type="hidden" name="id" value={original.id} />
       <input type="hidden" name="service_version" value={service.version} />
+      {booking && <BookingChoice data={booking} pending={busy} />}
+      {booking && (
+        <p className="muted">
+          Wybór prowadzącego i sali dotyczy całego cyklu. Poszczególne spotkania
+          możesz później przypisać osobno w kalendarzu.
+        </p>
+      )}
       <fieldset disabled={busy} className={styles.fields}>
         <legend className="sr-only">Dane cyklu</legend>
         <div className="field">
@@ -273,7 +288,7 @@ export function CourseCreateForm({
           ))}
         </div>
       </fieldset>
-      <Feedback state={state} error={error} />
+      <Feedback state={state} error={error} pending={busy} />
       <Submit busy={busy} label="Zapisz szkic cyklu" />
     </form>
   );
@@ -335,7 +350,7 @@ export function EnrollmentForm({
           </p>
         </fieldset>
       )}
-      <Feedback state={state} error={error} />
+      <Feedback state={state} error={error} pending={busy} />
       {dogs.length > 0 && !done && (
         <Submit
           busy={busy}
@@ -424,7 +439,7 @@ export function CommandForm({
           />
         </div>
       </fieldset>
-      <Feedback state={state} error={error} />
+      <Feedback state={state} error={error} pending={busy} />
       <Submit
         busy={busy}
         disabled={!enabled || !allowed.includes(intent)}
@@ -522,7 +537,7 @@ function ReopeningForm({
           </span>
         </div>
       </fieldset>
-      <Feedback state={state} error={error} />
+      <Feedback state={state} error={error} pending={busy} />
       {!enabled && !done && (
         <p className="muted">
           Powrót wymaga aktywnego kursu przed pierwszym spotkaniem. Po innej
@@ -544,9 +559,11 @@ function ReopeningForm({
 export function SessionEditor({
   session,
   enabled,
+  booking,
 }: {
   session: SessionDetail;
   enabled: boolean;
+  booking?: BookingChoices;
 }) {
   const [original] = useState(session);
   const [date, setDate] = useState(warsawDateTimeInput(session.starts_at));
@@ -570,6 +587,14 @@ export function SessionEditor({
     >
       <input type="hidden" name="id" value={original.id} />
       <input type="hidden" name="expected_version" value={state.version} />
+      {booking && (
+        <BookingChoice
+          data={booking}
+          appointmentId={original.id}
+          pending={busy || !enabled}
+          saved={state.version > original.version}
+        />
+      )}
       <fieldset disabled={busy || !enabled} className={styles.fields}>
         <legend className="sr-only">Termin i zbiórka</legend>
         <div className="field">
@@ -627,7 +652,7 @@ export function SessionEditor({
           />
         </div>
       </fieldset>
-      <Feedback state={state} error={error} />
+      <Feedback state={state} error={error} pending={busy} />
       <Submit busy={busy} disabled={!enabled} label="Zapisz termin i zbiórkę" />
     </form>
   );

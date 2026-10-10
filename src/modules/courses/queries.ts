@@ -2,6 +2,7 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/session";
+import { getBookingChoices } from "@/modules/calendar/booking-queries";
 import { allRows } from "@/lib/data/queries";
 import type {
   CourseBalance,
@@ -58,7 +59,7 @@ export async function getCourse(
 ) {
   if (!z.uuid().safeParse(id).success) notFound();
   if (focus && !z.uuid().safeParse(focus).success) notFound();
-  const { db, role } = await requireSession();
+  const { db, role, user } = await requireSession();
   const { data: course, error } = await db
     .from("courses")
     .select(columns)
@@ -180,7 +181,15 @@ export async function getCourse(
         ),
       ])
     : [[], [], []];
+  const booking =
+    role === "admin"
+      ? await getBookingChoices(db, user.id, {
+          kind: "course",
+          ids: (sessions.data || []).map((s) => s.id),
+        })
+      : undefined;
   return {
+    ...(booking ? { booking } : {}),
     role,
     course: course as Course,
     sessions: (sessions.data || []) as unknown as SessionDetail[],

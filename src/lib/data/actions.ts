@@ -12,6 +12,7 @@ import {
 } from "@/lib/validation/schemas";
 import type { ActionState } from "@/components/action-form";
 import { warsawLocalToISO } from "@/lib/time";
+import { calendarWrite, calendarWarning } from "../../modules/calendar/write";
 import { prepareAvatarPhoto } from "../avatar-photo";
 import {
   cleanupRetiredAvatar,
@@ -28,6 +29,12 @@ function issue(message: string): ActionState {
 }
 function dbError(message: string): ActionState {
   const allowed = [
+    "Sprawdź prowadzącego i miejsce zajęć.",
+    "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
+    "Wybierz aktywnego członka zespołu.",
+    "Wybierz aktywne miejsce.",
+    "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
+    "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
     "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
     "Ten czas jest już zajęty przez spacer, konsultację lub blokadę. Sprawdź kalendarz.",
     "Brak wolnych miejsc.",
@@ -139,7 +146,14 @@ export async function createWalk(
       error: "Sprawdź dane spaceru.",
       fields: result.error.flatten().fieldErrors,
     };
-  const { data, error } = await db.rpc("create_walk", { payload: result.data });
+  const { data, error } = await calendarWrite(
+    db,
+    "create_walk",
+    { payload: result.data },
+    form,
+  );
+  const warning = calendarWarning(error);
+  if (warning) return warning;
   if (error) return dbError(error.message);
   refresh();
   redirect(`/admin/walks/${data}?saved=1`);
@@ -462,12 +476,19 @@ export async function updateWalk(
       error: "Sprawdź dane spaceru.",
       fields: result.error.flatten().fieldErrors,
     };
-  const { error } = await db.rpc("update_walk", {
-    p_walk: meta.data.id,
-    p_expected_updated_at: meta.data.updated_at,
-    payload: result.data,
-    p_note: meta.data.change_note,
-  });
+  const { error } = await calendarWrite(
+    db,
+    "update_walk",
+    {
+      p_walk: meta.data.id,
+      p_expected_updated_at: meta.data.updated_at,
+      payload: result.data,
+      p_note: meta.data.change_note,
+    },
+    form,
+  );
+  const warning = calendarWarning(error);
+  if (warning) return warning;
   if (error) return dbError(error.message);
   refresh();
   redirect(`/admin/walks/${meta.data.id}?saved=1`);

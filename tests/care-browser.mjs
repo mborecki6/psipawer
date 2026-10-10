@@ -254,6 +254,7 @@ try {
   await page.evaluate(() => {
     window.careFail = false;
   });
+  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
   await association.selectOption("80000000-0000-4000-8000-000000000001");
   await page.getByRole("button", { name: "Opublikuj dla opiekuna" }).click();
   await expect(page.getByRole("status")).toContainText("Zapisano");
@@ -264,6 +265,175 @@ try {
   });
   await page.goto(`${base}/?meeting=scheduled&empty=1`);
   await expect(association).toHaveValue("80000000-0000-4000-8000-000000000002");
+  await expect(
+    page.getByRole("region", { name: "Powiązanie planu" }),
+  ).toContainText("Kolejna konsultacja testowa");
+  await expect(association).toBeHidden();
+
+  // Contextual entry starts with the requested source only if there is no
+  // saved draft. The actual hidden binding is independent of picker visibility.
+  const binding = (name) => page.locator(`input[type=hidden][name="${name}"]`);
+  const context = page.getByRole("region", { name: "Powiązanie planu" });
+  for (const [query, name, id, text, sessionName, sessionId, publishable] of [
+    [
+      "fitness=whole",
+      "fitness_package_id",
+      "82000000-0000-4000-8000-000000000001",
+      "Plan całego pakietu",
+      "fitness_session_id",
+      "",
+      true,
+    ],
+    [
+      "fitness=scheduled",
+      "fitness_package_id",
+      "82000000-0000-4000-8000-000000000001",
+      "Spotkanie 2",
+      "fitness_session_id",
+      "82000000-0000-4000-8000-000000000003",
+      false,
+    ],
+    [
+      "fitness=completed",
+      "fitness_package_id",
+      "82000000-0000-4000-8000-000000000001",
+      "Spotkanie 1",
+      "fitness_session_id",
+      "82000000-0000-4000-8000-000000000002",
+      true,
+    ],
+    [
+      "course=whole",
+      "course_enrollment_id",
+      "81000000-0000-4000-8000-000000000001",
+      "Plan całego kursu",
+      "course_session_id",
+      "",
+      true,
+    ],
+    [
+      "course=scheduled",
+      "course_enrollment_id",
+      "81000000-0000-4000-8000-000000000001",
+      "Spotkanie 2",
+      "course_session_id",
+      "81000000-0000-4000-8000-000000000004",
+      false,
+    ],
+  ]) {
+    await page.goto(`${base}/?${query}&empty=1`);
+    await expect(context).toContainText(text);
+    await expect(binding(name)).toHaveValue(id);
+    await expect(binding(sessionName)).toHaveValue(sessionId);
+    await expect(page.getByLabel("Rodzaj powiązania")).toBeHidden();
+    await expect(
+      page.getByLabel("Konsultacja, której dotyczą zalecenia"),
+    ).toHaveCount(0);
+    const publish = page.getByRole("button", {
+      name: "Opublikuj dla opiekuna",
+    });
+    if (publishable) await expect(publish).toBeEnabled();
+    else await expect(publish).toBeDisabled();
+  }
+
+  // An existing consultation draft cannot silently become a fitness plan.
+  // Even browsing a different service category preserves the source and text.
+  await page.goto(`${base}/?fitness=scheduled&saved=consultation`);
+  await expect(context).toContainText("Konsultacja testowa");
+  await expect(binding("consultation_id")).toHaveValue(
+    "80000000-0000-4000-8000-000000000001",
+  );
+  await expect(binding("fitness_package_id")).toHaveValue("");
+  const savedBody = await body.inputValue();
+  await body.fill(`${savedBody}\nDopisek przed zmianą powiązania.`);
+  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
+  await page.getByLabel("Rodzaj powiązania").selectOption("fitness");
+  await expect(context).toContainText("Konsultacja testowa");
+  await expect(binding("consultation_id")).toHaveValue(
+    "80000000-0000-4000-8000-000000000001",
+  );
+  await expect(binding("fitness_package_id")).toHaveValue("");
+  await page
+    .getByRole("button", {
+      name: "Powiąż ten szkic z wybranym pakietem fitness",
+    })
+    .click();
+  await expect(context).toContainText("PSI FITNESS");
+  await expect(binding("consultation_id")).toHaveValue("");
+  await expect(binding("fitness_session_id")).toHaveValue(
+    "82000000-0000-4000-8000-000000000003",
+  );
+  await expect(body).toHaveValue(
+    `${savedBody}\nDopisek przed zmianą powiązania.`,
+  );
+  await expect(
+    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+  ).toBeDisabled();
+  await page.evaluate(() => {
+    window.careFail = true;
+  });
+  await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(body).toHaveValue(
+    `${savedBody}\nDopisek przed zmianą powiązania.`,
+  );
+  await expect(binding("fitness_session_id")).toHaveValue(
+    "82000000-0000-4000-8000-000000000003",
+  );
+  await page.evaluate(() => {
+    window.careFail = false;
+  });
+  await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Zapisano");
+  const rebound = await page.evaluate(() => window.careCalls.at(-1));
+  expect(rebound).toMatchObject({
+    consultation_id: "",
+    course_enrollment_id: "",
+    course_session_id: "",
+    fitness_package_id: "82000000-0000-4000-8000-000000000001",
+    fitness_session_id: "82000000-0000-4000-8000-000000000003",
+    expected_version: "3",
+    intent: "draft",
+  });
+  expect(
+    await body
+      .locator("xpath=ancestor::form")
+      .evaluate((form) => new FormData(form).getAll("fitness_package_id")),
+  ).toEqual(["82000000-0000-4000-8000-000000000001"]);
+  await page.getByLabel("Zakres zaleceń fitness").selectOption("");
+  await expect(context).toContainText("Plan całego pakietu");
+  await expect(
+    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+  ).toBeEnabled();
+  await page.getByLabel("Rodzaj powiązania").selectOption("general");
+  await expect(context).toContainText("Ogólny plan pracy");
+  await expect(binding("fitness_package_id")).toHaveValue("");
+  await expect(binding("fitness_session_id")).toHaveValue("");
+  await expect(body).toHaveValue(
+    `${savedBody}\nDopisek przed zmianą powiązania.`,
+  );
+
+  // A whole-course draft also requires explicit confirmation before it becomes
+  // advice for an individual scheduled meeting.
+  await page.goto(`${base}/?course=scheduled&saved=course`);
+  await expect(context).toContainText("Plan całego kursu");
+  await expect(binding("course_session_id")).toHaveValue("");
+  await page
+    .getByRole("button", { name: "Powiąż ten szkic z wybranym kursem" })
+    .click();
+  await expect(context).toContainText("Spotkanie 2");
+  await expect(binding("course_session_id")).toHaveValue(
+    "81000000-0000-4000-8000-000000000004",
+  );
+  await expect(
+    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+  ).toBeDisabled();
+  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
+  await page.getByLabel("Zakres zaleceń kursowych").selectOption("");
+  await expect(context).toContainText("Plan całego kursu");
+  await expect(
+    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+  ).toBeEnabled();
   for (const role of ["admin", "client"]) {
     await page.goto(`${base}/?view=publication&meeting=completed&role=${role}`);
     await expect(
@@ -285,6 +455,9 @@ try {
     for (const [name, query] of [
       ["admin-plan", "role=admin"],
       ["meeting-draft", "meeting=scheduled"],
+      ["fitness-context", "fitness=scheduled&empty=1&long=1"],
+      ["fitness-rebind", "fitness=scheduled&saved=consultation"],
+      ["course-rebind", "course=scheduled&saved=course"],
       ["publication", "view=publication&meeting=completed&role=client"],
       ["client-plan", "role=client"],
       ["admin-inbox", "role=admin&view=overview"],
@@ -296,6 +469,21 @@ try {
       await page
         .getByRole("heading", { name: "Plany i postępy", exact: true })
         .waitFor();
+      if (name === "fitness-rebind" || name === "course-rebind")
+        expect(
+          await page
+            .locator(".alert:has(button)")
+            .evaluate((warning) => getComputedStyle(warning).display),
+          `${name} must stack the warning text and action at ${width}px`,
+        ).toBe("grid");
+      if (
+        ["fitness-context", "fitness-rebind", "course-rebind"].includes(name) &&
+        (width === 390 || width === 1440)
+      )
+        await page.screenshot({
+          path: resolve(output, `${name}-collapsed-${width}.png`),
+          fullPage: true,
+        });
       await page.locator("details").evaluateAll((nodes) =>
         nodes.forEach((node) => {
           node.open = true;
@@ -331,7 +519,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Care UI: form error recovery, publication intent/version, template replacement, guardian response, consultation association and 32 responsive scenarios passed.",
+    "Care UI: error recovery, publication versions, library, guardian response, contextual consultation/course/fitness binding, safe draft rebinding and 44 responsive scenarios passed.",
   );
   console.log(`Screenshots: ${output}`);
 } finally {

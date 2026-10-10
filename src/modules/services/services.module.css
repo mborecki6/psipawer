@@ -17,6 +17,35 @@
   letter-spacing: 0.06em;
   color: var(--ink-soft);
 }
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.filters a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  font-size: 0.875rem;
+}
+.filters span {
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: var(--sage-2);
+  font-size: 12px;
+}
+.filters a.active {
+  color: var(--paper);
+  background: var(--ink);
+}
+.filters a.active span {
+  color: inherit;
+  background: rgba(255, 255, 255, 0.16);
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

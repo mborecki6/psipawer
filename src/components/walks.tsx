@@ -4,6 +4,8 @@ import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
 import { WalkServiceFields } from "@/modules/services/selection";
 import type { Service } from "@/modules/services/types";
+import { BookingChoice } from "@/modules/calendar/booking-choice";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import { notFound } from "next/navigation";
 import { getSnapshot, allRows } from "@/lib/data/queries";
 import {
@@ -536,11 +538,13 @@ export function NewWalk({
   editing = false,
   hasRegistrations = false,
   services = [],
+  booking,
 }: {
   initial?: WalkFormValues;
   editing?: boolean;
   hasRegistrations?: boolean;
   services?: Service[];
+  booking?: BookingChoices;
 }) {
   return (
     <article className="card pad form-card">
@@ -567,6 +571,12 @@ export function NewWalk({
         action={editing ? updateWalk : createWalk}
         label={editing ? "Zapisz zmiany spaceru" : "Utwórz spacer"}
       >
+        {booking && (
+          <BookingChoice
+            data={booking}
+            appointmentId={editing ? initial.id : undefined}
+          />
+        )}
         {editing && (
           <>
             <input type="hidden" name="id" value={initial.id} />

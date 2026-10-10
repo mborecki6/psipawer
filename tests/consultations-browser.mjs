@@ -179,6 +179,83 @@ try {
     "Nie możemy przyjść.",
   );
 
+  await page.goto(`${base}/?view=detail&status=requested`);
+  await page
+    .getByLabel("Prowadzący", { exact: true })
+    .selectOption("10000000-0000-4000-8000-000000000002");
+  await page
+    .getByLabel("Sala do rezerwacji (opcjonalnie)")
+    .selectOption("40000000-0000-4000-8000-000000000001");
+  await page.getByLabel("Termin (czas polski)").fill("2026-10-06T15:00");
+  await page
+    .getByLabel("Miejsce lub instrukcja połączenia")
+    .fill("Miejsce zachowane przy ostrzeżeniu");
+  await page.evaluate(() => {
+    window.consultationWarn = true;
+  });
+  await page
+    .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+    .click();
+  await expect(page.getByRole("alert")).toBeFocused();
+  await expect(page.getByLabel("Prowadzący", { exact: true })).toHaveValue(
+    "10000000-0000-4000-8000-000000000002",
+  );
+  await expect(
+    page.getByLabel("Miejsce lub instrukcja połączenia"),
+  ).toHaveValue("Miejsce zachowane przy ostrzeżeniu");
+  await page
+    .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+    .click();
+  expect(await page.evaluate(() => window.consultationCalls.length)).toBe(1);
+  await page
+    .getByRole("checkbox", {
+      name: "Sprawdziłem przerwę i chcę zapisać ten termin.",
+    })
+    .check();
+  await page
+    .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Zapisano");
+  expect(
+    await page.evaluate(() => window.consultationCalls.at(-1)),
+  ).toMatchObject({
+    calendar_staff_id: "10000000-0000-4000-8000-000000000002",
+    calendar_resource_id: "40000000-0000-4000-8000-000000000001",
+    calendar_assignment_version: "4",
+    confirm_short_break: "true",
+    calendar_confirmation: "calendar-fixture-signature",
+  });
+  await expect(page.getByLabel("Prowadzący", { exact: true })).toBeDisabled();
+  await page
+    .getByLabel("Powód zmiany dla opiekuna")
+    .fill("Kolejna uzgodniona zmiana daty");
+  await page.getByRole("button", { name: "Zapisz zmianę terminu" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  // The updated assignment remains intact on later scheduling attempts.
+  expect(
+    await page.evaluate(
+      () => window.consultationCalls.at(-1).calendar_staff_id,
+    ),
+  ).toBeUndefined();
+  await expect(page.getByLabel("Prowadzący", { exact: true })).toBeDisabled();
+
+  await page.goto(`${base}/?view=detail&status=requested&inactive=1`);
+  await expect(page.getByLabel("Sala do rezerwacji (opcjonalnie)")).toHaveValue(
+    "40000000-0000-4000-8000-000000000001",
+  );
+  await page.getByLabel("Termin (czas polski)").fill("2026-10-06T15:00");
+  await page
+    .getByLabel("Miejsce lub instrukcja połączenia")
+    .fill("Dotychczasowe miejsce spotkania");
+  await page
+    .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Zapisano");
+  expect(
+    await page.evaluate(
+      () => window.consultationCalls.at(-1).calendar_resource_id,
+    ),
+  ).toBe("40000000-0000-4000-8000-000000000001");
   for (const role of ["admin", "client"]) {
     await page.goto(
       `${base}/?view=detail&status=completed&care=1&role=${role}`,
@@ -255,7 +332,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Consultation UI: recovery after errors, versioned scheduling, role controls, request retries and 28 responsive scenarios passed.",
+    "Consultation UI: recovery, versioned scheduling, staff and room assignments, short-break confirmation, inactive room preservation, role controls, request retries and 28 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

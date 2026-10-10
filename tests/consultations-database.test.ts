@@ -248,7 +248,7 @@ describe.sequential(
         change(second, {
           start: new Date(Date.parse(start) + 30 * 60000).toISOString(),
         }),
-      ).rejects.toThrow("koliduje");
+      ).rejects.toThrow("Ten czas jest już zajęty");
       await change(second, {
         start: new Date(Date.parse(start) + 60 * 60000).toISOString(),
       });

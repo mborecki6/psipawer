@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checked } from "./local-fixtures";
+import { careEditor, careSourcePicker } from "./care-journey";
 
 // The same journey runs for a provisioned fixture and a newly invited guardian.
 // All business operations use the UI; only elapsed time is simulated on the
@@ -89,6 +90,9 @@ export async function consultationJourney({
     await expect(staff.getByLabel("Termin (czas polski)")).toBeVisible();
     await expect(staff.getByLabel("Termin (czas polski)")).toBeDisabled();
     await expect(
+      staff.getByLabel("Prowadzący", { exact: true }),
+    ).toBeDisabled();
+    await expect(
       staff.getByRole("button", { name: "Przygotowuję formularz…" }),
     ).toBeDisabled();
   } finally {
@@ -101,6 +105,13 @@ export async function consultationJourney({
     month: "2-digit",
     day: "2-digit",
   }).format(new Date(Date.now() + 8 * 86400000));
+  // A guardian's request does not choose the lead. Assign this disposable
+  // appointment explicitly after hydration; the required picker must never
+  // cause the test to mistake browser validation for a scheduling failure.
+  await staff.getByLabel("Prowadzący", { exact: true }).selectOption(staffId);
+  await expect(staff.getByLabel("Prowadzący", { exact: true })).toHaveValue(
+    staffId,
+  );
   await staff.getByLabel("Termin (czas polski)").fill(`${day}T11:00`);
   await staff
     .getByLabel("Miejsce lub instrukcja połączenia")
@@ -112,6 +123,15 @@ export async function consultationJourney({
     .getByRole("button", { name: "Potwierdź uzgodniony termin" })
     .click();
   await expect(staff.getByRole("status")).toContainText("Termin zapisany");
+  const assignment = await checked(
+    db
+      .from("calendar_assignments")
+      .select("assigned_staff_id,resource_id")
+      .eq("kind", "consultation")
+      .eq("appointment_id", consultation)
+      .single(),
+  );
+  expect(assignment).toEqual({ assigned_staff_id: staffId, resource_id: null });
   await expect(
     staff.getByRole("button", { name: "Oznacz jako zakończoną" }),
   ).toHaveCount(0);
@@ -120,6 +140,14 @@ export async function consultationJourney({
 
   stage("care-private-draft");
   await staff.getByRole("link", { name: "Przygotuj zalecenia →" }).click();
+  const careForm = await careEditor(staff);
+  await expect(
+    careForm.getByRole("region", { name: "Powiązanie planu", exact: true }),
+  ).toContainText("Konsultacja");
+  await expect(
+    careForm.getByLabel("Konsultacja, której dotyczą zalecenia"),
+  ).toBeHidden();
+  await careSourcePicker(careForm);
   await expect(
     staff.getByLabel("Konsultacja, której dotyczą zalecenia"),
   ).toHaveValue(consultation);

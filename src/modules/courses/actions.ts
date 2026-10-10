@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import type { ActionState } from "@/components/action-form";
+import { calendarWrite, calendarWarning } from "../calendar/write";
 import {
   createCourseSchema,
   courseChangeSchema,
@@ -18,6 +19,12 @@ import {
 
 export type CourseActionState = ActionState & { version?: number };
 const allowed = new Set([
+  "Sprawdź prowadzącego i miejsce zajęć.",
+  "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
+  "Wybierz aktywnego członka zespołu.",
+  "Wybierz aktywne miejsce.",
+  "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
+  "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
   "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
   "Termin kursu nakłada się na inne zajęcia lub blokadę. Sprawdź kalendarz.",
   "Oferta zmieniła się. Odśwież formularz i sprawdź cenę.",
@@ -78,16 +85,23 @@ export async function createCourse(
     };
   const p = parsed.data;
   try {
-    const { data, error } = await db.rpc("create_course", {
-      p_id: p.id,
-      p_service: p.service_id,
-      p_expected_service_version: p.service_version,
-      p_title: p.title,
-      p_capacity: p.capacity,
-      p_public_location: p.public_location,
-      p_exact_location: p.exact_location,
-      p_starts: p.starts,
-    });
+    const { data, error } = await calendarWrite(
+      db,
+      "create_course",
+      {
+        p_id: p.id,
+        p_service: p.service_id,
+        p_expected_service_version: p.service_version,
+        p_title: p.title,
+        p_capacity: p.capacity,
+        p_public_location: p.public_location,
+        p_exact_location: p.exact_location,
+        p_starts: p.starts,
+      },
+      form,
+    );
+    const warning = calendarWarning(error);
+    if (warning) return warning;
     if (error || data !== p.id) return failure(error?.message);
   } catch {
     return failure();
@@ -132,12 +146,18 @@ export async function changeCourse(
     };
   const p = parsed.data;
   try {
-    const { data, error } = await db.rpc("change_course", {
+    const args = {
       p_id: p.id,
       p_expected_version: p.expected_version,
       p_action: p.intent,
       p_note: p.note,
-    });
+    };
+    const { data, error } =
+      p.intent === "publish"
+        ? await calendarWrite(db, "change_course", args, form)
+        : await db.rpc("change_course", args);
+    const warning = calendarWarning(error);
+    if (warning) return warning;
     if (error || !Number.isInteger(data)) return failure(error?.message);
     refresh();
     return { version: data, success: "Zmiana kursu zapisana." };
@@ -217,14 +237,21 @@ export async function rescheduleSession(
     };
   const p = parsed.data;
   try {
-    const { data, error } = await db.rpc("reschedule_course_session", {
-      p_id: p.id,
-      p_expected_version: p.expected_version,
-      p_starts_at: p.starts_at,
-      p_note: p.note,
-      p_public_location: p.public_location,
-      p_exact_location: p.exact_location,
-    });
+    const { data, error } = await calendarWrite(
+      db,
+      "reschedule_course_session",
+      {
+        p_id: p.id,
+        p_expected_version: p.expected_version,
+        p_starts_at: p.starts_at,
+        p_note: p.note,
+        p_public_location: p.public_location,
+        p_exact_location: p.exact_location,
+      },
+      form,
+    );
+    const warning = calendarWarning(error);
+    if (warning) return warning;
     if (error || !Number.isInteger(data)) return failure(error?.message);
     refresh();
     return {

@@ -49,6 +49,52 @@ beforeEach(() => {
   });
 });
 describe("course server action boundary", () => {
+  it("confirms short breaks when publishing without overwriting individual session assignments", async () => {
+    const publish = { id, expected_version: "1", intent: "publish", note: "" };
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: "Short break",
+        hint: "CALENDAR_SHORT_BREAK",
+        details: "[]",
+      },
+    });
+    const warning = await changeCourse({}, form(publish));
+    expect(warning.calendarWarning?.signature).toMatch(/^[a-f0-9]{64}$/);
+    expect(warning.version).toBeUndefined();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenLastCalledWith("calendar_write", {
+      p_operation: "change_course",
+      p_assignment: null,
+      p_confirm_short_break: false,
+      p_arguments: {
+        p_id: id,
+        p_expected_version: 1,
+        p_action: "publish",
+        p_note: "",
+      },
+    });
+    await changeCourse(
+      {},
+      form({
+        ...publish,
+        confirm_short_break: "true",
+        calendar_confirmation: warning.calendarWarning!.signature,
+      }),
+    );
+    expect(mocks.rpc).toHaveBeenLastCalledWith(
+      "calendar_write",
+      expect.objectContaining({
+        p_confirm_short_break: true,
+        p_assignment: null,
+      }),
+    );
+    await changeCourse({}, form({ ...publish, intent: "close" }));
+    expect(mocks.rpc).toHaveBeenLastCalledWith(
+      "change_course",
+      expect.objectContaining({ p_action: "close" }),
+    );
+  });
   it("restricts reopening to staff and strips forged price, guardian and settlement fields", async () => {
     await expect(
       reopenEnrollment(
@@ -169,15 +215,20 @@ describe("course server action boundary", () => {
       ),
     ).rejects.toThrow("redirect");
     expect(mocks.session).toHaveBeenCalledWith("admin");
-    expect(mocks.rpc).toHaveBeenCalledWith("create_course", {
-      p_id: id,
-      p_service: service,
-      p_expected_service_version: 2,
-      p_title: create.title,
-      p_capacity: 4,
-      p_public_location: create.public_location,
-      p_exact_location: create.exact_location,
-      p_starts: ["2028-01-15T13:00:00.000Z", "2028-01-22T13:00:00.000Z"],
+    expect(mocks.rpc).toHaveBeenCalledWith("calendar_write", {
+      p_operation: "create_course",
+      p_assignment: null,
+      p_confirm_short_break: false,
+      p_arguments: {
+        p_id: id,
+        p_service: service,
+        p_expected_service_version: 2,
+        p_title: create.title,
+        p_capacity: 4,
+        p_public_location: create.public_location,
+        p_exact_location: create.exact_location,
+        p_starts: ["2028-01-15T13:00:00.000Z", "2028-01-22T13:00:00.000Z"],
+      },
     });
     expect(mocks.redirect).toHaveBeenCalledWith(`/admin/courses/${id}`);
   });
@@ -272,13 +323,18 @@ describe("course server action boundary", () => {
         )
       ).version,
     ).toBe(2);
-    expect(mocks.rpc).toHaveBeenCalledWith("reschedule_course_session", {
-      p_id: id,
-      p_expected_version: 1,
-      p_starts_at: "2028-06-12T12:00:00.000Z",
-      p_public_location: "Park miejski",
-      p_exact_location: "Inny prywatny punkt",
-      p_note: "Uzgodniona zmiana",
+    expect(mocks.rpc).toHaveBeenCalledWith("calendar_write", {
+      p_operation: "reschedule_course_session",
+      p_assignment: null,
+      p_confirm_short_break: false,
+      p_arguments: {
+        p_id: id,
+        p_expected_version: 1,
+        p_starts_at: "2028-06-12T12:00:00.000Z",
+        p_public_location: "Park miejski",
+        p_exact_location: "Inny prywatny punkt",
+        p_note: "Uzgodniona zmiana",
+      },
     });
   });
   it("allows first attendance version zero, without accepting forged staff IDs", async () => {

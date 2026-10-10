@@ -85,6 +85,55 @@
   line-height: 1.7;
   resize: vertical;
 }
+.sourceContext {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--sage-2);
+  overflow-wrap: anywhere;
+}
+.sourceLabel {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 650;
+}
+.sourceContext strong {
+  font-size: 16px;
+}
+.sourceContext p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.sourcePicker {
+  min-width: 0;
+}
+.sourcePicker > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.sourcePicker[open] > summary {
+  margin-bottom: 14px;
+}
+.sourcePicker p {
+  margin: 0;
+}
+.fields .sourceWarning {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.sourceWarning p {
+  margin: 0;
+}
+.sourceWarning button {
+  max-width: 100%;
+  white-space: normal;
+}
 .templatePicker {
   display: flex;
   align-items: end;
@@ -194,6 +243,7 @@
 }
 @media (max-width: 480px) {
   .actions > *,
+  .sourceWarning > button,
   .templatePicker > button {
     width: 100%;
   }

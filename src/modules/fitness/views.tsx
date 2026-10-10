@@ -322,6 +322,7 @@ export function FitnessDetailView({
                       <summary>Ustal lub zmień termin spotkania</summary>
                       <FitnessScheduleForm
                         session={s}
+                        booking={data.booking}
                         enabled={
                           p.status === "active" &&
                           ["pending", "scheduled"].includes(s.status)

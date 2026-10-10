@@ -146,6 +146,9 @@ test("consultation price → partial payments → reschedule/conflict → guardi
         .format(new Date(value))
         .replace(" ", "T");
     await staff.goto(`/admin/consultations/${id}`);
+    await staff
+      .getByLabel("Prowadzący", { exact: true })
+      .selectOption(leader.id);
     await staff.getByLabel("Termin (czas polski)").fill(dateInput(start));
     await staff
       .getByLabel("Miejsce lub instrukcja połączenia")
@@ -154,6 +157,16 @@ test("consultation price → partial payments → reschedule/conflict → guardi
       .getByRole("button", { name: "Potwierdź uzgodniony termin" })
       .click();
     await expect(staff.getByRole("status")).toContainText("Termin zapisany");
+    expect(
+      await checked(
+        db
+          .from("calendar_assignments")
+          .select("assigned_staff_id")
+          .eq("kind", "consultation")
+          .eq("appointment_id", id)
+          .single(),
+      ),
+    ).toEqual({ assigned_staff_id: leader.id });
     async function balance() {
       return checked(
         ownDb

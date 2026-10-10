@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
+import assert from "node:assert/strict";
+import { LocalPostgres } from "../helpers/local-postgres.mjs";
 import { account, checked, localClients, login } from "./local-fixtures";
 import { dateInput, mobileEvidence } from "./walk-journey";
 
-test("working rhythm: version conflicts, atomic buffers, weekly hours and private mobile panels", async ({
+// Real Auth/API/UI, isolated fixture users and events. Preferred breaks may be
+// confirmed; actual staff/room collisions remain impossible. No cloud access.
+test("team calendar: parallel staff, exclusive rooms, confirmed short breaks, individual hours and all-day leave", async ({
   browser,
   baseURL,
 }) => {
@@ -22,38 +25,89 @@ test("working rhythm: version conflicts, atomic buffers, weekly hours and privat
   const staff = await staffContext.newPage(),
     otherEditor = await staffContext.newPage(),
     owner = await ownerContext.newPage();
-  const ownerDb = client();
-  const original = await sql.json(
-    "select json_build_object('settings',(select to_jsonb(s) from public.calendar_settings s),'week',(select jsonb_agg(to_jsonb(h) order by weekday) from public.calendar_weekly_hours h),'slots',(select coalesce(jsonb_agg(to_jsonb(s) order by occupied),'[]') from public.calendar_slots s));",
-  );
+  const ownerDb = client(),
+    staffDb = client();
+  const snapshot = `select json_build_object(
+    'profiles',(select jsonb_agg(to_jsonb(p) order by id) from public.profiles p),
+    'dogs',(select jsonb_agg(to_jsonb(d) order by id) from public.dogs d),
+    'settings',(select to_jsonb(s) from public.calendar_settings s),
+    'week',(select jsonb_agg(to_jsonb(h) order by weekday) from public.calendar_weekly_hours h),
+    'slots',(select coalesce(jsonb_agg(to_jsonb(s) order by occupied,walk_id,consultation_id,block_id,course_session_id,fitness_session_id),'[]') from public.calendar_slots s),
+    'assignments',(select coalesce(jsonb_agg(to_jsonb(a) order by kind,appointment_id),'[]') from public.calendar_assignments a));`;
+  const original = await sql.json(snapshot);
   let phase = "accounts";
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const roomName = `Sala testowa ${suffix}`;
   const rhythm = (page = staff) => page.locator("#calendar-settings");
-  const open = async (page = staff) => {
-    await page.goto("/admin/settings/calendar");
+  const open = async (id: string, page = staff) => {
+    await page.goto(`/admin/settings/calendar?staff=${id}`);
     await expect(
       rhythm(page).getByRole("button", { name: "Zapisz rytm pracy" }),
     ).toBeEnabled();
   };
-  const save = async () => {
-    await rhythm().getByRole("button", { name: "Zapisz rytm pracy" }).click();
-  };
   try {
-    const admin = await account(db, users, "admin"),
+    const anna = await account(db, users, "admin"),
+      jan = await account(db, users, "admin"),
       guardian = await account(db, users, "client");
+    await checked(
+      db
+        .from("profiles")
+        .update({ full_name: `Anna ${suffix}` })
+        .eq("id", anna.id),
+    );
+    await checked(
+      db
+        .from("profiles")
+        .update({ full_name: `Jan ${suffix}` })
+        .eq("id", jan.id),
+    );
     await checked(ownerDb.auth.signInWithPassword(guardian));
-    await login(staff, admin, "admin");
+    await checked(staffDb.auth.signInWithPassword(anna));
+    await login(staff, anna, "admin");
     await login(owner, guardian, "client");
-    await open();
-    await open(otherEditor);
-    phase = "first-policy-and-stale-editor";
-    await rhythm().getByLabel("Przerwa przed spotkaniem (min)").fill("15");
-    await save();
+
+    phase = "room-creation";
+    await staff.goto("/admin/settings/calendar");
+    await staff.getByText("Miejsca i wspólne sale", { exact: true }).click();
+    const addSummary = staff
+      .locator("summary")
+      .filter({ hasText: /^Dodaj miejsce$/ });
+    await addSummary.click();
+    const addPlace = addSummary.locator("..");
+    await addPlace.getByLabel("Nazwa miejsca").fill(roomName);
+    await addPlace
+      .getByRole("button", { name: "Dodaj miejsce", exact: true })
+      .click();
+    await expect(addPlace.getByRole("status")).toContainText(
+      "Miejsce zapisane",
+    );
+    const room = await checked(
+      db
+        .from("calendar_resources")
+        .select("id,exclusive")
+        .eq("name", roomName)
+        .single(),
+    );
+    assert(room);
+    expect(room.exclusive).toBe(true);
+
+    phase = "individual-rhythm-and-stale-editor";
+    await open(anna.id);
+    await open(anna.id, otherEditor);
+    await rhythm().getByLabel("Korzystaj z domyślnego rytmu zespołu").uncheck();
+    await rhythm().getByLabel("Pilnuj godzin pracy").uncheck();
+    await rhythm().getByLabel("Przerwa przed spotkaniem (min)").fill("0");
+    await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("30");
+    await rhythm().getByRole("button", { name: "Zapisz rytm pracy" }).click();
     await expect(rhythm().getByRole("status")).toContainText(
-      "Ustawienia zapisane",
+      "Rytm pracy prowadzącego zapisany",
     );
     await rhythm(otherEditor)
-      .getByLabel("Przerwa przed spotkaniem (min)")
-      .fill("30");
+      .getByLabel("Korzystaj z domyślnego rytmu zespołu")
+      .uncheck();
+    await rhythm(otherEditor)
+      .getByLabel("Przerwa po spotkaniu (min)")
+      .fill("45");
     await rhythm(otherEditor)
       .getByRole("button", { name: "Zapisz rytm pracy" })
       .click();
@@ -61,211 +115,239 @@ test("working rhythm: version conflicts, atomic buffers, weekly hours and privat
       "zmieniły się",
     );
     await expect(
-      rhythm(otherEditor).getByLabel("Przerwa przed spotkaniem (min)"),
-    ).toHaveValue("30");
+      rhythm(otherEditor).getByLabel("Przerwa po spotkaniu (min)"),
+    ).toHaveValue("45");
+
     const start = await sql.json(`select to_json(min(t)) from (
-      select ((now() at time zone 'Europe/Warsaw')::date+interval '3 years'+make_interval(days=>n)+interval '10 hours') at time zone 'Europe/Warsaw' t from generate_series(1,30) n
-      ) candidates where not exists(select 1 from public.calendar_slots s where upper(s.base_occupied)>now()
-        and (extract(isodow from lower(s.base_occupied) at time zone 'Europe/Warsaw')=extract(isodow from t at time zone 'Europe/Warsaw')
-          or extract(isodow from upper(s.base_occupied) at time zone 'Europe/Warsaw')=extract(isodow from t at time zone 'Europe/Warsaw')));`);
+      select ((now() at time zone 'Europe/Warsaw')::date+interval '3 years'+make_interval(days=>n)+interval '10 hours') at time zone 'Europe/Warsaw' t from generate_series(1,90) n
+      ) candidates where extract(isodow from t at time zone 'Europe/Warsaw')=1
+      and not exists(select 1 from public.calendar_slots s where s.base_occupied && tstzrange(t,t+interval '2 days','[)'));`);
     expect(typeof start).toBe("string");
     const day = dateInput(start).slice(0, 10);
-    async function walkAt(at: string, location: string) {
+    const later = (minutes: number) =>
+      new Date(Date.parse(start) + minutes * 60000).toISOString();
+    async function prepareWalk(
+      at: string,
+      location: string,
+      lead: string,
+      place = "",
+    ) {
       await staff.goto("/admin/walks/new");
       await staff.getByLabel("Termin (czas polski)").fill(dateInput(at));
       await staff.getByLabel("Czas trwania w minutach").fill("60");
       await staff.getByLabel("Ogólna lokalizacja").fill(location);
       await staff
         .getByLabel("Dokładne miejsce zbiórki")
-        .fill("FIKCYJNA ZBIÓRKA");
+        .fill(`FIKCYJNA ZBIÓRKA ${suffix}`);
+      await staff.getByLabel("Prowadzący", { exact: true }).selectOption(lead);
+      await staff
+        .getByLabel("Sala do rezerwacji (opcjonalnie)")
+        .selectOption(place);
+    }
+    async function submitWalk() {
       await staff
         .getByRole("button", { name: "Utwórz spacer", exact: true })
         .click();
+    }
+    async function savedWalk() {
       await expect(staff).toHaveURL(/\/admin\/walks\/[a-f0-9-]+\?saved=1$/);
       return new URL(staff.url()).pathname.split("/").at(-1)!;
     }
-    phase = "buffer-recalculation";
-    const first = await walkAt(start, "Fikcyjny rytm pierwszy");
-    await walkAt(
-      new Date(Date.parse(start) + 75 * 60000).toISOString(),
-      "Fikcyjny rytm drugi",
+
+    phase = "short-break-confirmation";
+    await prepareWalk(start, `Pierwszy ${suffix}`, anna.id, room.id);
+    await submitWalk();
+    const first = await savedWalk();
+    await prepareWalk(later(75), `Krótka przerwa ${suffix}`, anna.id, room.id);
+    await submitWalk();
+    const warning = staff.locator("form").getByRole("alert");
+    await expect(warning).toContainText("krótszą przerwę");
+    await expect(warning).toContainText("15 min");
+    await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(
+      dateInput(later(75)),
     );
-    await open();
-    await rhythm().getByLabel("Przerwa przed spotkaniem (min)").fill("0");
-    await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("15");
-    await save();
-    await expect(rhythm().getByRole("status")).toContainText(
-      "Ustawienia zapisane",
+    await expect(staff.getByLabel("Prowadzący", { exact: true })).toHaveValue(
+      anna.id,
     );
-    const slots = await sql.json(
-      "select jsonb_agg(to_jsonb(s) order by occupied) from public.calendar_slots s;",
-    );
-    await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("30");
-    await save();
-    await expect(rhythm().getByRole("alert")).toContainText(
-      "kolizję istniejących terminów",
-    );
-    await expect(rhythm().getByLabel("Przerwa po spotkaniu (min)")).toHaveValue(
-      "30",
-    );
+    await expect(
+      staff.getByLabel("Sala do rezerwacji (opcjonalnie)"),
+    ).toHaveValue(room.id);
     expect(
-      await sql.json(
-        "select jsonb_agg(to_jsonb(s) order by occupied) from public.calendar_slots s;",
+      await checked(
+        db
+          .from("walks")
+          .select("id")
+          .eq("public_location", `Krótka przerwa ${suffix}`),
       ),
-    ).toEqual(slots);
+    ).toEqual([]);
+    await staff
+      .getByLabel("Sprawdziłem przerwę i chcę zapisać ten termin.")
+      .check();
+    await submitWalk();
+    await savedWalk();
+
+    phase = "exclusive-room-and-parallel-staff";
+    await prepareWalk(start, `Równoległy ${suffix}`, jan.id, room.id);
+    await submitWalk();
+    await expect(staff.locator("form").getByRole("alert")).toContainText(
+      "już zajęty",
+    );
+    await expect(
+      staff.getByLabel("Sprawdziłem przerwę i chcę zapisać ten termin."),
+    ).toHaveCount(0);
+    await staff.getByLabel("Sala do rezerwacji (opcjonalnie)").selectOption("");
+    await submitWalk();
+    const parallel = await savedWalk();
+    const assignments = await checked(
+      db
+        .from("calendar_assignments")
+        .select("appointment_id,assigned_staff_id,resource_id,created_by")
+        .in("appointment_id", [first, parallel]),
+    );
+    assert(assignments);
+    expect(assignments.find((a) => a.appointment_id === first)).toMatchObject({
+      assigned_staff_id: anna.id,
+      resource_id: room.id,
+      created_by: anna.id,
+    });
     expect(
-      await sql.json(
-        "select to_json(after_minutes) from public.calendar_settings;",
-      ),
-    ).toBe(15);
-    phase = "weekly-hours";
-    await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("15");
+      assignments.find((a) => a.appointment_id === parallel),
+    ).toMatchObject({
+      assigned_staff_id: jan.id,
+      resource_id: null,
+      created_by: anna.id,
+    });
+
+    phase = "calendar-reassignment-conflict";
+    await staff.goto(`/admin/calendar?date=${day}`);
+    const firstCard = staff.locator(
+      `article[id^="appointment-walk-${first}-"]`,
+    );
+    await firstCard.getByText("Prowadzący i miejsce", { exact: true }).click();
+    await firstCard
+      .getByLabel("Prowadzący", { exact: true })
+      .selectOption(jan.id);
+    await firstCard.getByRole("button", { name: "Zapisz przypisanie" }).click();
+    await expect(firstCard.getByRole("alert")).toContainText("już zajęty");
+    await expect(
+      firstCard.getByLabel("Prowadzący", { exact: true }),
+    ).toHaveValue(jan.id);
+    const unchangedAssignment = await checked(
+      db
+        .from("calendar_assignments")
+        .select("assigned_staff_id")
+        .eq("kind", "walk")
+        .eq("appointment_id", first)
+        .single(),
+    );
+    assert(unchangedAssignment);
+    expect(unchangedAssignment.assigned_staff_id).toBe(anna.id);
+
+    phase = "individual-hours-and-all-day-leave";
+    await open(jan.id);
+    await rhythm().getByLabel("Korzystaj z domyślnego rytmu zespołu").uncheck();
     await rhythm().getByLabel("Pilnuj godzin pracy").check();
-    const weekday = await sql.json(
-      `select to_json(extract(isodow from ${q(start)}::timestamptz at time zone 'Europe/Warsaw')::integer);`,
-    );
-    const names = [
-      "Poniedziałek",
-      "Wtorek",
-      "Środa",
-      "Czwartek",
-      "Piątek",
-      "Sobota",
-      "Niedziela",
-    ];
-    for (const [i, name] of names.entries()) {
-      await rhythm().getByLabel(name, { exact: true }).check();
-      await rhythm()
-        .getByLabel(new RegExp(`^Od.*${name}`))
-        .selectOption(String(i + 1 === weekday ? 540 : 0));
-      await rhythm()
-        .getByLabel(new RegExp(`^Do.*${name}`))
-        .selectOption(String(i + 1 === weekday ? 1020 : 1440));
-    }
-    await save();
+    await rhythm().getByLabel("Przerwa przed spotkaniem (min)").fill("0");
+    await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("0");
+    await rhythm().getByRole("button", { name: "Zapisz rytm pracy" }).click();
     await expect(rhythm().getByRole("status")).toContainText(
-      "Ustawienia zapisane",
+      "Rytm pracy prowadzącego zapisany",
     );
-    await expect(rhythm().locator("form")).toHaveAttribute(
-      "aria-busy",
-      "false",
-    );
-    await expect(rhythm().getByLabel("Pilnuj godzin pracy")).toBeChecked();
-    for (const [i, name] of names.entries()) {
-      await expect(rhythm().getByLabel(name, { exact: true })).toBeChecked();
-      await expect(rhythm().getByLabel(new RegExp(`^Od.*${name}`))).toHaveValue(
-        String(i + 1 === weekday ? 540 : 0),
-      );
-      await expect(rhythm().getByLabel(new RegExp(`^Do.*${name}`))).toHaveValue(
-        String(i + 1 === weekday ? 1020 : 1440),
-      );
-    }
-    expect(
-      await sql.json(
-        `select to_json(starts_at=${q(start)}::timestamptz) from public.walks where id=${q(first)};`,
-      ),
-    ).toBe(true);
-    mkdirSync("output/calendar", { recursive: true });
-    for (const width of [320, 390]) {
-      await staff.setViewportSize({ width, height: 900 });
-      await mobileEvidence(staff, `output/calendar/rytm-pracy-${width}.png`);
-    }
-    phase = "outside-hours-form-and-privacy";
-    await staff.goto("/admin/walks/new");
-    await staff.getByLabel("Termin (czas polski)").fill(`${day}T08:00`);
-    await staff.getByLabel("Czas trwania w minutach").fill("60");
-    await staff
-      .getByLabel("Ogólna lokalizacja")
-      .fill("Fikcyjny rytm poza godzinami");
-    await staff
-      .getByLabel("Dokładne miejsce zbiórki")
-      .fill("FIKCYJNA ZBIÓRKA PO GODZINACH");
-    await staff
-      .getByRole("button", { name: "Utwórz spacer", exact: true })
-      .click();
+    await prepareWalk(later(-120), `Poza godzinami ${suffix}`, jan.id);
+    await submitWalk();
     await expect(staff.locator("form").getByRole("alert")).toContainText(
       "wykracza poza godziny pracy",
     );
     await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(
-      `${day}T08:00`,
+      dateInput(later(-120)),
     );
-    await expect(staff.getByLabel("Dokładne miejsce zbiórki")).toHaveValue(
-      "FIKCYJNA ZBIÓRKA PO GODZINACH",
-    );
-    await staff.getByLabel("Termin (czas polski)").fill(`${day}T13:00`);
-    await staff
-      .getByRole("button", { name: "Utwórz spacer", exact: true })
+    const tuesday = dateInput(later(24 * 60)).slice(0, 10);
+    await staff.goto(`/admin/calendar?date=${tuesday}`);
+    await staff.getByText("Zarezerwuj czas", { exact: true }).click();
+    const block = staff.locator("#calendar-block-editor");
+    await block.getByLabel("Nazwa blokady").fill(`Urlop Jana ${suffix}`);
+    await block.getByLabel("Cały dzień", { exact: true }).check();
+    await block.getByLabel("Od dnia", { exact: true }).fill(tuesday);
+    await expect(block.getByLabel("Do dnia (włącznie)")).toHaveValue(tuesday);
+    await block.getByLabel("Prowadzący", { exact: true }).selectOption(jan.id);
+    await block
+      .getByRole("button", { name: "Zablokuj czas", exact: true })
       .click();
-    await expect(staff).toHaveURL(/\/admin\/walks\/[a-f0-9-]+\?saved=1$/);
-    await owner.goto("/app/calendar");
-    await expect(owner.locator("#calendar-settings")).toHaveCount(0);
-    expect(
-      await checked(ownerDb.from("calendar_settings").select("version")),
-    ).toEqual([]);
-    expect(
-      await checked(ownerDb.from("calendar_weekly_hours").select("weekday")),
-    ).toEqual([]);
+    await expect(block.getByRole("status")).toContainText("Czas zablokowany");
+    const leave = await checked(
+      db
+        .from("calendar_blocks")
+        .select("starts_at,ends_at")
+        .eq("title", `Urlop Jana ${suffix}`)
+        .single(),
+    );
+    assert(leave);
+    expect(dateInput(leave.starts_at)).toBe(`${tuesday}T00:00`);
+    expect(Date.parse(leave.ends_at) - Date.parse(leave.starts_at)).toBe(
+      86400000,
+    );
+    await prepareWalk(later(24 * 60), `W urlop ${suffix}`, jan.id);
+    await submitWalk();
+    await expect(staff.locator("form").getByRole("alert")).toContainText(
+      "już zajęty",
+    );
+    await staff.getByLabel("Prowadzący", { exact: true }).selectOption(anna.id);
+    await submitWalk();
+    await savedWalk();
+
+    phase = "month-privacy-and-mobile";
+    await staff.goto(`/admin/calendar?date=${day}&view=month`);
+    await expect(
+      staff.getByText(
+        "Wybierz dzień, żeby zobaczyć godziny i szczegóły w widoku tygodnia.",
+      ),
+    ).toBeVisible();
+    mkdirSync("output/calendar", { recursive: true });
+    await mobileEvidence(staff, "output/calendar/team-month-390.png");
+    await staff.goto(`/admin/settings/calendar?staff=${jan.id}`);
+    await staff.setViewportSize({ width: 320, height: 900 });
+    await mobileEvidence(staff, "output/calendar/team-hours-320.png");
+    await owner.goto("/app/calendar?date=2028-10-10&view=month");
+    await expect(owner.getByLabel("Kalendarz: październik 2028")).toBeVisible();
+    await expect(
+      owner.getByRole("link", { name: /zaplanowanych|bez spotkań/ }),
+    ).toHaveCount(42);
+    await expect(owner.getByLabel("Kalendarz prowadzącego")).toHaveCount(0);
+    await expect(owner.getByText(roomName, { exact: false })).toHaveCount(0);
+    await expect(
+      owner.getByText(`Urlop Jana ${suffix}`, { exact: true }),
+    ).toHaveCount(0);
+    for (const table of [
+      "calendar_resources",
+      "calendar_assignments",
+      "calendar_staff_settings",
+      "calendar_staff_weekly_hours",
+    ])
+      expect(await checked(ownerDb.from(table).select("*"))).toEqual([]);
     expect(
       (
-        await ownerDb.rpc("save_calendar_settings", {
-          p_expected_version: 4,
-          p_hours_enabled: false,
-          p_before_minutes: 0,
-          p_after_minutes: 0,
-          p_week: original.week,
-        })
+        await ownerDb.rpc(
+          "calendar_team_appointments",
+          { p_from: start, p_to: later(24 * 60) },
+          { get: true },
+        )
       ).error?.message,
     ).toContain("Brak uprawnień");
-    phase = "completed-meeting-buffer";
-    await open();
-    await rhythm().getByLabel("Pilnuj godzin pracy").uncheck();
-    await save();
-    await expect(rhythm().getByRole("status")).toContainText(
-      "Ustawienia zapisane",
-    );
-    // Advance only this run's walk to five minutes after its nominal end.
-    // Fifteen minutes of configured travel time must still block ten minutes.
-    await checked(
-      db
-        .from("walks")
-        .update({
-          starts_at: new Date(Date.now() - 65 * 60000).toISOString(),
-          status: "completed",
-        })
-        .eq("id", first),
-    );
     expect(
-      await sql.json(
-        `select to_json(upper(occupied)>now() and upper(occupied)-upper(base_occupied)=interval '15 minutes') from public.calendar_slots where walk_id=${q(first)};`,
-      ),
-    ).toBe(true);
-    const near = dateInput(new Date(Date.now() + 2 * 60000).toISOString());
-    await staff.goto("/admin/walks/new");
-    await staff.getByLabel("Termin (czas polski)").fill(near);
-    await staff.getByLabel("Czas trwania w minutach").fill("60");
-    await staff
-      .getByLabel("Ogólna lokalizacja")
-      .fill("Fikcyjna pozostała przerwa");
-    await staff
-      .getByLabel("Dokładne miejsce zbiórki")
-      .fill("FIKCYJNA ZBIÓRKA PO PRZERWIE");
-    await staff
-      .getByRole("button", { name: "Utwórz spacer", exact: true })
-      .click();
-    await expect(staff.locator("form").getByRole("alert")).toContainText(
-      "Ten czas jest już zajęty",
+      (
+        await ownerDb.rpc(
+          "calendar_staff_preferences",
+          { p_staff_id: anna.id },
+          { get: true },
+        )
+      ).error?.message,
+    ).toContain("Brak uprawnień");
+    const legacy = await staffDb.rpc(
+      "calendar_team_appointments",
+      { p_from: start, p_to: later(24 * 60) },
+      { get: true },
     );
-    await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(near);
-    await checked(
-      db
-        .from("walks")
-        .update({ starts_at: new Date(Date.now() - 80 * 60000).toISOString() })
-        .eq("id", first),
-    );
-    await staff
-      .getByRole("button", { name: "Utwórz spacer", exact: true })
-      .click();
-    await expect(staff).toHaveURL(/\/admin\/walks\/[a-f0-9-]+\?saved=1$/);
+    expect(legacy.error).toBeNull();
   } catch (error) {
     const lines = [
       ...String(error instanceof Error ? error.stack : "").matchAll(
@@ -274,30 +356,28 @@ test("working rhythm: version conflicts, atomic buffers, weekly hours and privat
     ].map((m) => Number(m[1]));
     console.error(JSON.stringify({ phase, ownLines: lines }));
     throw new Error(
-      `Lokalny rytm kalendarza nie przeszedł etapu ${phase}; treści i poświadczenia pominięto.`,
+      `Lokalny kalendarz nie przeszedł etapu ${phase}; treści i poświadczenia pominięto.`,
     );
   } finally {
     await staffContext.close();
     await ownerContext.close();
-    // Only this test's walks and audit rows are removed. Restore the complete
-    // original settings row before deleting its temporary author account.
-    if (users.length)
+    if (users.length) {
       await checked(db.from("walks").delete().in("leader_id", users));
-    const s = original.settings;
-    await sql.query(`begin;lock table public.calendar_slots in share row exclusive mode;
-      update public.calendar_settings set version=${s.version},hours_enabled=${s.hours_enabled},before_minutes=${s.before_minutes},after_minutes=${s.after_minutes},updated_by=${s.updated_by ? q(s.updated_by) : "null"},updated_at=${q(s.updated_at)};
-      update public.calendar_weekly_hours h set enabled=x.enabled,start_minute=x.start_minute,end_minute=x.end_minute from jsonb_to_recordset(${q(JSON.stringify(original.week))}::jsonb) x(weekday integer,enabled boolean,start_minute integer,end_minute integer) where h.weekday=x.weekday;
-      set constraints public.calendar_no_overlap deferred;update public.calendar_slots set occupied=base_occupied;set constraints public.calendar_no_overlap immediate;commit;`);
-    expect(
-      await sql.json(
-        "select json_build_object('settings',(select to_jsonb(s) from public.calendar_settings s),'week',(select jsonb_agg(to_jsonb(h) order by weekday) from public.calendar_weekly_hours h),'slots',(select coalesce(jsonb_agg(to_jsonb(s) order by occupied),'[]') from public.calendar_slots s));",
-      ),
-    ).toEqual(original);
-    await ownerDb.auth.signOut();
-    for (const id of users) {
-      await checked(db.from("audit_events").delete().eq("actor_id", id));
-      await checked(db.auth.admin.deleteUser(id));
+      await checked(
+        db.from("calendar_blocks").delete().in("updated_by", users),
+      );
+      await checked(
+        db.from("calendar_resources").delete().in("created_by", users),
+      );
+      await checked(db.from("audit_events").delete().in("actor_id", users));
+      await checked(
+        db.from("calendar_staff_settings").delete().in("staff_id", users),
+      );
+      for (const id of users) await checked(db.auth.admin.deleteUser(id));
     }
+    expect(await sql.json(snapshot)).toEqual(original);
+    await ownerDb.auth.signOut();
+    await staffDb.auth.signOut();
     await sql.close();
   }
 });

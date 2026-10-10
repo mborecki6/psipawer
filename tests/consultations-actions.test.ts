@@ -141,15 +141,20 @@ describe("consultation actions", () => {
   it("converts Warsaw time, requires staff, and acknowledges the saved version", async () => {
     const result = await scheduleConsultation({}, form(schedule));
     expect(mocks.session).toHaveBeenCalledWith("admin");
-    expect(mocks.rpc).toHaveBeenCalledWith("change_consultation", {
-      p_id: id,
-      p_expected_version: 1,
-      p_action: "schedule",
-      p_starts_at: "2026-10-01T08:00:00.000Z",
-      p_duration: 60,
-      p_mode: "online",
-      p_location: schedule.location,
-      p_note: schedule.note,
+    expect(mocks.rpc).toHaveBeenCalledWith("calendar_write", {
+      p_operation: "change_consultation",
+      p_assignment: null,
+      p_confirm_short_break: false,
+      p_arguments: {
+        p_id: id,
+        p_expected_version: 1,
+        p_action: "schedule",
+        p_starts_at: "2026-10-01T08:00:00.000Z",
+        p_duration: 60,
+        p_mode: "online",
+        p_location: schedule.location,
+        p_note: schedule.note,
+      },
     });
     expect(result.version).toBe(2);
     expect(mocks.refresh).toHaveBeenCalledWith("/app", "layout");
@@ -169,6 +174,57 @@ describe("consultation actions", () => {
     );
     expect(result.error).toBeTruthy();
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("preserves a short-break warning and requires confirmation of the same date and assignment", async () => {
+    const assigned = {
+      ...schedule,
+      calendar_staff_id: "10000000-0000-4000-8000-000000000002",
+      calendar_resource_id: "40000000-0000-4000-8000-000000000001",
+      calendar_assignment_version: "4",
+      assigned_staff_id: "forged",
+    };
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: "Short break",
+        hint: "CALENDAR_SHORT_BREAK",
+        details: "[]",
+      },
+    });
+    const warning = await scheduleConsultation({}, form(assigned));
+    expect(warning.calendarWarning?.signature).toMatch(/^[a-f0-9]{64}$/);
+    expect(warning.version).toBeUndefined();
+    expect(warning.error).toBeUndefined();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenLastCalledWith(
+      "calendar_write",
+      expect.objectContaining({
+        p_assignment: {
+          staff_id: assigned.calendar_staff_id,
+          resource_id: assigned.calendar_resource_id,
+          expected_version: 4,
+        },
+        p_confirm_short_break: false,
+      }),
+    );
+    const confirmation = {
+      ...assigned,
+      confirm_short_break: "true",
+      calendar_confirmation: warning.calendarWarning!.signature,
+    };
+    await scheduleConsultation({}, form(confirmation));
+    expect(mocks.rpc).toHaveBeenLastCalledWith(
+      "calendar_write",
+      expect.objectContaining({ p_confirm_short_break: true }),
+    );
+    await scheduleConsultation(
+      {},
+      form({ ...confirmation, starts_at: "2026-10-01T11:00" }),
+    );
+    expect(mocks.rpc).toHaveBeenLastCalledWith(
+      "calendar_write",
+      expect.objectContaining({ p_confirm_short_break: false }),
+    );
   });
   it("keeps useful conflict errors but hides infrastructure errors", async () => {
     mocks.rpc.mockResolvedValueOnce({

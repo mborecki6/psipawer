@@ -6,9 +6,14 @@ import {
   blockSchema,
   cancelBlockSchema,
   calendarSettingsSchema,
+  calendarAssignmentSchema,
+  calendarResourceSchema,
+  calendarStaffSettingsSchema,
 } from "./schemas";
+import { calendarConfirmation, calendarWarning } from "./write";
 export type BlockState = ActionState & {
   version?: number;
+  assignmentVersion?: number;
   cancelled?: boolean;
 };
 const messages = [
@@ -17,6 +22,12 @@ const messages = [
   "Ta blokada została już usunięta.",
   "Blokada musi obejmować przyszły czas.",
   "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
+  "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
+  "Ten czas jest już zajęty przez prowadzącego lub wybrane miejsce. Sprawdź kalendarz.",
+  "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
+  "Wybierz aktywnego członka zespołu.",
+  "Wybierz aktywne miejsce.",
+  "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
 ];
 function failed(message?: string): BlockState {
   return {
@@ -38,19 +49,44 @@ export async function saveBlock(
       fields: parsed.error.flatten().fieldErrors,
     };
   const p = parsed.data;
+  const args = {
+    p_id: p.id,
+    p_expected_version: p.expected_version,
+    p_expected_assignment_version: p.expected_assignment_version,
+    p_title: p.title,
+    p_starts_at: p.starts_at,
+    p_ends_at: p.ends_at,
+    p_staff_id: p.assigned_staff_id,
+    p_resource_id: p.resource_id,
+  };
+  const confirmation = calendarConfirmation(
+    "save_calendar_team_block",
+    args,
+    form,
+  );
   try {
-    const { data, error } = await db.rpc("save_calendar_block", {
-      p_id: p.id,
-      p_expected_version: p.expected_version,
-      p_title: p.title,
-      p_starts_at: p.starts_at,
-      p_ends_at: p.ends_at,
+    const { data, error } = await db.rpc("save_calendar_team_block", {
+      ...args,
+      p_confirm_short_break: confirmation.confirmed,
     });
-    if (error || !Number.isInteger(data)) return failed(error?.message);
+    const warning = calendarWarning(
+      error
+        ? { ...error, confirmation_signature: confirmation.signature }
+        : null,
+    );
+    if (warning) return warning;
+    if (
+      error ||
+      !data ||
+      !Number.isInteger(data.version) ||
+      !Number.isInteger(data.assignment_version)
+    )
+      return failed(error?.message);
     revalidatePath("/admin", "layout");
     return {
-      version: data,
-      success: "Czas zablokowany. W tym przedziale nie umówisz innych spotkań.",
+      version: data.version,
+      assignmentVersion: data.assignment_version,
+      success: "Czas zablokowany dla wybranego prowadzącego i miejsca.",
     };
   } catch {
     return failed();
@@ -115,12 +151,131 @@ export async function saveCalendarSettings(
     return {
       version: data,
       success:
-        "Ustawienia zapisane. Kalendarz pilnuje wybranych przerw i godzin pracy.",
+        "Ustawienia zapisane. Godziny pracy są pilnowane po włączeniu kontroli, a krótkie przerwy wymagają potwierdzenia.",
     };
   } catch {
     return {
       error:
         "Nie udało się zapisać ustawień. Twoje wpisy pozostają w formularzu.",
+    };
+  }
+}
+
+export async function saveCalendarAssignment(
+  _: BlockState,
+  form: FormData,
+): Promise<BlockState> {
+  const { db } = await requireSession("admin");
+  const parsed = calendarAssignmentSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success)
+    return { error: "Sprawdź wybrane zajęcia, prowadzącego i miejsce." };
+  const p = parsed.data;
+  const args = {
+    p_kind: p.kind,
+    p_appointment_id: p.appointment_id,
+    p_expected_version: p.expected_version,
+    p_staff_id: p.assigned_staff_id,
+    p_resource_id: p.resource_id,
+  };
+  const confirmation = calendarConfirmation(
+    "save_calendar_assignment",
+    args,
+    form,
+  );
+  try {
+    const { data, error } = await db.rpc("save_calendar_assignment", {
+      ...args,
+      p_confirm_short_break: confirmation.confirmed,
+    });
+    const warning = calendarWarning(
+      error
+        ? { ...error, confirmation_signature: confirmation.signature }
+        : null,
+    );
+    if (warning) return warning;
+    if (error || !Number.isInteger(data)) return failed(error?.message);
+    revalidatePath("/admin", "layout");
+    return { version: data, success: "Prowadzący i miejsce zapisane." };
+  } catch {
+    return failed();
+  }
+}
+
+export async function saveCalendarResource(
+  _: BlockState,
+  form: FormData,
+): Promise<BlockState> {
+  const { db } = await requireSession("admin");
+  const parsed = calendarResourceSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: "Sprawdź nazwę i ustawienia miejsca." };
+  const p = parsed.data;
+  try {
+    const { data, error } = await db.rpc("save_calendar_resource", {
+      p_id: p.id,
+      p_expected_version: p.expected_version,
+      p_name: p.name,
+      p_exclusive: p.exclusive,
+      p_active: p.active,
+    });
+    if (error || !Number.isInteger(data))
+      return {
+        error:
+          error &&
+          [
+            "Miejsce zmieniło się. Odśwież widok przed zapisem.",
+            "Sala jest zajęta przez równoległe spotkania. Najpierw zmień ich przypisanie.",
+          ].includes(error.message)
+            ? error.message
+            : "Nie udało się zapisać miejsca. Wpisane dane pozostają w formularzu.",
+      };
+    revalidatePath("/admin", "layout");
+    return { version: data, success: "Miejsce zapisane." };
+  } catch {
+    return {
+      error:
+        "Nie udało się zapisać miejsca. Wpisane dane pozostają w formularzu.",
+    };
+  }
+}
+
+export async function saveCalendarStaffSettings(
+  _: BlockState,
+  form: FormData,
+): Promise<BlockState> {
+  const { db } = await requireSession("admin");
+  const parsed = calendarStaffSettingsSchema.safeParse(
+    Object.fromEntries(form),
+  );
+  if (!parsed.success)
+    return { error: "Sprawdź prowadzącego, przerwy i godziny pracy." };
+  const p = parsed.data;
+  try {
+    const { data, error } = await db.rpc("save_calendar_staff_settings", {
+      p_staff_id: p.staff_id,
+      p_expected_version: p.expected_version,
+      p_use_default: p.use_default,
+      p_hours_enabled: p.hours_enabled,
+      p_before_minutes: p.before_minutes,
+      p_after_minutes: p.after_minutes,
+      p_week: p.week,
+    });
+    if (error || !Number.isInteger(data))
+      return {
+        error:
+          error &&
+          [
+            "Ustawienia prowadzącego zmieniły się. Odśwież widok przed zapisem.",
+            "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
+          ].includes(error.message)
+            ? error.message
+            : "Nie udało się zapisać godzin prowadzącego. Wpisane dane pozostają w formularzu.",
+      };
+    revalidatePath("/admin", "layout");
+    return { version: data, success: "Rytm pracy prowadzącego zapisany." };
+  } catch {
+    return {
+      error:
+        "Nie udało się zapisać godzin prowadzącego. Wpisane dane pozostają w formularzu.",
     };
   }
 }

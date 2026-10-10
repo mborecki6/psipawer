@@ -22,7 +22,7 @@ export function ContactCard({
       </p>
       <p className="muted">
         {admin
-          ? "Wróć do ustaleń i sprawdź, jak przebiega wspólna praca."
+          ? "Zadanie dla prowadzącej: skontaktuj się z opiekunem i sprawdź postępy. Termin nie rezerwuje wizyty w kalendarzu."
           : item.status === "open"
             ? "Prowadząca wróci do Waszych postępów. To planowany kontakt, nie rezerwacja wizyty o określonej godzinie."
             : "Aktualny status kontaktu z prowadzącą. Wasze zalecenia i odpowiedzi pozostają poniżej."}

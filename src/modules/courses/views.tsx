@@ -22,6 +22,7 @@ import {
   CourseSettingsForm,
 } from "./forms";
 import { changeCourse, decideEnrollment, changeSession } from "./actions";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import styles from "./courses.module.css";
 import { CourseBilling } from "./billing";
 const courseOptions = [
@@ -206,10 +207,12 @@ export function CourseCreateView({
   id,
   services,
   serviceId,
+  booking,
 }: {
   id: string;
   services: Service[];
   serviceId?: string;
+  booking?: BookingChoices;
 }) {
   return (
     <div className={`stack ${styles.create}`}>
@@ -227,7 +230,12 @@ export function CourseCreateView({
         </p>
       </header>
       <article className="card pad">
-        <CourseCreateForm id={id} services={services} serviceId={serviceId} />
+        <CourseCreateForm
+          id={id}
+          services={services}
+          serviceId={serviceId}
+          booking={booking}
+        />
       </article>
       <article className={`card pad ${styles.note}`}>
         <h3>Cena za cały kurs</h3>
@@ -266,6 +274,7 @@ export function CourseDetailView({
   focus,
   care = {},
   plansPage = 1,
+  booking,
 }: Awaited<ReturnType<typeof getCourse>> & {
   page: number;
   filter: string;
@@ -410,6 +419,7 @@ export function CourseDetailView({
                         <summary>Zmień termin lub zbiórkę</summary>
                         <SessionEditor
                           session={s}
+                          booking={booking}
                           enabled={
                             unfinished && s.status === "scheduled" && !started
                           }

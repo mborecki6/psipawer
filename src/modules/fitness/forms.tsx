@@ -15,14 +15,24 @@ import {
   type FitnessActionState,
 } from "./actions";
 import styles from "./fitness.module.css";
+import { CalendarWarning } from "@/modules/calendar/warning";
+import { BookingChoice } from "@/modules/calendar/booking-choice";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 
-function Feedback({ state }: { state: FitnessActionState }) {
+function Feedback({
+  state,
+  pending = false,
+}: {
+  state: FitnessActionState;
+  pending?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (state.error) ref.current?.focus();
   }, [state]);
   return (
     <>
+      <CalendarWarning warning={state.calendarWarning} pending={pending} />
       <div aria-live="polite" aria-atomic="true">
         {state.success && (
           <p role="status" className="alert green">
@@ -403,11 +413,13 @@ export function FitnessScheduleForm({
   enabled,
   requestId,
   refreshHref,
+  booking,
 }: {
   session: FitnessSession;
   enabled: boolean;
   requestId: string;
   refreshHref: string;
+  booking?: BookingChoices;
 }) {
   const [original] = useState({
     id: session.id,
@@ -427,7 +439,15 @@ export function FitnessScheduleForm({
     hydrated = useHydrated();
   return (
     <form ref={ref} action={submit} className="stack">
-      <Feedback state={state} />
+      <Feedback state={state} pending={!hydrated || pending} />
+      {booking && (
+        <BookingChoice
+          data={booking}
+          appointmentId={original.id}
+          pending={!hydrated || pending || !enabled}
+          saved={!!state.success}
+        />
+      )}
       <fieldset
         className={styles.fields}
         disabled={!hydrated || pending || !enabled || !!state.success}

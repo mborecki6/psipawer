@@ -5,6 +5,7 @@ import { getCourse, getCourses } from "./queries";
 import { courseFilter, coursePage, enrollmentFilter } from "./types";
 import { CourseDetailView, CourseListView, CourseCreateView } from "./views";
 import { getCourseCare } from "@/modules/care/queries";
+import { getBookingChoices } from "@/modules/calendar/booking-queries";
 export async function CoursesPage({
   searchParams,
 }: {
@@ -72,10 +73,11 @@ export async function CourseCreatePage({
 }: {
   searchParams: Promise<{ service?: string }>;
 }) {
-  await requireSession("admin");
-  const [search, { services }] = await Promise.all([
+  const { db, user } = await requireSession("admin");
+  const [search, { services }, booking] = await Promise.all([
     searchParams,
     getServices(true),
+    getBookingChoices(db, user.id),
   ]);
   return (
     <CourseCreateView
@@ -89,6 +91,7 @@ export async function CourseCreatePage({
           s.duration_minutes,
       )}
       serviceId={search.service}
+      booking={booking}
     />
   );
 }

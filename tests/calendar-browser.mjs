@@ -94,6 +94,9 @@ try {
   const create = page.locator("#calendar-block-editor");
   await create.getByLabel("Nazwa blokady").fill("Przerwa testowa");
   await create.getByLabel("Od (czas polski)").fill("2026-09-22T12:00");
+  await expect(create.getByLabel("Do (czas polski)")).toHaveValue(
+    "2026-09-22T13:00",
+  );
   await create.getByLabel("Do (czas polski)").fill("2026-09-22T12:30");
   await page.evaluate(() => {
     window.calendarFail = true;
@@ -134,6 +137,165 @@ try {
   expect(await create.locator("input[name=id]").inputValue()).not.toBe(
     "90000000-0000-4000-8000-000000000009",
   );
+  await create.getByLabel("Nazwa blokady").fill("Urlop testowy");
+  await create.getByLabel("Cały dzień", { exact: true }).check();
+  await create.getByLabel("Od dnia", { exact: true }).fill("2026-10-25");
+  await expect(create.getByLabel("Do dnia (włącznie)")).toHaveValue(
+    "2026-10-25",
+  );
+  await create
+    .getByLabel("Prowadzący", { exact: true })
+    .selectOption("90000000-0000-4000-8000-000000000011");
+  await create
+    .getByLabel("Miejsce do rezerwacji")
+    .selectOption("90000000-0000-4000-8000-000000000012");
+  await page.evaluate(() => {
+    window.calendarWarn = true;
+  });
+  await create
+    .getByRole("button", { name: "Zablokuj czas", exact: true })
+    .click();
+  await expect(create.getByRole("alert")).toBeFocused();
+  await expect(create.getByRole("alert")).toContainText("15 min");
+  await expect(create.getByLabel("Od dnia", { exact: true })).toHaveValue(
+    "2026-10-25",
+  );
+  await create
+    .getByLabel("Sprawdziłem przerwę i chcę zapisać ten termin.")
+    .check();
+  await create
+    .getByRole("button", { name: "Zablokuj czas", exact: true })
+    .click();
+  await expect(create.getByRole("status")).toContainText("Zapisano");
+  expect(await page.evaluate(() => window.calendarCalls.at(-1))).toMatchObject({
+    starts_at: "2026-10-25T00:00",
+    ends_at: "2026-10-26T00:00",
+    assigned_staff_id: "90000000-0000-4000-8000-000000000011",
+    resource_id: "90000000-0000-4000-8000-000000000012",
+    confirm_short_break: "true",
+  });
+  // The current lead can disappear from the active team after an event was
+  // created. Reading or submitting either editor must preserve that UUID,
+  // rather than silently turning a personal reservation into a shared one.
+  await page.goto(`${base}/?former-lead=1`);
+  const formerLead = "90000000-0000-4000-8000-000000000021";
+  const formerBlock = page.locator("article").filter({
+    has: page.getByRole("heading", {
+      name: "Dojazd i przerwa",
+      exact: true,
+    }),
+  });
+  await formerBlock
+    .getByText("Zmień lub usuń blokadę", { exact: true })
+    .click();
+  const formerAppointment = page.locator("article").filter({
+    has: page.getByRole("heading", {
+      name: "Spacery socjalizacyjne — pojedynczy spacer",
+      exact: true,
+    }),
+  });
+  await formerAppointment
+    .getByText("Prowadzący i miejsce", { exact: true })
+    .click();
+  for (const editor of [formerBlock, formerAppointment]) {
+    const selectedLead = editor.getByLabel("Prowadzący", { exact: true });
+    await expect(selectedLead).toHaveValue(formerLead);
+    await expect(
+      selectedLead.getByRole("option", {
+        name: "Dawna prowadząca (poza zespołem)",
+        exact: true,
+      }),
+    ).toBeEnabled();
+    expect(
+      await editor
+        .locator("form")
+        .evaluate((form) => new FormData(form).get("assigned_staff_id")),
+    ).toBe(formerLead);
+  }
+  await page.evaluate(() => {
+    window.calendarFail = true;
+  });
+  await formerBlock
+    .getByRole("button", { name: "Zapisz blokadę", exact: true })
+    .click();
+  await expect(formerBlock.getByRole("alert")).toBeFocused();
+  expect(await page.evaluate(() => window.calendarCalls.at(-1))).toMatchObject({
+    id: "90000000-0000-4000-8000-000000000003",
+    assigned_staff_id: formerLead,
+  });
+  await formerAppointment
+    .getByRole("button", { name: "Zapisz przypisanie", exact: true })
+    .click();
+  await expect(formerAppointment.getByRole("alert")).toBeFocused();
+  expect(await page.evaluate(() => window.calendarCalls.at(-1))).toMatchObject({
+    appointment_id: "90000000-0000-4000-8000-000000000001",
+    assigned_staff_id: formerLead,
+  });
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const [name, editor] of [
+      ["former-block", formerBlock],
+      ["former-assignment", formerAppointment],
+    ]) {
+      await expect(
+        editor.getByLabel("Prowadzący", { exact: true }),
+      ).toHaveValue(formerLead);
+      await editor.screenshot({
+        path: resolve(output, `${name}-${width}.png`),
+      });
+    }
+  }
+  await page.goto(`${base}/?view=home`);
+  await expect(
+    page.getByRole("link", { name: "Otwórz kalendarz" }),
+  ).toHaveAttribute("href", /date=2026-09-21&event=walk.*#appointment-walk/);
+  await page.getByRole("link", { name: "Otwórz kalendarz" }).click();
+  await expect(
+    page.getByLabel(
+      "Wybrane spotkanie: Spacery socjalizacyjne — pojedynczy spacer",
+    ),
+  ).toHaveCount(1);
+  await page
+    .getByLabel("Kalendarz prowadzącego")
+    .selectOption("90000000-0000-4000-8000-000000000011");
+  await page.getByRole("button", { name: "Filtruj", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Spacery socjalizacyjne — pojedynczy spacer",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      name: "Konsultacja behawioralna — online · Kluska",
+      exact: true,
+    }),
+  ).toHaveCount(1);
+  await page.goto(`${base}/?view=month&role=client`);
+  await expect(page.getByLabel("Kalendarz: wrzesień 2026")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /zaplanowanych|bez spotkań/ }),
+  ).toHaveCount(35);
+  await expect(page.getByLabel("Kalendarz prowadzącego")).toHaveCount(0);
+  await page
+    .getByRole("link", {
+      name: "poniedziałek, 21 września: 2 zaplanowanych",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("link", { name: "Otwórz szczegóły" }),
+  ).toHaveCount(2);
+  await page.goto(`${base}/?view=settings&staff-settings=1`);
+  await expect(
+    page.getByText("Kontrola godzin jest wyłączona.", { exact: false }),
+  ).toBeVisible();
+  await page.getByLabel("Korzystaj z domyślnego rytmu zespołu").check();
+  await expect(page.getByLabel("Pilnuj godzin pracy")).toBeHidden();
+  await page.getByRole("button", { name: "Zapisz rytm pracy" }).click();
+  expect(
+    await page.evaluate(() => window.calendarCalls.at(-1)?.use_default),
+  ).toBe("true");
   await page.goto(`${base}/?role=client`);
   await expect(page.getByLabel("Nazwa blokady")).toHaveCount(0);
   await expect(page.getByText("Dojazd i przerwa", { exact: true })).toHaveCount(
@@ -151,6 +313,10 @@ try {
       ["empty", "empty=1"],
       ["home", "view=home"],
       ["home-empty", "view=home&empty=1"],
+      ["month", "view=month"],
+      ["month-guardian", "view=month&role=client"],
+      ["settings", "view=settings"],
+      ["staff-settings", "view=settings&staff-settings=1"],
     ]) {
       await page.goto(`${base}/?${query}`);
       await page
@@ -179,7 +345,15 @@ try {
         );
       expect(clipped, `${name} clipped at ${width}`).toEqual([]);
       if (
-        ["admin", "guardian", "home"].includes(name) &&
+        [
+          "admin",
+          "guardian",
+          "home",
+          "month",
+          "month-guardian",
+          "settings",
+          "staff-settings",
+        ].includes(name) &&
         [390, 1440].includes(width)
       ) {
         await page.locator("details").evaluateAll((nodes) =>
@@ -196,7 +370,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Calendar UI: block recovery, saved versions, fresh block creation, client role and 24 responsive scenarios passed.",
+    "Calendar UI: block recovery, all-day dates, assignments, former lead UUID preservation in both editors, warning confirmation, exact-event navigation, staff filter, month/client privacy, staff settings and 40 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

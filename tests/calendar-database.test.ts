@@ -377,7 +377,7 @@ describe.sequential("shared calendar: real SQL writes and RLS", () => {
       asUser(owner, () =>
         db.query("select * from public.calendar_appointments($1,$2)", [
           at,
-          plus(at, 33 * 1440),
+          plus(at, 44 * 1440),
         ]),
       ),
     ).rejects.toThrow("Nieprawidłowy zakres");
@@ -391,9 +391,9 @@ describe.sequential("shared calendar: real SQL writes and RLS", () => {
   });
 });
 
-describe.sequential("working hours and automatic buffers", () => {
+describe.sequential("working hours and preferred break warnings", () => {
   it.each(["walk", "consultation", "course", "fitness"] as const)(
-    "keeps the remaining after-buffer when %s is completed, without extending it on a policy retry",
+    "keeps a completed %s available for a short-break warning without reserving extra time",
     async (kind) => {
       await settings(0, 30);
       let id: string, key: string;
@@ -490,11 +490,11 @@ describe.sequential("working hours and automatic buffers", () => {
           [id],
         )
       ).rows[0];
-      expect(slot.remaining).toBe(true);
-      expect(slot.length).toBe(30);
+      expect(slot.remaining).toBe(false);
+      expect(slot.length).toBe(0);
       await expect(
         walk(new Date(Date.now() + 60000).toISOString()),
-      ).rejects.toThrow("Ten czas jest już zajęty");
+      ).rejects.toThrow("Krótka przerwa");
       await settings(0, 30, false, fullWeek(), 2);
       expect(
         (
@@ -507,7 +507,7 @@ describe.sequential("working hours and automatic buffers", () => {
       await walk(new Date(Date.now() + 30 * 60000).toISOString());
     },
   );
-  it("reserves buffers without moving the actual appointment and rejects a neighbour within its preparation time", async () => {
+  it("keeps the actual appointment interval and warns before a neighbour within preferred break time", async () => {
     await settings(10, 15);
     const at = "2027-05-10T10:00:00.000Z";
     const id = await walk(at);
@@ -517,13 +517,12 @@ describe.sequential("working hours and automatic buffers", () => {
         [id],
       )
     ).rows[0];
-    expect(slot.occupied).toContain("09:50:00");
-    expect(slot.occupied).toContain("11:15:00");
+    expect(slot.occupied).toContain("10:00:00");
+    expect(slot.occupied).toContain("11:00:00");
+    expect(slot.occupied).toBe(slot.base);
     expect(slot.base).toContain("10:00:00");
     expect((await agenda(at))[0].id).toBe(id);
-    await expect(walk(plus(at, 80))).rejects.toThrow(
-      "Ten czas jest już zajęty",
-    );
+    await expect(walk(plus(at, 80))).rejects.toThrow("Krótka przerwa");
     await walk(plus(at, 85));
     await settings(10, 15, false, fullWeek(), 2);
     expect(
@@ -535,8 +534,8 @@ describe.sequential("working hours and automatic buffers", () => {
       ).rows[0],
     ).toEqual({ occupied: slot.occupied });
   });
-  it("rolls back every policy, interval and audit change when a new buffer collides", async () => {
-    const at = "2027-05-10T10:00:00.000Z";
+  it("allows preferred breaks around existing adjacent bookings without moving any appointment", async () => {
+    const at = "2027-05-10T10:00:00Z";
     await walk(at);
     await walk(plus(at, 60));
     const before = (
@@ -544,21 +543,7 @@ describe.sequential("working hours and automatic buffers", () => {
         "select to_jsonb(s) s from public.calendar_slots s order by occupied",
       )
     ).rows;
-    const audits = (
-      await db.query(
-        "select count(*) n from public.audit_events where event='calendar_settings_saved'",
-      )
-    ).rows;
-    await expect(settings(0, 1)).rejects.toThrow(
-      "Nowe przerwy powodują kolizję",
-    );
-    expect(
-      (
-        await db.query(
-          "select version,after_minutes from public.calendar_settings",
-        )
-      ).rows[0],
-    ).toEqual({ version: 1, after_minutes: 0 });
+    expect(await settings(0, 15)).toBe(2);
     expect(
       (
         await db.query(
@@ -566,15 +551,17 @@ describe.sequential("working hours and automatic buffers", () => {
         )
       ).rows,
     ).toEqual(before);
-    expect(
-      (
-        await db.query(
-          "select count(*) n from public.audit_events where event='calendar_settings_saved'",
-        )
-      ).rows,
-    ).toEqual(audits);
+    const rows = (
+      await asUser(admin, () =>
+        db.query<{ break_warnings: unknown[] }>(
+          "select * from public.calendar_team_appointments($1,$2)",
+          [at, plus(at, 1440)],
+        ),
+      )
+    ).rows;
+    expect(rows.every((row) => row.break_warnings.length === 1)).toBe(true);
   });
-  it("recalculates all buffers atomically even when an intermediate interval would overlap the old neighbouring buffer", async () => {
+  it("changes preferred before/after minutes without changing hard collision intervals", async () => {
     await settings(15, 0);
     const at = "2027-05-10T10:00:00.000Z";
     await walk(at);
@@ -588,7 +575,7 @@ describe.sequential("working hours and automatic buffers", () => {
       ).rows[0].n,
     ).toBe(0);
   });
-  it("uses the Polish weekly window including buffers, and leaves private holiday blocks independent of working hours", async () => {
+  it("uses the actual Polish weekly window, with preferred breaks and private holidays independent of hours", async () => {
     const week = fullWeek().map((d) => ({
       ...d,
       enabled: d.weekday <= 5,
@@ -596,10 +583,10 @@ describe.sequential("working hours and automatic buffers", () => {
       end_minute: 1020,
     }));
     await settings(15, 15, true, week);
-    await expect(walk("2027-05-10T07:00:00Z")).rejects.toThrow(
+    await expect(walk("2027-05-10T06:45:00Z")).rejects.toThrow(
       "wykracza poza godziny pracy",
     );
-    await walk("2027-05-10T07:15:00Z");
+    await walk("2027-05-10T07:00:00Z");
     await expect(walk("2027-05-15T10:00:00Z")).rejects.toThrow(
       "wykracza poza godziny pracy",
     );

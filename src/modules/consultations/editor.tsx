@@ -6,15 +6,22 @@ import type { Consultation } from "./types";
 import type { ActionState } from "@/components/action-form";
 import styles from "./consultations.module.css";
 import { useHydrated } from "@/components/use-hydrated";
+import { usePersistentForm } from "@/components/use-persistent-form";
+import { CalendarWarning } from "@/modules/calendar/warning";
+import { BookingChoice } from "@/modules/calendar/booking-choice";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 
 export function ScheduleEditor({
   consultation,
   confirmedPriceVersion,
+  booking,
 }: {
   consultation: Consultation;
   confirmedPriceVersion?: number;
+  booking?: BookingChoices;
 }) {
   const hydrated = useHydrated();
+  const form = usePersistentForm();
   // The version always describes the visible draft. A background refresh must
   // not silently relabel an old draft with a newer version from another tab.
   const [original] = useState(consultation);
@@ -68,12 +75,21 @@ export function ScheduleEditor({
   }
   return (
     <form
+      ref={form}
       action={action}
       className="form-stack"
       aria-busy={!hydrated || pending}
     >
       <input type="hidden" name="id" value={original.id} />
       <input type="hidden" name="expected_version" value={expectedVersion} />
+      {booking && (
+        <BookingChoice
+          data={booking}
+          appointmentId={original.id}
+          pending={!hydrated || pending}
+          saved={state.version > original.version}
+        />
+      )}
       <fieldset disabled={!hydrated || pending} className={styles.fields}>
         <legend className="sr-only">Szczegóły konsultacji</legend>
         <div className={styles.formGrid}>
@@ -148,6 +164,10 @@ export function ScheduleEditor({
           {state.success}
         </div>
       )}
+      <CalendarWarning
+        warning={state.calendarWarning}
+        pending={!hydrated || pending}
+      />
       <button className="primary-button" disabled={!hydrated || pending}>
         {!hydrated
           ? "Przygotowuję formularz…"

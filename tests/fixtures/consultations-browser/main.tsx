@@ -121,6 +121,42 @@ function Fixture() {
           <ConsultationView
             role={role}
             consultation={item}
+            booking={
+              role === "admin"
+                ? {
+                    defaultStaffId: "10000000-0000-4000-8000-000000000001",
+                    staff: [
+                      {
+                        user_id: "10000000-0000-4000-8000-000000000001",
+                        full_name: "Prowadząca próbna",
+                      },
+                      {
+                        user_id: "10000000-0000-4000-8000-000000000002",
+                        full_name: "Druga prowadząca próbna",
+                      },
+                    ],
+                    resources: [
+                      {
+                        id: "40000000-0000-4000-8000-000000000001",
+                        name: "Sala próbna",
+                        exclusive: true,
+                        active: !search.has("inactive"),
+                      },
+                    ],
+                    assignments: [
+                      {
+                        appointment_id: item.id,
+                        assigned_staff_id:
+                          "10000000-0000-4000-8000-000000000001",
+                        resource_id: search.has("inactive")
+                          ? "40000000-0000-4000-8000-000000000001"
+                          : null,
+                        version: 4,
+                      },
+                    ],
+                  }
+                : undefined
+            }
             care={{
               hasDraft: search.has("care"),
               more: search.has("care"),

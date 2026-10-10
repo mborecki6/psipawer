@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import type { ActionState } from "@/components/action-form";
+import { calendarWrite, calendarWarning } from "../calendar/write";
 import {
   requestSchema,
   scheduleSchema,
@@ -16,6 +17,12 @@ function refresh() {
 }
 function failure(message?: string): ActionState {
   const allowed = [
+    "Sprawdź prowadzącego i miejsce zajęć.",
+    "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
+    "Wybierz aktywnego członka zespołu.",
+    "Wybierz aktywne miejsce.",
+    "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
+    "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
     "Termin wraz z przerwami wykracza poza godziny pracy. Sprawdź ustawienia kalendarza.",
     "Ten czas jest już zajęty przez spacer, konsultację lub blokadę. Sprawdź kalendarz.",
     "Ten pies ma już otwarte zgłoszenie lub umówioną konsultację.",
@@ -117,16 +124,23 @@ export async function scheduleConsultation(
   const p = parsed.data;
   let version: number;
   try {
-    const { data, error } = await db.rpc("change_consultation", {
-      p_id: p.id,
-      p_expected_version: p.expected_version,
-      p_action: "schedule",
-      p_starts_at: p.starts_at,
-      p_duration: p.duration_minutes,
-      p_mode: p.meeting_mode,
-      p_location: p.location,
-      p_note: p.note,
-    });
+    const { data, error } = await calendarWrite(
+      db,
+      "change_consultation",
+      {
+        p_id: p.id,
+        p_expected_version: p.expected_version,
+        p_action: "schedule",
+        p_starts_at: p.starts_at,
+        p_duration: p.duration_minutes,
+        p_mode: p.meeting_mode,
+        p_location: p.location,
+        p_note: p.note,
+      },
+      form,
+    );
+    const warning = calendarWarning(error);
+    if (warning) return warning;
     if (error) return failure(error.message);
     if (!Number.isInteger(data)) return failure();
     version = data;

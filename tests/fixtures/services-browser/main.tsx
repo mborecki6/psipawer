@@ -2,11 +2,49 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ServicesView, ServiceDetailView } from "@/modules/services/views";
 import { WalkServiceFields } from "@/modules/services/selection";
+import { serviceFilter } from "@/modules/services/catalogue";
+import type { Service } from "@/modules/services/types";
 import { testServices } from "../services-data";
 import "@/app/globals.css";
 const search = new URLSearchParams(location.search);
 const admin = search.get("role") !== "client";
 const view = search.get("view") || "list";
+const category = search.getAll("category");
+const catalogueServices: Service[] = [
+  ...testServices.map((service) =>
+    service.kind === "course"
+      ? { ...service, course_format: "group" as const }
+      : service,
+  ),
+  {
+    ...testServices[2],
+    id: "60000000-0000-4000-8000-000000000003",
+    name: "Psie Przedszkole — indywidualne",
+    course_format: "individual",
+  },
+  {
+    ...testServices[0],
+    id: "60000000-0000-4000-8000-000000000006",
+    name: "PSI FITNESS — pakiet 4 spotkań",
+    kind: "package",
+    booking_flow: "fitness",
+    sessions_count: 4,
+  },
+  {
+    ...testServices[0],
+    id: "60000000-0000-4000-8000-000000000017",
+    name: "Karta podarunkowa",
+    kind: "voucher",
+    booking_flow: "catalogue",
+  },
+  {
+    ...testServices[0],
+    id: "60000000-0000-4000-8000-000000000014",
+    name: "Pakiet do uzgodnienia",
+    kind: "package",
+    booking_flow: "catalogue",
+  },
+];
 function Fixture() {
   const [service, setService] = useState({
     ...testServices[0],
@@ -86,9 +124,12 @@ function Fixture() {
         ) : (
           <ServicesView
             services={
-              search.has("empty") ? [] : [service, ...testServices.slice(1)]
+              search.has("empty")
+                ? []
+                : [service, ...catalogueServices.slice(1)]
             }
             admin={admin}
+            filter={serviceFilter(category.length > 1 ? category : category[0])}
           />
         )}
         <p className="muted" style={{ marginTop: 24 }}>

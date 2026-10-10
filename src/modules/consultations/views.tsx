@@ -8,6 +8,7 @@ import { dateLabel, money } from "@/lib/domain";
 import { ConsultationServicePicker } from "@/modules/services/selection";
 import type { Service } from "@/modules/services/types";
 import { ScheduleEditor } from "./editor";
+import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import { ConsultationPriceEditor } from "./price-editor";
 import { requestConsultation, closeConsultation } from "./actions";
 import {
@@ -306,6 +307,7 @@ export function ConsultationView({
   priceRequestId,
   priceSaved = false,
   confirmedPriceVersion,
+  booking,
 }: {
   role: Role;
   consultation: Consultation;
@@ -323,6 +325,7 @@ export function ConsultationView({
   priceRequestId?: string;
   priceSaved?: boolean;
   confirmedPriceVersion?: number;
+  booking?: BookingChoices;
 }) {
   const base = role === "admin" ? "/admin" : "/app";
   const active = c.status === "requested" || c.status === "scheduled";
@@ -425,8 +428,8 @@ export function ConsultationView({
                   : "Ustal termin"}
               </h3>
               <p className="muted">
-                Zapisz termin uzgodniony z opiekunem. Wszystkie pola tego
-                formularza są widoczne dla opiekuna. Wiadomości e-mail nie są
+                Zapisz termin uzgodniony z opiekunem. Termin, miejsce i
+                wiadomość są widoczne dla opiekuna. Wiadomości e-mail nie są
                 jeszcze wysyłane.
               </p>
               {c.status === "requested" && c.agreed_price_cents !== null && (
@@ -438,6 +441,7 @@ export function ConsultationView({
               <ScheduleEditor
                 consultation={c}
                 confirmedPriceVersion={confirmedPriceVersion}
+                booking={booking}
               />
               <Link
                 className="ghost-button"

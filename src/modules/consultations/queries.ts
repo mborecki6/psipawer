@@ -2,6 +2,7 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/session";
+import { getBookingChoices } from "@/modules/calendar/booking-queries";
 import type { ConsultationBalance } from "@/lib/finance";
 import {
   consultationFilter,
@@ -43,7 +44,7 @@ export async function getConsultations(
 }
 export async function getConsultation(id: string, page: number) {
   if (!z.uuid().safeParse(id).success) notFound();
-  const { db, role } = await requireSession();
+  const { db, role, user } = await requireSession();
   const c = await db
     .from("consultations")
     .select(columns)
@@ -68,7 +69,15 @@ export async function getConsultation(id: string, page: number) {
     .maybeSingle();
   if (balance.error || !balance.data)
     throw new Error("Nie udało się pobrać rozliczenia spotkania.");
+  const booking =
+    role === "admin"
+      ? await getBookingChoices(db, user.id, {
+          kind: "consultation",
+          ids: [id],
+        })
+      : undefined;
   return {
+    ...(booking ? { booking } : {}),
     role,
     consultation: c.data as unknown as Consultation,
     balance: balance.data as ConsultationBalance,

@@ -3,6 +3,11 @@ import { Tags, Clock3, ArrowRight } from "lucide-react";
 import { money } from "@/lib/domain";
 import { ServiceEditor } from "./editor";
 import {
+  serviceCategories,
+  serviceCategory,
+  type ServiceCategory,
+} from "./catalogue";
+import {
   serviceKinds,
   serviceTime,
   type Service,
@@ -12,10 +17,24 @@ import styles from "./services.module.css";
 export function ServicesView({
   services,
   admin,
+  filter = "all",
 }: {
   services: Service[];
   admin: boolean;
+  filter?: ServiceCategory;
 }) {
+  const base = admin ? "/admin/services" : "/app/services";
+  const counts = {
+    all: services.length,
+    individual: 0,
+    group: 0,
+    voucher: 0,
+    other: 0,
+  };
+  for (const service of services) counts[serviceCategory(service)] += 1;
+  const visible = services.filter(
+    (service) => filter === "all" || serviceCategory(service) === filter,
+  );
   return (
     <div className="stack">
       {admin && (
@@ -42,11 +61,38 @@ export function ServicesView({
           aktualnym cennikiem ze strony Psi Pawer.
         </div>
       )}
+      {services.length > 0 && (
+        <nav className={styles.filters} aria-label="Forma usług">
+          {(Object.keys(serviceCategories) as ServiceCategory[])
+            .filter(
+              (category) =>
+                category !== "other" || counts.other > 0 || filter === "other",
+            )
+            .map((category) => (
+              <Link
+                key={category}
+                href={
+                  category === "all" ? base : `${base}?category=${category}`
+                }
+                className={filter === category ? styles.active : ""}
+                aria-current={filter === category ? "page" : undefined}
+              >
+                {serviceCategories[category]} <span>{counts[category]}</span>
+              </Link>
+            ))}
+        </nav>
+      )}
       <div className={styles.grid}>
-        {services.map((s) => (
+        {visible.map((s) => (
           <article className={`card pad ${styles.service}`} key={s.id}>
             <div className={styles.badges}>
               <span className="badge">{serviceKinds[s.kind]}</span>
+              {["course", "package"].includes(s.kind) &&
+                ["individual", "group"].includes(serviceCategory(s)) && (
+                  <span className="badge">
+                    {serviceCategories[serviceCategory(s)]}
+                  </span>
+                )}
               {!s.active && <span className="badge">Ukryta</span>}
               {s.is_test_price && (
                 <span className={styles.testBadge}>Cena robocza</span>
@@ -108,6 +154,17 @@ export function ServicesView({
         <article className="card pad">
           <h3>Oferta jest w przygotowaniu</h3>
           <p>Wróć tutaj później lub skontaktuj się z prowadzącą.</p>
+        </article>
+      )}
+      {services.length > 0 && !visible.length && (
+        <article className="card pad">
+          <h3>Brak usług w tej kategorii</h3>
+          <p className="muted">
+            Wybierz inną formę pracy lub zobacz całą ofertę.
+          </p>
+          <Link className="ghost-button" href={base}>
+            Pokaż wszystkie usługi →
+          </Link>
         </article>
       )}
     </div>

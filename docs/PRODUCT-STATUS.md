@@ -1,6 +1,20 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 09.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
+Aktualizacja: 10.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
+
+## Pierwsza lokalna iteracja po feedbacku — 10.10.2026
+
+Kalendarz rozdziela autora, prowadzącego i salę. Ma tydzień oraz miesiąc, filtr prowadzącego, blokady całodniowe, indywidualne godziny i odnośnik do konkretnego spotkania. Prowadzącego i opcjonalną salę wybiera się również przy tworzeniu lub zmianie spaceru, konsultacji, spotkania kursu i fitness. Rzeczywiste nakładanie zajęć tej samej osoby albo wyłącznej sali jest blokowane; krótsza preferowana przerwa wymaga świadomego potwierdzenia. Starsze wpisy pozostają jawnie nieprzypisane do czasu decyzji zespołu.
+
+Edytor planu pokazuje jedno bieżące powiązanie z konsultacją, kursem lub fitness, a jego zmianę rozwija osobno. Wejście ze spotkania wybiera właściwy kontekst dla nowego szkicu; istniejący szkic zachowuje treść, wersję i wcześniejsze powiązanie. Kolejka nazywa kwalifikację psów wprost i wyjaśnia zadania kontaktowe. Oferta ma filtry indywidualne, grupowe, karty i pozostałe usługi.
+
+Migrację `202610100001_calendar_team.sql` zastosowano po prywatnej kopii **tylko w lokalnym Supabase**. Lokalny schemat ma 49 migracji, chmura nadal 48. Nie wdrażano interfejsu ani nie zmieniano cen, kont pilota i danych chmury. Pakiety premium, zewnętrzne integracje i powiadomienia poza aplikacją pozostają dalszym zakresem.
+
+Odbiór kodu: **1017/1017 testów w 76 plikach**, TypeScript, ESLint 74 zmienionych plików, formatowanie i lokalna kompilacja. Backend kalendarza przeszedł **50/50 scenariuszy SQL** i **19/19 prób PostgreSQL**, z obserwacją 17 zależności blokad. Sprawdzono również komponenty w prawdziwej przeglądarce: 40 wariantów kalendarza, 44 opieki, 28 konsultacji i 24 oferty, z oceną zrzutów na telefonie i komputerze.
+
+W rzeczywistej lokalnej aplikacji zaliczono **45 unikalnych scenariuszy E2E obu ról**. Wynik obejmuje dwa przebiegi: pełny zestaw dał 36 poprawnych ścieżek i wykrył dziewięć testów wymagających dostosowania do osobnego rozwijanego powiązania i wymaganego prowadzącego. Następnie **14/14 powtórzonych scenariuszy** (2,3 minuty), obejmujących wszystkie dziewięć i dodatkowe zmienione sprawdzenia, przeszło. Kod aplikacji pozostał identyczny między przebiegami. Scenariusz nowego kalendarza obejmuje prawdziwe sesje Auth/API/UI, równoległe osoby, kolizję sali, potwierdzenie przerwy, nieaktualne wersje, godziny, urlop i prywatność.
+
+Końcowy odczyt potwierdził wcześniejsze pięć profili, cztery psy, trzy spacery i 17 usług; własne dane nowych prób usunięto. Dwa wcześniejsze konta testowe z 19.09.2026 zachowano. Podgląd lokalny odpowiada HTTP 200. Usunięto cztery wygenerowane kopie typów Next.js wyłącznie po porównaniu identycznej zawartości; końcowy TypeScript przeszedł.
 
 ## Lżejszy panel prowadzącej 09.10.2026
 

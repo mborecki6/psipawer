@@ -16,6 +16,12 @@ Lokalny odbiór 03.10.2026 objął **971 testów**, **45 pełnych scenariuszy ob
 
 ## Moduły aplikacji
 
+### Lokalna iteracja po feedbacku — 10.10.2026
+
+Lokalny podgląd ma kalendarz tygodnia i miesiąca, osobny wybór prowadzącego oraz sali, całodniowe blokady i godziny pracy każdego członka zespołu. Faktyczne kolizje pozostają blokowane; krótsza preferowana przerwa wymaga potwierdzenia. Plany opieki pokazują jedno bieżące powiązanie i rozwijany wybór jego zmiany, a oferta ma filtry rodzaju zajęć. [Szczegóły kalendarza](docs/CALENDAR-MODULE.md), [opieki](docs/CARE-MODULE.md) i [oferty](docs/SERVICES-MODULE.md).
+
+Nową migrację `202610100001_calendar_team.sql` zastosowano **wyłącznie lokalnie**. Lokalna baza ma 49 migracji; opublikowany pilot nadal ma 48 i poprzedni interfejs. Ta iteracja nie zawiera wdrożenia ani resetu danych.
+
 ### Plany pracy i postępy
 
 Dodano bibliotekę materiałów, prywatne szkice, publikację wersjonowanych zaleceń oraz odpowiedzi opiekunów z listą do przeczytania. Widoki znajdują się pod `/admin/care`, `/app/care` i przy kartach psów. Moduł jest dostępny w opublikowanym MVP; migracja `202609180001_care_plans.sql` jest zastosowana. [Zakres, testy i kolejność wdrożenia](docs/CARE-MODULE.md).

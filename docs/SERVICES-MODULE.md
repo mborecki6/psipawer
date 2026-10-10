@@ -6,6 +6,8 @@ Moduł działa w opublikowanym pilocie od 06.10.2026; migracja `202609180003_ser
 
 Prowadząca i administrator otwierają cennik przez **Ustawienia → Usługi i ceny** (`/admin/services`). Edycja obejmuje nazwę, opis, kwotę, jednostkę ceny, czas, liczbę spotkań, widoczność i oznaczenie ceny jako roboczej lub docelowej. Opiekun ma katalog **Oferta** (`/app/services`). Edycja ceny nie wymaga programisty ani publikacji nowej wersji aplikacji: aktualizuje rekord w bazie. Kwoty przechowujemy w groszach.
 
+Lokalna iteracja po feedbacku z 10.10.2026 dodaje w obu katalogach filtry **Indywidualne**, **Grupowe** i **Karty podarunkowe**, z liczbą pozycji i zachowaniem wyboru w adresie (`category`). Kurs korzysta z `course_format`, więc kurs indywidualny nie trafia do grupowych. Pakiet z przepływem fitness jest indywidualny; pakiet z przepływem spaceru jest grupowy. Pakiet katalogowy lub kurs bez określonej formy pozostaje w **Pozostałych** i w pełnej ofercie, bez zgadywania z nazwy lub adresu strony. Nie zmienia to cen, zapisów ani edytora; podział nie wymaga migracji bazy. Te poprawki nie są jeszcze opublikowane.
+
 Każda z 17 pozycji rozpoczyna od **100 zł**, zgodnie z decyzją użytkownika, niezależnie od rzeczywistych cen na stronie. Kurs i pakiet kosztują roboczo 100 zł za całość, a nie za każde spotkanie. Spacer jest wyceniony za jednego psa. Nie jest to automatycznie synchronizowany cennik witryny.
 
 Przykład: zgłoszenie konsultacji przy cenie 100 zł zachowuje 100 zł. Prowadząca zmienia usługę na 175,50 zł; dopiero następne zgłoszenie otrzymuje 175,50 zł. Otwarty formularz ze starą ofertą nie zapisze po cichu nowej kwoty — wymaga odświeżenia i sprawdzenia ceny. Powtórzenie wcześniej przyjętego zgłoszenia nadal odnajduje wcześniejszy zapis, także po ukryciu usługi.
@@ -14,19 +16,19 @@ Przykład: zgłoszenie konsultacji przy cenie 100 zł zachowuje 100 zł. Prowadz
 
 Nazwy i zakres sprawdzono w [menu i ofercie Psi Pawer](https://www.psipawer.pl/) oraz podstronach usług 18–19.09.2026. Szczegóły CITY CHALLENGE potwierdzono bezpośrednio w przeglądarce 19.09.2026: 5 × 60 min, do czterech psów z opiekunami, różne przestrzenie miejskie Wrocławia. Pojedyncze pozycje menu z kilkoma wariantami rozdzielono w katalogu. Opisy są krótkimi parafrazami; nie przenoszono terminów wydarzeń ani regulaminów.
 
-| Usługa / warianty | Jednostka ceny roboczej | Podstawa |
-| --- | --- | --- |
-| Psie Przedszkole — grupowe i indywidualne | 100 zł za każdy cały kurs, 5 × 60 min | [grupowe](https://www.psipawer.pl/psie-przedszkole-grupowe), [indywidualne](https://www.psipawer.pl/psie-przedszkole-indywidualne) |
-| Psia Szkółka — grupowe i indywidualne | 100 zł za każdy cały kurs, 5 × 60 min | [grupowe](https://www.psipawer.pl/psia-szk%C3%B3%C5%82ka-grupowe), [indywidualne](https://www.psipawer.pl/psia-szk%C3%B3%C5%82ka-indywidualne) |
-| PSI FITNESS — ocena ruchowa i plan; pakiet 4 spotkań | 100 zł za ocenę 60 min; 100 zł za cały pakiet 4 × 45 min | [fitness](https://www.psipawer.pl/psi-fitness-zajecia) |
-| Trening indywidualny | 100 zł za 60 min | [trening](https://www.psipawer.pl/trening-indywidualny) |
-| Posłuszeństwo PAWER UP! | 100 zł za kurs 5 × 60 min | [kurs](https://www.psipawer.pl/pawer-up) |
-| CITY CHALLENGE | 100 zł za cały kurs, 5 × 60 min | [kurs miejski](https://www.psipawer.pl/city-challenge) |
-| Konsultacja behawioralna — stacjonarna i online | 100 zł za każdy wariant, 90 min | [konsultacja](https://www.psipawer.pl/konsultacja-behawioralna) |
-| Walk for a dog | 100 zł za 60 min | [spacer indywidualny](https://www.psipawer.pl/walk-for-a-dog) |
-| Spacer socjalizacyjny — pojedynczy, pakiet 4 i duet | 100 zł za psa / spacer; 100 zł za psa / cały pakiet; 100 zł za psa / duet | [spacery](https://www.psipawer.pl/spacery-socjalizacyjne); czas pojedynczego spaceru przyjęto orientacyjnie 60 min |
-| Treningi tematyczne | 100 zł za spotkanie 45 min | [treningi](https://www.psipawer.pl/treningi-tematyczne) |
-| Karta podarunkowa | 100 zł za roboczą kartę | [karty](https://www.psipawer.pl/karty-podarunkowe) |
+| Usługa / warianty                                    | Jednostka ceny roboczej                                                   | Podstawa                                                                                                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Psie Przedszkole — grupowe i indywidualne            | 100 zł za każdy cały kurs, 5 × 60 min                                     | [grupowe](https://www.psipawer.pl/psie-przedszkole-grupowe), [indywidualne](https://www.psipawer.pl/psie-przedszkole-indywidualne)             |
+| Psia Szkółka — grupowe i indywidualne                | 100 zł za każdy cały kurs, 5 × 60 min                                     | [grupowe](https://www.psipawer.pl/psia-szk%C3%B3%C5%82ka-grupowe), [indywidualne](https://www.psipawer.pl/psia-szk%C3%B3%C5%82ka-indywidualne) |
+| PSI FITNESS — ocena ruchowa i plan; pakiet 4 spotkań | 100 zł za ocenę 60 min; 100 zł za cały pakiet 4 × 45 min                  | [fitness](https://www.psipawer.pl/psi-fitness-zajecia)                                                                                         |
+| Trening indywidualny                                 | 100 zł za 60 min                                                          | [trening](https://www.psipawer.pl/trening-indywidualny)                                                                                        |
+| Posłuszeństwo PAWER UP!                              | 100 zł za kurs 5 × 60 min                                                 | [kurs](https://www.psipawer.pl/pawer-up)                                                                                                       |
+| CITY CHALLENGE                                       | 100 zł za cały kurs, 5 × 60 min                                           | [kurs miejski](https://www.psipawer.pl/city-challenge)                                                                                         |
+| Konsultacja behawioralna — stacjonarna i online      | 100 zł za każdy wariant, 90 min                                           | [konsultacja](https://www.psipawer.pl/konsultacja-behawioralna)                                                                                |
+| Walk for a dog                                       | 100 zł za 60 min                                                          | [spacer indywidualny](https://www.psipawer.pl/walk-for-a-dog)                                                                                  |
+| Spacer socjalizacyjny — pojedynczy, pakiet 4 i duet  | 100 zł za psa / spacer; 100 zł za psa / cały pakiet; 100 zł za psa / duet | [spacery](https://www.psipawer.pl/spacery-socjalizacyjne); czas pojedynczego spaceru przyjęto orientacyjnie 60 min                             |
+| Treningi tematyczne                                  | 100 zł za spotkanie 45 min                                                | [treningi](https://www.psipawer.pl/treningi-tematyczne)                                                                                        |
+| Karta podarunkowa                                    | 100 zł za roboczą kartę                                                   | [karty](https://www.psipawer.pl/karty-podarunkowe)                                                                                             |
 
 ## Połączenie z zapisami
 

@@ -1913,7 +1913,7 @@ describe.sequential("course cycle, enrollment and calendar domain", () => {
       asUser(owner, () =>
         db.query("select * from public.calendar_appointments($1,$2)", [
           boundary,
-          plus(boundary, 33 * 24 * 60),
+          plus(boundary, 44 * 24 * 60),
         ]),
       ),
     ).rejects.toThrow("zakres kalendarza");
