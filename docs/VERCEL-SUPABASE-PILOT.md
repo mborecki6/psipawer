@@ -60,7 +60,8 @@ Odczytowy odbiór hostingu przeszedł **38 stron** administratora i dwóch
 istniejących kont DEMO oraz **36 wariantów responsywności** (12 ekranów przy
 320/390/1440 px). Sprawdzono dziewięć grup uprawnień: przekierowania opiekunów
 z dwóch ekranów administracyjnych, brak anonimowego dostępu, izolację psa
-oraz kontekstów, prywatność szkiców i wiadomości, aktualne RPC oferty i skrzynki.
+oraz kontekstów, prywatność istniejących szkiców, dostępność API czatu,
+aktualne RPC oferty i skrzynki.
 Historyczne publikacje zachowały uprawnienia do raportowania. Interfejs push
 odczytuje konfigurację; test nie wyrażał zgody ani nie rejestrował urządzeń.
 Service worker, manifest i odmowa dostępu do niezabezpieczonego wywołania
@@ -77,6 +78,12 @@ Końcowe porównanie po odbiorze ponownie potwierdziło konta, hasła, Storage,
 57 migracji oraz wszystkie wcześniejsze dane biznesowe. Jedyna dalsza zmiana
 to techniczny znacznik `reminder_worker_state` od działającego harmonogramu;
 72 pozostałe porównywane tabele i pierwotny szkic pozostały identyczne.
+Odczyty 38 tras potwierdzają HTTP 200 bez rozpoznanego błędu; mocniejszy
+odbiór rzeczywistej treści i hydratacji obejmuje 12 ekranów w przeglądarce.
+Kontrola czatu online zastała pustą tabelę: odmowę odczytu istniejącej cudzej
+rozmowy potwierdzają lokalne E2E, nie ten smoke. Rejestr błędów przeglądarki
+obejmuje `pageerror`, nie wszystkie komunikaty konsoli lub żądania sieciowe.
+Brak zmian danych biznesowych potwierdza osobne porównanie bazy.
 Prywatne raporty, kopie i zrzuty są wyłączone z Git i artefaktu wdrożenia.
 
 ## Aktualizacja po feedbacku — 10.10.2026
