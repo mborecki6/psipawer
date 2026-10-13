@@ -2,11 +2,88 @@
 
 Pilot od 06.10.2026 działa pod [psipawer.vercel.app](https://psipawer.vercel.app/login). Jest przeznaczony do walidacji MVP przez administratora, behawiorystkę i fikcyjne konta opiekunów. Kwoty i spotkania DEMO nie stanowią rzeczywistych transakcji ani rezerwacji. [Scenariusze testów](PILOT-TEST-SCENARIOS.md) opisują oba panele.
 
+## Rozszerzenie po feedbacku — 13.10.2026
+
+Opublikowano „Spokojny start” oraz konteksty zaleceń, kalendarz dostępnej oferty,
+zgłoszenia ustalenia terminu, zaproszenia na kontrolę, konfigurowane raportowanie,
+prywatny czat Psiutków i dobrowolny Web Push. Pierwszy build wydania:
+`dpl_3r3CUEUKCmEsiXMjB8WrfaCT7C5W`, kod `88b2b3f`, region `fra1`.
+Publiczny adres: [psipawer.vercel.app](https://psipawer.vercel.app/login).
+
+Supabase ma **57 migracji** do `202610130008_notification_contexts.sql`.
+Wykonano świeżą prywatną kopię produkcyjnego schematu, danych, Auth, metadanych
+Storage i historii migracji. Storage nie zawierał plików. Kopię odtworzono
+w osobnej bazie lokalnej, zastosowano komplet ośmiu migracji i porównano wszystkie
+wcześniejsze kolumny istniejących tabel. Tymczasową bazę po próbie usunięto.
+Dopiero po gotowym buildzie wykonano jedną transakcję migracji i przełączono alias.
+
+Próba kopii oraz kontrola produkcji potwierdziły niezmienioną zawartość
+**73 istniejących tabel publicznych** poza osobno sprawdzanym `care_drafts`.
+Pierwotny szkic zachowano w całości, a trzy brakujące konteksty odtworzono
+z ostatnich publikacji: łącznie cztery szkice. Zachowano cztery konta, hasła,
+ustawienia Auth, ceny, publikacje, historię i postęp testerów. Nie resetowano DEMO.
+Migracje nie utworzyły dawnych zaproszeń do kontroli, zgód czatu ani dostaw push;
+wcześniejsze przypisania mają zachowany nielimitowany dostęp do raportowania.
+
+W Vercel ustawiono osobną produkcyjną tożsamość VAPID. Klucz prywatny pozostaje
+sekretem serwera, a `VAPID_SUBJECT` wskazuje adres aplikacji. Nie rotuje się tej
+pary przy zwykłym wydaniu. SMTP i zaproszenia klientów nadal są wyłączone.
+Nie wysłano wiadomości testerom ani nie potwierdzono fizycznego odbioru push.
+
+Harmonogram **`psi-pilot-push` co minutę** używa pg_net i istniejącego sekretu
+`psi_maintenance_secret` w Vault, aby wykonać chroniony POST maintenance.
+Potwierdzono rzeczywiste przebiegi cron oraz odpowiedzi HTTP **200** z
+`push.configured=true`, bez błędów i wysyłek. Dotychczasowy
+**`psi-pilot-reminders` co pięć minut** nadal samodzielnie obsługuje skrzynki
+w bazie. SQL operacji: [pilot-push-maintenance.sql](../supabase/operations/pilot-push-maintenance.sql).
+
+Schematy `net` i `vault` nie są wystawione w Data API, dostępne role logowania
+są rolami infrastruktury, a publiczne RPC nie otwierają dowolnego SQL ani
+odczytu kolejki net. Nagłówek autoryzacji jest chwilowo obecny w wewnętrznej
+kolejce pg_net; Vault nie usuwa tego ograniczenia. Sekret maintenance nie jest
+kluczem Supabase. Kontrola HTTP obejmuje `net._http_response`, nie tylko sukces
+zakolejkowania SQL w `cron.job_run_details`.
+
+Jeden przebieg obsługuje najwyżej trzy dostawy do urządzeń; ponowienia też
+zużywają ten limit. Przy większym jednoczesnym ruchu kolejka zwiększy opóźnienie.
+To konfiguracja pilota, bez nowego testu obciążeniowego hostingu. Sam odbiór
+HTTP procesu nie oznacza wyświetlenia powiadomienia na telefonie.
+
+**Wycofanie:** powrót aliasu do wersji sprzed 13.10 nie jest samodzielnie
+bezpiecznym rollbackiem, ponieważ stara aplikacja zakłada jeden szkic psa.
+Preferowana jest poprawka zgodna z nowym schematem; odtworzenie bazy wymaga
+osobnego planu i zachowania późniejszych zapisów. W razie problemu push można
+wyłączyć tylko `psi-pilot-push`, pozostawiając proces przypomnień w bazie.
+Nie cofaj migracji ani kopii automatycznie. [Zakres i odbiór lokalny](iterations/2026-10-13-funkcje-po-feedbacku.md).
+
+Odczytowy odbiór hostingu przeszedł **38 stron** administratora i dwóch
+istniejących kont DEMO oraz **36 wariantów responsywności** (12 ekranów przy
+320/390/1440 px). Sprawdzono dziewięć grup uprawnień: przekierowania opiekunów
+z dwóch ekranów administracyjnych, brak anonimowego dostępu, izolację psa
+oraz kontekstów, prywatność szkiców i wiadomości, aktualne RPC oferty i skrzynki.
+Historyczne publikacje zachowały uprawnienia do raportowania. Interfejs push
+odczytuje konfigurację; test nie wyrażał zgody ani nie rejestrował urządzeń.
+Service worker, manifest i odmowa dostępu do niezabezpieczonego wywołania
+maintenance przeszły. Zero błędów strony, zapisów biznesowych i zablokowanych
+prób zapisu. Wykorzystano wyłącznie własne tymczasowe sesje istniejących kont,
+bez zmiany haseł i wysyłki e-maili. Oceniono również zrzuty telefoniczne.
+
+Pierwszy przebieg przerwał pojedynczy timeout 45 s pobrania skrzynki opiekuna.
+Ponowiony odczyt trwał 698 ms, odczyt drugiego opiekuna 408 ms, a późniejsza
+kontrola przeglądarkowa przeszła. Przyczyna timeoutu nie została ustalona;
+odczyt logów Vercel z ostatnich 20 minut nie zwrócił wpisów poziomu error.
+To odbiór funkcjonalny, a nie pomiar niezawodności lub obciążenia hostingu.
+Końcowe porównanie po odbiorze ponownie potwierdziło konta, hasła, Storage,
+57 migracji oraz wszystkie wcześniejsze dane biznesowe. Jedyna dalsza zmiana
+to techniczny znacznik `reminder_worker_state` od działającego harmonogramu;
+72 pozostałe porównywane tabele i pierwotny szkic pozostały identyczne.
+Prywatne raporty, kopie i zrzuty są wyłączone z Git i artefaktu wdrożenia.
+
 ## Aktualizacja po feedbacku — 10.10.2026
 
 Kalendarz zespołu, widok miesiąca, indywidualne godziny, sale, blokady całodniowe, ostrzeżenia o preferowanych przerwach, uproszczony kontekst planów i filtry oferty są dostępne online. Pierwszy opublikowany build tego wydania to `dpl_VdWitq7Bg5jfHXwGvv5ZicZKb5oY`, z kodu `28d6fa9`. Publiczny alias jest gotowy. Późniejszy push dokumentacji na `main` może wygenerować kolejny build; bieżący identyfikator należy sprawdzać przez `vercel inspect https://psipawer.vercel.app --json`.
 
-Chmura ma **49 migracji**. `202610100001_calendar_team.sql` zastosowano atomowo po świeżej prywatnej kopii obejmującej Auth, Storage oraz historię migracji. Odtworzenie tej kopii i próba nowej migracji zachowały zawartość wszystkich 68 wcześniejszych tabel publicznych poza celowo zmienioną projekcją `calendar_slots`. Tę samą kontrolę wykonano po migracji produkcyjnej. Źródłowe terminy, konta, hasła, ustawienia Auth, ceny i postęp testerów są zachowane. Nie resetowano zestawu DEMO.
+W momencie tego wydania chmura miała **49 migracji**. `202610100001_calendar_team.sql` zastosowano atomowo po świeżej prywatnej kopii obejmującej Auth, Storage oraz historię migracji. Odtworzenie tej kopii i próba nowej migracji zachowały zawartość wszystkich 68 wcześniejszych tabel publicznych poza celowo zmienioną projekcją `calendar_slots`. Tę samą kontrolę wykonano po migracji produkcyjnej. Źródłowe terminy, konta, hasła, ustawienia Auth, ceny i postęp testerów są zachowane. Nie resetowano zestawu DEMO.
 
 Końcowy odczyt potwierdził `ACTIVE_HEALTHY`, historię 49 migracji i zgodny skrót SQL nowej migracji, zachowane liczby kont i danych oraz hasła, a także aktywny harmonogram przypomnień.
 
@@ -20,7 +97,7 @@ Poprzednia aktualizacja interfejsu z 09.10.2026 miała identyfikator `dpl_GRLuGP
 
 ## Środowisko i dostęp
 
-Vercel obsługuje aplikację Next.js, a Supabase Auth, PostgreSQL i prywatny Storage. Funkcje aplikacji działają w regionie `fra1`, baza w `eu-central-1`. Zastosowano 49 migracji do `202610100001`. Rozwój lokalny ma oddzielną bazę; launchery nie przełączają jej na chmurę.
+Vercel obsługuje aplikację Next.js, a Supabase Auth, PostgreSQL i prywatny Storage. Funkcje aplikacji działają w regionie `fra1`, baza w `eu-central-1`. Zastosowano 57 migracji do `202610130008`. Rozwój lokalny ma oddzielną bazę; launchery nie przełączają jej na chmurę.
 
 Dotychczasowe konta `mborecki6+1@gmail.com` i `asiakostrzanowska@gmail.com` mają rolę prowadzącej `admin`. Zachowano ich hasła, profile i role. Fikcyjne konta `demo.opiekun@psipawer.test` oraz `demo.opiekun2@psipawer.test` mają rolę `client`; ich prywatne hasła znajdują się w pliku przekazanym właścicielowi projektu, wykluczonym z Git i wdrożeń.
 
@@ -32,7 +109,7 @@ Powiadomienia biznesowe są zapisywane transakcyjnie w skrzynkach aplikacji. Har
 
 W panelu prowadzącej ceny i godziny pracy znajdują się w **Ustawieniach**; kontrola procesu przypomnień jest dostępna przez rozwijaną **Kontrolę przypomnień**. Skrzynkę otwiera dzwonek u góry. [Mapa nawigacji](PILOT-TEST-SCENARIOS.md#gdzie-znaleźć-funkcje-w-panelu-prowadzącej) obejmuje również sekcje Zajęcia i Więcej.
 
-Chroniony adres `/api/internal/maintenance` przyjmuje POST z autoryzacją i wykonuje wyłącznie przypomnienia. Zwraca 401 bez prawidłowego sekretu, działa tylko w środowisku produkcyjnym i odrzuca nieprawidłową konfigurację projektu.
+Chroniony adres `/api/internal/maintenance` przyjmuje POST z autoryzacją i wykonuje przypomnienia oraz niezależną kolejkę Web Push. Zwraca 401 bez prawidłowego sekretu, działa tylko w środowisku produkcyjnym i odrzuca nieprawidłową konfigurację projektu.
 
 Domyślna [poczta Supabase](https://supabase.com/docs/guides/auth/auth-smtp) obsługuje wyłącznie Auth, z ograniczeniem odbiorców do zespołu i niskim limitem wysyłki. Nie zastępuje poczty biznesowej. Fikcyjne adresy `.test` nie mają skrzynek. Wysyłkę i rzeczywiste zaproszenia uruchom po konfiguracji dostawcy i odrębnym odbiorze.
 

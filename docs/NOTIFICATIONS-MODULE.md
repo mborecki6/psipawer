@@ -1,12 +1,25 @@
 # Powiadomienia w aplikacji
 
-## Rozszerzenie lokalne 13.10.2026
+## Rozszerzenie online — 13.10.2026
 
-Nowy zakres opisuje [brief odbioru](iterations/2026-10-13-funkcje-po-feedbacku.md).
+Kod aplikacji i osiem migracji rozszerzenia opublikowano na
+[psipawer.vercel.app](https://psipawer.vercel.app/login) 13.10.2026.
+Zakres oraz wcześniejsze wyniki lokalne opisuje
+[brief odbioru](iterations/2026-10-13-funkcje-po-feedbacku.md).
 Skrzynkę uzupełnia osobna kolejka Web Push (`src/modules/push/`, migracja
 `202610130002`), a migracja `202610130008` dodaje konteksty zaproszenia na
-kontrolę i prywatnego czatu. Stan implementacji i weryfikacji należy sprawdzać
-w briefie; ta sekcja nie oznacza wdrożenia w chmurze.
+kontrolę i prywatnego czatu. Produkcyjny harmonogram HTTP `psi-pilot-push`
+jest aktywny i wywołuje handler przypomnień oraz Web Push co minutę.
+Nie potwierdzono dostarczenia powiadomienia systemowego na fizyczny telefon.
+[Stan wydania](VERCEL-SUPABASE-PILOT.md).
+
+Rzeczywiste przebiegi harmonogramu 13.10 o 18:34 i 18:35 UTC zakończyły się
+HTTP 200, z `push.configured=true` i wszystkimi licznikami równymi zero.
+Osobne wywołanie maintenance również zwróciło HTTP 200 i ten sam wynik.
+Potwierdza to działanie harmonogramu i skonfigurowanego workera w przebiegach
+bez dostaw; w tych próbach nie wysłano żadnego push. Dotychczasowy proces
+`psi-pilot-reminders` pozostaje aktywny co pięć minut jako niezależne
+zabezpieczenie przypomnień w skrzynce.
 
 Push włącza się świadomie w rozwijanych ustawieniach na stronie powiadomień,
 osobno na każdym urządzeniu. Dostawca otrzymuje ogólny komunikat o nowej
@@ -16,11 +29,18 @@ Wylogowanie, brak aktualnej sesji lub utrata dostępu do źródła wstrzymują
 dalszą wysyłkę. Włączenie urządzenia nie rozsyła archiwalnych wpisów.
 
 Powiadomienie czatu wymaga aktualnej zgody obu uczestników i dostępu do
-rozmowy; prowadząca nie uzyskuje wglądu tylko dzięki swojej roli. Zaproszenie
+rozmowy. Wzajemne zainteresowanie w Psiutkach nie włącza czatu automatycznie;
+oboje opiekunowie osobno wyrażają zgodę i mogą ją cofnąć. Prowadząca nie
+uzyskuje wglądu tylko dzięki swojej roli. Zaproszenie
 na kontrolę prowadzi do zgłoszenia konsultacji dla wskazanego psa, z ponownym
 sprawdzeniem stanu zaproszenia. Licznik, lista i otwarcie stosują wspólne
 reguły dostępu. Żaden z tych kanałów nie uruchamia poczty SMTP, WhatsApp,
 ClickMeeting, MailerLite ani aplikacji natywnej.
+
+Powiadomienia o zaleceniach zachowują właściwy kontekst konsultacji, kursu
+lub fitness. Istniejące przypisania zachowują dotychczasowy dostęp do
+raportowania; nowa konfiguracja usługi określa warunki nowych przypisań.
+Wygaśnięcie prawa do nowych odpowiedzi nie usuwa planów ani historii raportów.
 
 Lokalny proces uruchamia się przez `pnpm local:push` lub
 `pnpm local:push:watch`; szczegóły konfiguracji zawiera
@@ -29,11 +49,11 @@ dostawcą potwierdza przetwarzanie kolejki, nie dostarczenie na fizyczny telefon
 
 ## Poprzedni zakres skrzynki
 
-Stan lokalny: 03.10.2026. Moduł `src/modules/notifications/`, migracje `202609190004_in_app_notifications.sql`, `202610030001_course_notifications.sql` oraz `202610030006_fitness_notifications_work.sql`, z rozszerzeniami edycji/powrotu kursów. Nie zastosowano migracji w chmurze, nie wykonano wdrożenia ani wysyłki wiadomości poza aplikację.
+Historia odbioru lokalnego z 03.10.2026: moduł `src/modules/notifications/`, migracje `202609190004_in_app_notifications.sql`, `202610030001_course_notifications.sql` oraz `202610030006_fitness_notifications_work.sql`, z rozszerzeniami edycji/powrotu kursów. W chwili tego odbioru nie zastosowano migracji w chmurze, nie wykonano wdrożenia ani wysyłki wiadomości poza aplikację. Aktualny stan publikacji opisuje sekcja z 13.10 powyżej.
 
 ## Obsługa skrzynki
 
-Obie role mają **Powiadomienia** w menu oraz przycisk z dzwonkiem w nagłówku. Licznik pokazuje wszystkie nieprzeczytane wiadomości danego konta; wizualnie wartości powyżej 99 mają postać `99+`, a etykieta dla czytnika ekranu zawiera dokładną liczbę. Niedostępny licznik jest oznaczony `!`, a nie udawanym zerem.
+Obie role otwierają **Powiadomienia** przyciskiem z dzwonkiem w nagłówku. Licznik pokazuje wszystkie nieprzeczytane wiadomości danego konta; wizualnie wartości powyżej 99 mają postać `99+`, a etykieta dla czytnika ekranu zawiera dokładną liczbę. Niedostępny licznik jest oznaczony `!`, a nie udawanym zerem.
 
 Widok `/admin/notifications` lub `/app/notifications` ma filtry **Nieprzeczytane** i **Wszystkie**, datę, nazwę psa, kategorię zmiany oraz przycisk **Otwórz sprawę**. Otwarcie oznacza konkretną wiadomość jako przeczytaną i prowadzi do właściwego ekranu. Samo pobranie strony, podgląd linku lub odczyt listy nie zmieniają statusów.
 
@@ -82,7 +102,7 @@ Dodano 33 testy: rzeczywiste migracje i operacje w PGlite, fan-out dla obu ról,
 
 Pierwotna weryfikacja z 19.09.2026: **383 testy w 36 plikach**, ESLint, kontrola typów i kompilacja poprawne. Na tamtym etapie sprawdzenie renderowania było testem treści i kontrolek, bez działającego lokalnego Auth/PostgREST. Późniejsze rzeczywiste próby obu ról i niezależnych połączeń opisuje [stan produktu](PRODUCT-STATUS.md).
 
-Przypomnienia o określonej porze mają teraz osobny [moduł i trwałą kolejkę prób](REMINDERS-MODULE.md), dodane lokalnie migracją `202609190005`. Obsługa zewnętrznego dostawcy i poczta po konfiguracji SMTP pozostają do wykonania. Bieżąca skrzynka działa niezależnie od flagi `AUTH_EMAIL_ENABLED` i nie stanowi uruchomienia e-maili, WhatsApp ani powiadomień push.
+Przypomnienia o określonej porze mają osobny [moduł i trwałą kolejkę prób](REMINDERS-MODULE.md), dodane pierwotnie lokalną migracją `202609190005`. W tamtym odbiorze obsługa zewnętrznego dostawcy i poczta po konfiguracji SMTP pozostawały do wykonania. Skrzynka nadal działa niezależnie od flagi `AUTH_EMAIL_ENABLED` i od transportu Web Push dodanego w rozszerzeniu 13.10. SMTP i WhatsApp pozostają nieuruchomione.
 
 Powiadomienie o nowym planie otwiera teraz [konkretną publikację](CONSULTATION-CARE.md), zachowując dostęp do treści wskazanej przez zdarzenie również po opublikowaniu nowszego planu.
 
@@ -96,7 +116,7 @@ Wiadomość zachowuje identyfikatory cyklu, zgłoszenia i ewentualnego spotkania
 
 Odbiorcą pozostaje opiekun zapisany przy zgłoszeniu, również po późniejszej zmianie opiekuna psa. Licznik, lista i oznaczanie przeczytania stosują tę samą regułę dostępu oraz wymagają aktualnej roli klienta. Nowy opiekun nie otrzymuje wcześniejszych rozliczeń ani wiadomości. Jeżeli poprzednie konto nie może już odczytać profilu psa, lista pokazuje „Pies zgłoszenia”, bez udostępniania nowej prywatnej nazwy profilu.
 
-Dowody odbioru: [powiadomienia i przypomnienia kursów](LOCAL-DEVELOPMENT.md#powiadomienia-i-przypomnienia-kursów). Poczta, WhatsApp i push nadal pozostają oddzielnym, odłożonym zakresem.
+Dowody pierwotnego odbioru: [powiadomienia i przypomnienia kursów](LOCAL-DEVELOPMENT.md#powiadomienia-i-przypomnienia-kursów). Na tamtym etapie poczta, WhatsApp i push pozostawały oddzielnym, odłożonym zakresem. Stan Web Push z 13.10 opisano na początku dokumentu; poczta i WhatsApp nadal pozostają poza wdrożeniem.
 
 ## Indywidualny fitness
 

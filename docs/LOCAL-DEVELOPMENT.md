@@ -1,6 +1,6 @@
 # Lokalny rozwój produktu
 
-Rozwój i codzienne testy korzystają z oddzielnego lokalnego Supabase. Decyzja użytkownika z 18.09.2026 wymagała lokalnego odbioru oraz nowej zgody przed publikacją; późniejsze zgody objęły MVP i aktualizację po feedbacku z 10.10.2026. Ta wersja jest opublikowana z 49 migracjami. [Aktualny stan hostingu i operacje](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026). Lokalnych launcherów, testów ani seederów nadal nie kierujemy do chmury; nowe etapy nie są publikowane automatycznie przez sam lokalny odbiór.
+Rozwój i codzienne testy korzystają z oddzielnego lokalnego Supabase. Decyzja użytkownika z 18.09.2026 wymagała lokalnego odbioru oraz nowej zgody przed publikacją; późniejsze zgody objęły MVP i aktualizacje po feedbacku z 10 i 13.10.2026. Najnowsza wersja jest opublikowana z 57 migracjami. [Aktualny stan hostingu i operacje](VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026). Lokalnych launcherów, testów ani seederów nadal nie kierujemy do chmury; nowe etapy nie są publikowane automatycznie przez sam lokalny odbiór.
 
 ## Podgląd rozszerzenia po feedbacku — 13.10.2026
 
@@ -13,7 +13,7 @@ duplikatów. Sam lokalny podgląd i skrzynka działają niezależnie od tych pro
 
 ## Lokalny odbiór MVP — 03.10.2026
 
-**Nowsza iteracja 10.10.2026:** lokalny schemat ma 49 migracji do `202610100001_calendar_team.sql`. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Po lokalnym odbiorze i późniejszej zgodzie użytkownika tę samą wersję zastosowano w chmurze; historia produkcyjna również ma 49 migracji. [Lokalny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026) oraz [osobna kontrola publikacji](PRODUCT-STATUS.md#publikacja-aktualizacji-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
+**Historyczny odbiór iteracji 10.10.2026:** lokalny schemat ma 49 migracji do `202610100001_calendar_team.sql`. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Po lokalnym odbiorze i późniejszej zgodzie użytkownika tę samą wersję zastosowano w chmurze; historia produkcyjna również ma 49 migracji. [Lokalny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026) oraz [osobna kontrola publikacji](PRODUCT-STATUS.md#publikacja-aktualizacji-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
 
 Lokalny MVP jest gotowy do wspólnych testów: **971/971 testów w 73 plikach**, **45/45 pełnych E2E** (6,2 minuty), TypeScript i ESLint. Baza ma **48 migracji**; podgląd ma zgodny manifest i odpowiada HTTP 200. [Próba 50 kont](PILOT-LOAD.md) objęła 1050 odczytów opiekunów, 27 prowadzącej, 153 rzeczywiste strony Chrome, 50 zapisów na cztery miejsca i 50 ponowień jednej wpłaty. Lokalny cel p95 HTTP poniżej 2 s został spełniony.
 

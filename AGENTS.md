@@ -27,7 +27,8 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
 - Bieżący zakres opisuje `docs/iterations/2026-10-13-funkcje-po-feedbacku.md`.
-  Rozwijamy funkcje lokalnie, zachowując lżejszy interfejs. Logo, hasło,
+  Iterację z 13.10 opublikowano po osobnej zgodzie użytkownika. Kolejne funkcje
+  rozwijamy lokalnie, zachowując lżejszy interfejs. Logo, hasło,
   ClickMeeting i MailerLite pozostają na koniec. Otwarte decyzje produktowe
   wymagają odpowiedzi użytkownika; propozycja agenta nie jest taką odpowiedzią.
   Web Push, skrzynka aplikacji, e-mail i przyszły push natywny to osobne kanały.

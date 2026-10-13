@@ -2,7 +2,9 @@
 
 Uzupełnienie AC-08 i AC-10 iteracji po feedbacku. Użytkownik potwierdził datę
 kontroli wybieraną przez behawiorystkę oraz konfigurowalne raportowanie i okres.
-Implementacja oraz odbiór są lokalne; bez wysyłki do chmury i bez publikacji.
+Poniższe dowody opisują odbiór lokalny. Po osobnej zgodzie użytkownika zakres
+opublikowano 13.10.2026 razem z rozszerzeniem po feedbacku.
+[Osobny odbiór hostingu](../VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026).
 
 ## AC-08
 

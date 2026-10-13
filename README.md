@@ -2,9 +2,9 @@
 
 Aplikacja do organizacji spacerów socjalizacyjnych i pracy behawiorysty. Stos: Next.js App Router, TypeScript, React, Supabase Auth/PostgreSQL/Storage. Wygląd zachowuje ciepłą paletę i układ dostarczonego prototypu.
 
-## Rozszerzenie po feedbacku — lokalnie, 13.10.2026
+## Rozszerzenie po feedbacku — online, 13.10.2026
 
-Lokalna wersja zachowuje wynik [„Spokojnego startu”](docs/iterations/2026-10-13-spokojny-start.md) i rozszerza funkcje:
+Wersja online zachowuje wynik [„Spokojnego startu”](docs/iterations/2026-10-13-spokojny-start.md) i rozszerza funkcje:
 
 - Zalecenia, szkice, publikacje, odpowiedzi i kontakty kontrolne mają osobne konteksty konkretnej usługi lub spotkania, z zachowaniem historii.
 - Kalendarz dostępnej oferty pokazuje miesiąc i listę zajęć. Usługa indywidualna bez publicznego terminu prowadzi do prywatnego zgłoszenia ustalenia terminu, bez automatycznej rezerwacji lub płatności.
@@ -13,11 +13,16 @@ Lokalna wersja zachowuje wynik [„Spokojnego startu”](docs/iterations/2026-10
 - Prywatny czat Psiutków wymaga wzajemnego zainteresowania i obu zgód, bez obowiązkowego udziału prowadzącej i ujawniania telefonu lub e-maila. Wycofanie zgody, zainteresowania, ukrycie profilu lub zmiana właściciela odbierają dostęp; stare dopasowania nie uruchamiają rozmów.
 - Dostęp do raportowania i jego okres są konfigurowalne dla usługi oraz konkretnego przypisania. Dotychczasowe przypisania zachowują dostęp; wygaśnięcie blokuje nowe odpowiedzi, zachowując historię i odczyt zaleceń.
 
-Lokalny Supabase ma **57 migracji** do `202610130008_notification_contexts.sql`. Chmura pozostaje przy **49 migracjach** i wydaniu z 10.10.2026; rozszerzenia nie opublikowano. Fizyczne dostarczenie push na telefonie nie zostało odebrane. Zewnętrzny SMTP, branding (logo i hasło), ClickMeeting oraz MailerLite pozostają poza tą iteracją. [Kryteria, wyniki odbioru i ich ograniczenia](docs/iterations/2026-10-13-funkcje-po-feedbacku.md).
+Lokalny i produkcyjny Supabase mają **57 migracji**. Wydanie 13.10 działa na
+[psipawer.vercel.app](https://psipawer.vercel.app/login), po próbie świeżej kopii
+i zachowaniu kont, haseł oraz danych. Produkcyjny proces push działa co minutę;
+odbiór systemowego powiadomienia na telefonie pozostaje do sprawdzenia.
+SMTP, logo/hasło, ClickMeeting i MailerLite pozostają odłożone.
+[Obsługa wydania i wycofanie](docs/VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026).
 
 ## MVP online do wspólnych testów
 
-Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login), na Vercel i Supabase we Frankfurcie. Aktualizacja po feedbacku z 10.10.2026 jest opublikowana; baza ma **49 migracji** do `202610100001`. Przed tą zmianą wykonano świeżą kopię chmury z Auth, Storage i historią migracji, odtworzono ją w oddzielnej lokalnej bazie oraz sprawdzono nową migrację. Konta, hasła, terminy, ceny i postęp testerów zostały zachowane. [Przebieg publikacji i jej ograniczenia](docs/VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
+Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login), na Vercel i Supabase we Frankfurcie. Najnowsza aktualizacja z 13.10.2026 obejmuje opisane powyżej rozszerzenie; baza ma **57 migracji** do `202610130008`. Przed zmianą wykonano świeżą kopię chmury z Auth, Storage i historią migracji, odtworzono ją w oddzielnej bazie oraz sprawdzono komplet nowych migracji. Konta, hasła, terminy, ceny i postęp testerów zostały zachowane. [Przebieg publikacji i jej ograniczenia](docs/VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026).
 
 Pilot obejmuje prowadzącą, administratora i **dwa fikcyjne konta opiekunów**. [Scenariusze testów](docs/PILOT-TEST-SCENARIOS.md) obejmują profile, spacery, konsultacje, kursy, fitness, zalecenia, rozliczenia, karty, społeczność i skrzynki. Hasła testowe są przekazywane prywatnie, poza repozytorium. Wszystkie dane oznaczone DEMO są fikcyjne; wdrożenia nie resetują postępu testerów.
 
@@ -33,7 +38,7 @@ Rozwój prowadzimy w Codexie z rolami biznesową, techniczną i niezależnego re
 Projektowe profile są w `.codex/agents/`, a zasady delegowania w `AGENTS.md`.
 [Proces i warunki ukończenia](docs/AGENT-WORKFLOW.md) oraz
 [bieżąca iteracja rozszerzenia po feedbacku](docs/iterations/2026-10-13-funkcje-po-feedbacku.md).
-Wynik [Spokojnego startu](docs/iterations/2026-10-13-spokojny-start.md) pozostaje częścią lokalnej wersji.
+Wynik [Spokojnego startu](docs/iterations/2026-10-13-spokojny-start.md) jest częścią wydania online z 13.10.
 
 ## Moduły aplikacji
 
@@ -57,7 +62,7 @@ Moduły działają w chmurze i w lokalnym środowisku. Lokalny rozwój nadal kor
 - [Do zrobienia i kontakty kontrolne](docs/WORK-MODULE.md): wspólna kolejka, pełny cykl kontaktu po publikacji planu, prywatne notatki i jawny przegląd odpowiedzi; rzeczywiste E2E obu ról i niezależne próby równoczesnych zapisów; migracja `202609190002`.
 - [Rozliczenia konsultacji](docs/CONSULTATION-FINANCE.md): należność po potwierdzeniu terminu, częściowe wpłaty i korekty, saldo przy spotkaniu; migracja `202609190003`.
 - [Odzyskanie hasła](docs/ACCESS-RECOVERY.md): formularz prośby, potwierdzenie linku i ustawienie hasła. Poczta domyślnie wyłączona, gotowy szablon lokalny.
-- [Powiadomienia w aplikacji](docs/NOTIFICATIONS-MODULE.md): prywatne skrzynki obu ról, licznik nieprzeczytanych i komunikaty o zmianach spraw; migracja `202609190004`. Bez wysyłki poza aplikację.
+- [Powiadomienia w aplikacji](docs/NOTIFICATIONS-MODULE.md): prywatne skrzynki obu ról, licznik nieprzeczytanych i komunikaty o zmianach spraw; migracja `202609190004`. Od 13.10 osobny, dobrowolny kanał Web Push jest skonfigurowany również online.
 
 [Aktualny stan całego MVP oraz pozostałe warunki odbioru](docs/PRODUCT-STATUS.md).
 
@@ -333,8 +338,8 @@ Końcowa kontrola aktualizacji powinna objąć zgodność migracji, logowanie ob
 Znane ograniczenia:
 
 - Zewnętrzny SMTP i zaproszenia klientów pozostają odłożone. Zaproszenie i samodzielne odzyskanie hasła są zaimplementowane oraz sprawdzane wyłącznie z lokalną skrzynką.
-- Brak wysyłki e-mailowych przypomnień, WhatsApp, AI, płatności online, faktur i wielofirmowości. Prywatny czat Psiutków i dobrowolny Web Push są częścią lokalnego rozszerzenia z 13.10, bez publikacji i bez odbioru fizycznego push na telefonie. Skrzynka powiadomień i [kolejka terminowych przypomnień](docs/REMINDERS-MODULE.md) działają w chmurze przez harmonogram Supabase; lokalnie używają osobnego procesu. Zwroty pieniędzy odbywają się poza aplikacją.
-- Zmiana spaceru lub jego odwołanie zapisuje powiadomienie dla właściwych opiekunów w aplikacji, także w chmurze. Wydanie online z 10.10 nie wysyła tych wiadomości poza aplikację; lokalny Web Push ma osobną kolejkę dla dobrowolnie włączonych urządzeń. E-mail nie jest włączony.
+- Brak wysyłki e-mailowych przypomnień, WhatsApp, AI, płatności online, faktur i wielofirmowości. Prywatny czat Psiutków i dobrowolny Web Push są częścią wydania online z 13.10; fizyczny odbiór push na telefonie pozostaje do sprawdzenia. Skrzynka powiadomień i [kolejka terminowych przypomnień](docs/REMINDERS-MODULE.md) działają w chmurze przez harmonogram Supabase; lokalnie używają osobnego procesu. Zwroty pieniędzy odbywają się poza aplikacją.
+- Zmiana spaceru lub jego odwołanie zapisuje powiadomienie dla właściwych opiekunów w aplikacji, także w chmurze. Od wydania 13.10 Web Push ma osobną kolejkę dla dobrowolnie włączonych urządzeń, obsługiwaną online co minutę. E-mail nie jest włączony.
 - Nie ma automatycznego awansu rezerwy. Kwalifikację, ostrzeżenia relacji i propozycje wspólnych spotkań ocenia behawiorysta.
 - Finanse pokazują po 20 pozycji w trzech niezależnych listach, zachowując pełne sumy i historię. Pozostałe zbiorcze odczyty wymagają dalszej oceny dla większej skali; sam pomiar 50 lokalnych sesji nie dowodzi gotowości dowolnego obciążenia.
 - Sprzątanie zastąpionych zdjęć i zarejestrowanych niedokończonych przesłań działa lokalnie przez trwałą kolejkę i Storage API. W chmurze automatyczne fizyczne usuwanie zdjęć jest wyłączone; pozostają dawne osierocone pliki i ręczne przesłania bez rejestracji.

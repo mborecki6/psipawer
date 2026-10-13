@@ -1,8 +1,8 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 13.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie online pochodzi z 10.10 i ma 49 migracji. „Spokojny start” oraz poniższe rozszerzenie funkcji są dostępne wyłącznie lokalnie, z 57 migracjami.
+Aktualizacja: 13.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie online z 13.10 obejmuje „Spokojny start” i poniższe rozszerzenie funkcji; chmura i środowisko lokalne mają 57 migracji.
 
-## Rozszerzenie funkcji po feedbacku — lokalnie, 13.10.2026
+## Rozszerzenie funkcji po feedbacku — online, 13.10.2026
 
 Iteracja zachowuje lżejszy interfejs „Spokojnego startu” i obejmuje sześć obszarów:
 
@@ -13,11 +13,13 @@ Iteracja zachowuje lżejszy interfejs „Spokojnego startu” i obejmuje sześć
 - **Prywatny czat Psiutków:** po wzajemnym zainteresowaniu oboje opiekunowie świadomie włączają rozmowę, bez obowiązkowego pośrednictwa prowadzącej. Zgody nie wynikają ze starych dopasowań; wycofanie zgody lub zainteresowania, ukrycie profilu i zmiana opiekuna odbierają dostęp. Nowy właściciel nie dziedziczy historii; czat nie udostępnia telefonu ani e-maila i nie ma załączników.
 - **Konfiguracja raportowania:** dostęp i jego okres są określane dla nowych przypisań usługi, z jawną możliwością zmiany konkretnego uprawnienia przez prowadzącą. Istniejące przypisania zachowują dotychczasowy dostęp; wygaśnięcie blokuje nowe odpowiedzi, pozostawiając historię oraz odczyt zaleceń.
 
-Lokalny Supabase ma **57 migracji**, w tym osiem nowych do `202610130008_notification_contexts.sql`. Chmura pozostaje na **49 migracjach** do `202610100001_calendar_team.sql`; nie publikowano rozszerzenia ani nie zmieniano danych pilota. Fizyczne dostarczenie Web Push na telefonie nie zostało odebrane. Zewnętrzny SMTP, branding (logo i hasło), ClickMeeting i MailerLite pozostają poza zakresem tej iteracji; nie powstaje aplikacja natywna.
+Lokalny i produkcyjny Supabase mają **57 migracji**, w tym osiem nowych do `202610130008_notification_contexts.sql`. Publikacja nastąpiła po sprawdzeniu świeżej kopii produkcji. Konta, hasła i wcześniejsze dane zachowano; brakujące szkice odtworzono z historii. [Operacje, harmonogramy i ograniczenia wycofania](VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026). Fizyczne dostarczenie Web Push na telefonie nie zostało odebrane. Zewnętrzny SMTP, branding (logo i hasło), ClickMeeting i MailerLite pozostają poza zakresem tej iteracji; nie powstaje aplikacja natywna.
+
+Odczytowy odbiór online objął 38 stron istniejących kont, 36 wariantów układu i dziewięć grup kontroli prywatności; bez błędów strony i zapisów biznesowych. Harmonogram push co minutę zwrócił HTTP 200 z pustą kolejką. Pojedynczy timeout pierwszego odczytu skrzynki nie powtórzył się w ponowieniu i kontroli UI; przyczyna pozostaje nieustalona. Pełne E2E z zapisami i próby obciążenia pozostają odrębnymi lokalnymi przebiegami.
 
 Kryteria oraz końcowe wyniki i granice odbioru są prowadzone w [dokumencie rozszerzenia po feedbacku](iterations/2026-10-13-funkcje-po-feedbacku.md). Wyniki „Spokojnego startu” i wcześniejszych publikacji poniżej pozostają osobnymi przebiegami historycznymi.
 
-## Spokojny start i praca zespołu agentów — lokalnie, 13.10.2026
+## Spokojny start i praca zespołu agentów — odbiór lokalny, 13.10.2026
 
 Zapisano projektowe role biznesową, techniczną i recenzenta oraz [proces ich pracy](AGENT-WORKFLOW.md). Pierwsza wspólna iteracja ma niezależne propozycje, uzgodnione kryteria i osobny przegląd kodu. Profile dziedziczą model sesji; nie uruchamiają pracy w tle.
 
@@ -25,11 +27,11 @@ Pulpit prowadzącej ma jasną kartę terminu z pełną datą i czytelniejsze czt
 
 Przeszły lint, TypeScript, końcowa lokalna kompilacja, 70 testów autora i osobny przebieg 61 testów recenzenta (częściowo wspólne zestawy). Rzeczywista lokalna aplikacja przeszła kontrolę 21 tras, 8 wariantów responsywności i 6 scenariuszy mobilnego menu. Po korekcie kontrastu powtórzono 8 widoków pulpitów. Dodatkowe 16 przypadków izolowanych komponentów sprawdziło skrajne treści, puste stany i daty Warszawy. Biznes oraz recenzent nie zgłosili pozostałych problemów blokujących ten zakres. [Szczegółowe kryteria i granice dowodów](iterations/2026-10-13-spokojny-start.md).
 
-Podgląd działa na localhost:3000. Nie publikowano aplikacji ani nie zmieniano migracji, konfiguracji chmury i danych biznesowych. Poprzednie wyniki pełnych E2E, obciążenia i kopii pozostają odrębnymi historycznymi przebiegami.
+W chwili opisanego odbioru podgląd działał na localhost:3000; nie publikowano jeszcze aplikacji ani nie zmieniano chmury. Późniejsze wspólne wdrożenie z rozszerzeniem opisano powyżej. Poprzednie wyniki pełnych E2E, obciążenia i kopii pozostają odrębnymi historycznymi przebiegami.
 
 ## Publikacja aktualizacji po feedbacku — 10.10.2026
 
-Pierwsza iteracja opisana poniżej jest dostępna online. Supabase ma **49 migracji** do `202610100001_calendar_team.sql`; zastosowano ją atomowo po odtworzeniu i sprawdzeniu świeżej kopii obejmującej Auth, Storage oraz historię migracji. Odtworzenie i zapis produkcyjny zachowały zawartość wcześniejszych 68 tabel publicznych poza celowo przebudowaną projekcją `calendar_slots`. Źródłowe terminy, konta, hasła, ustawienia Auth, ceny i postęp testerów pozostały zachowane.
+Pierwsza iteracja opisana poniżej została opublikowana 10.10. Wtedy Supabase miał **49 migracji** do `202610100001_calendar_team.sql`; zastosowano ją atomowo po odtworzeniu i sprawdzeniu świeżej kopii obejmującej Auth, Storage oraz historię migracji. Odtworzenie i zapis produkcyjny zachowały zawartość wcześniejszych 68 tabel publicznych poza celowo przebudowaną projekcją `calendar_slots`. Źródłowe terminy, konta, hasła, ustawienia Auth, ceny i postęp testerów pozostały zachowane.
 
 Końcowy odczyt potwierdził `ACTIVE_HEALTHY`, historię 49 migracji i zgodny skrót SQL nowej migracji, zachowane liczby kont i danych oraz hasła, a także aktywny harmonogram przypomnień.
 

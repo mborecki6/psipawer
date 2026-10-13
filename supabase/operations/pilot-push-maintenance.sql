@@ -1,6 +1,6 @@
 -- Hosted operation. Apply only after the production maintenance handler and
 -- VAPID configuration are deployed, and the matching MAINTENANCE_SECRET has
--- been stored separately in Vault as psi-pilot-maintenance-secret.
+-- been stored separately in Vault as psi_maintenance_secret.
 -- Keep psi-pilot-reminders: its database-only job remains the inbox fallback.
 -- Preflight: net/vault must not be exposed through the Data API. Direct DB
 -- login roles must be trusted: pg_net briefly queues Authorization in plaintext.
@@ -16,7 +16,7 @@ begin
   select count(*), min(decrypted_secret)
     into secret_count, maintenance_secret
     from vault.decrypted_secrets
-    where name = 'psi-pilot-maintenance-secret';
+    where name = 'psi_maintenance_secret';
   if secret_count <> 1 or maintenance_secret is null
     or maintenance_secret !~ '^[A-Za-z0-9_-]{43,128}$' then
     raise exception 'Push maintenance secret unavailable';
@@ -39,7 +39,7 @@ select cron.schedule(
       select count(*), min(decrypted_secret)
         into secret_count, maintenance_secret
         from vault.decrypted_secrets
-        where name = 'psi-pilot-maintenance-secret';
+        where name = 'psi_maintenance_secret';
       if secret_count <> 1 or maintenance_secret is null
         or maintenance_secret !~ '^[A-Za-z0-9_-]{43,128}$' then
         raise exception 'Push maintenance secret unavailable';

@@ -4,9 +4,22 @@ Wersja testowa działa pod [psipawer.vercel.app](https://psipawer.vercel.app/log
 
 ## Konta i sposób testowania
 
-**Aktualizacja po feedbacku z 10.10.2026 jest opublikowana.** Nowy kalendarz zespołu, miesiąc, kontekst planów i filtry oferty są dostępne na [psipawer.vercel.app](https://psipawer.vercel.app/login). Chmura ma 49 migracji; dotychczasowe konta i postęp testerów są zachowane. Konta opisane poniżej dotyczą chmury; lokalny rozwój nadal korzysta z oddzielnego Supabase. [Wyniki kontroli wydania](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
+**Aktualizacja po feedbacku z 13.10.2026 jest opublikowana.** Aplikacja i osiem
+migracji rozszerzenia są wdrożone na
+[psipawer.vercel.app](https://psipawer.vercel.app/login). Dostępne są osobne
+konteksty zaleceń, oferta w kalendarzu, zgłoszenia ustalenia terminu,
+zaproszenia na kontrolę, dobrowolny czat Psiutków i ustawienia raportowania.
+Produkcyjny harmonogram Web Push działa co minutę; potwierdzono poprawne
+przebiegi bez wysyłki push. Nie potwierdzono jeszcze
+powiadomienia systemowego na fizycznym telefonie.
+Konta opisane poniżej dotyczą chmury; lokalny rozwój nadal korzysta
+z oddzielnego Supabase. [Stan i wyniki wydania](VERCEL-SUPABASE-PILOT.md).
 
-Przy odbiorze tej wersji: wybierz prowadzącego i opcjonalnie salę nowego spotkania, sprawdź równoległy termin innej osoby, odrzucenie rzeczywistej kolizji, potwierdzenie krótszej przerwy, własne godziny oraz całodniowy urlop. Sale dodaje się świadomie w ustawieniach; migracja nie tworzy ich automatycznie. W miesiącu przejdź do wybranego dnia. Z konsultacji, kursu i fitness otwórz zalecenia i sprawdź kontekst nowego szkicu; istniejący szkic z innym powiązaniem powinien wymagać jawnej zmiany. W ofercie przełącz filtry indywidualne/grupowe/karty. Starsze wpisy kalendarza pozostają do świadomego przypisania zespołu i do tego czasu mają wspólną zajętość.
+Poprzednie wydanie z 10.10.2026 wprowadziło kalendarz zespołu, miesiąc,
+kontekst planów i filtry oferty. Chmura miała wtedy 49 migracji, z zachowanymi
+kontami i postępem testerów. [Wyniki kontroli poprzedniego wydania](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
+
+Przy kontroli wcześniejszych funkcji: wybierz prowadzącego i opcjonalnie salę nowego spotkania, sprawdź równoległy termin innej osoby, odrzucenie rzeczywistej kolizji, potwierdzenie krótszej przerwy, własne godziny oraz całodniowy urlop. Sale dodaje się świadomie w ustawieniach; migracja nie tworzy ich automatycznie. W miesiącu przejdź do wybranego dnia. Z konsultacji, kursu i fitness otwórz zalecenia i sprawdź kontekst nowego szkicu oraz oddzielną historię planów. W ofercie przełącz filtry indywidualne/grupowe/karty. Starsze wpisy kalendarza pozostają do świadomego przypisania zespołu i do tego czasu mają wspólną zajętość.
 
 Prowadząca korzysta z dotychczasowego konta `asiakostrzanowska@gmail.com`, administrator z `mborecki6+1@gmail.com`. Hasła tych kont pozostają bez zmian. Dwa oddzielne konta opiekunów to `demo.opiekun@psipawer.test` i `demo.opiekun2@psipawer.test`. Wygenerowane hasła oraz kod fikcyjnej karty przekazujemy w prywatnym pliku, poza repozytorium i wdrożeniem.
 
@@ -18,28 +31,29 @@ Główne menu obejmuje **Pulpit, Kalendarz, Zajęcia, Psy i opiekunowie, Plany i
 
 **Ustawienia**, u dołu menu, zawierają **Usługi i ceny**, **Godziny i przerwy** oraz **Dostęp opiekunów**. Historię działania przypomnień znajdziesz w rozwijanej **Kontroli przypomnień**. W kalendarzu rozwiń **Zarezerwuj czas**, aby dodać prywatną blokadę.
 
-**Więcej** otwiera karty podarunkowe, relacje psów i Psiutki. Dzwonek u góry prowadzi do skrzynki powiadomień; **Moje konto** rozwija dane i zmianę hasła. Menu opiekuna zachowuje dotychczasowy układ. Funkcje i dane pozostają dostępne także przez wcześniejsze adresy.
+**Więcej** otwiera karty podarunkowe, relacje psów i Psiutki. Dzwonek u góry prowadzi do skrzynki powiadomień; **Moje konto** rozwija dane i zmianę hasła. Aktualne menu opiekuna opisano poniżej. Funkcje i dane pozostają dostępne także przez wcześniejsze adresy.
 
-## Lokalny wariant „Spokojny start” — 13.10.2026
+## „Spokojny start” online — 13.10.2026
 
-Wariant jest gotowy lokalnie i nie zastępuje jeszcze wydania online
-opisanego powyżej. Menu opiekuna ma sześć głównych linków: **Mój start,
+Wariant sprawdzony wcześniej lokalnie jest częścią wydania online z 13.10.
+Menu opiekuna ma sześć głównych linków: **Mój start,
 Kalendarz, Moje psy, Plany i postępy, Oferta, Moje rozliczenia**. Rozwiń
 **Zajęcia**, aby wejść w spacery, kursy, PSI FITNESS lub konsultacje;
 **Więcej** zawiera karty podarunkowe i Psiutki. Skrzynkę otwiera dzwonek.
 Dane konta i zmiana hasła są na dole przewijanego menu.
 
 Pulpit prowadzącej ma jaśniejszą kartę najbliższego terminu i krótsze wiersze
-spraw. W odbiorze lokalnym sprawdź pełną datę, tekstowe oznaczenie zaległości,
+spraw. W odbiorze online sprawdź pełną datę, tekstowe oznaczenie zaległości,
 rozwijane podsumowanie oraz dostęp do wszystkich funkcji na telefonie.
-[Zakres i dowody odbioru](iterations/2026-10-13-spokojny-start.md).
+[Zakres i dowody wcześniejszego odbioru lokalnego](iterations/2026-10-13-spokojny-start.md).
 
 ## Scenariusze obu ról
 
-### Rozszerzenie po feedbacku — do odbioru lokalnego
+### Rozszerzenie po feedbacku — odbiór online 13.10.2026
 
-Poniższe nowe scenariusze odnoszą się do lokalnej iteracji 13.10, nie do
-aktualnego wydania online. [Bieżący stan odbioru](iterations/2026-10-13-funkcje-po-feedbacku.md).
+Poniższe scenariusze dotyczą opublikowanego rozszerzenia. Są instrukcją
+odbioru, nie potwierdzeniem wykonania wszystkich prób w chmurze.
+[Zakres i wcześniejsze wyniki lokalne](iterations/2026-10-13-funkcje-po-feedbacku.md).
 
 - **Niezależne zalecenia:** opublikuj plan po konsultacji oraz osobny plan po
   kursie lub fitness tego samego psa. Oba zachowują własny szkic, historię
@@ -54,16 +68,22 @@ aktualnego wydania online. [Bieżący stan odbioru](iterations/2026-10-13-funkcj
   dubluje konsultacji. Przełożenie lub wycofanie unieważnia stary komunikat.
 - **Raportowanie:** w ustawieniach konkretnej usługi zmień dostęp i okres.
   Nowe przypisanie otrzymuje nowe warunki, poprzednie zachowuje swoje.
+  Samo wdrożenie zachowuje dotychczasowy dostęp istniejących przypisań.
   Przy zaleceniach prowadząca może wprowadzić uzasadniony wyjątek. Wygaśnięcie
   blokuje nowe odpowiedzi, lecz zachowuje odczyt planów i wcześniejsze raporty.
 - **Psiutki:** dwa zatwierdzone profile wyrażają wzajemne zainteresowanie,
-  a następnie obaj opiekunowie osobno zgadzają się na czat. Sprawdź wiadomości,
-  starszą historię, ponowienie po przerwie w połączeniu i cofnięcie zgody.
+  a następnie obaj opiekunowie osobno, dobrowolnie zgadzają się na czat.
+  Wcześniejsze zainteresowanie nie włącza rozmowy automatycznie.
+  Sprawdź wiadomości, starszą historię, ponowienie po przerwie w połączeniu
+  i cofnięcie zgody.
   Trzecie konto oraz prowadząca niebędąca uczestnikiem nie odczytują rozmowy.
 - **Powiadomienia urządzenia:** rozwiń ustawienia pod dzwonkiem; sprawdź
   obsługę przeglądarki, dobrowolne włączenie i wyłączenie. Systemowy komunikat
-  nie zawiera prywatnej treści. Próbę dostarczenia na rzeczywisty telefon
-  odróżniamy od testu kolejki z podstawionym dostawcą.
+  nie zawiera prywatnej treści. Sprawdź nową wiadomość na rzeczywistym
+  urządzeniu z włączonym push.
+  Dostarczenie na telefon nie jest jeszcze potwierdzone; lokalny test kolejki
+  z podstawionym dostawcą tego nie zastępuje. Odmowa lub wyłączenie push
+  nie wyłącza skrzynki w aplikacji.
 
 ### Dotychczasowe scenariusze pilota
 
@@ -84,11 +104,21 @@ aktualnego wydania online. [Bieżący stan odbioru](iterations/2026-10-13-funkcj
 | Karty podarunkowe      | Otwórz przypisaną kartę 100 zł. Przypisz drugą kartę kodem z prywatnego pliku.                      | Zastosuj fikcyjną kartę do wybranej należności i sprawdź historię.                          | Karta zachowuje właściciela, saldo i powiązanie rozliczenia.                                                  |
 | Społeczność            | Przejrzyj profile Kluski i Luny, wyraź zainteresowanie drugim profilem.                             | Przejrzyj moderację, publikację i prywatne relacje psów.                                    | Publiczny profil nie ujawnia prywatnych notatek i danych innych opiekunów.                                    |
 | Kalendarz i oferta     | Przejrzyj własne terminy i ceny usług.                                                              | Dodaj blokadę kalendarza, sprawdź godziny pracy i zmień roboczą cenę usługi.                | Konflikty są blokowane; nowa cena dotyczy nowych zgłoszeń, a istniejące uzgodnienia zachowują swoją cenę.     |
-| Powiadomienia          | Otwórz skrzynkę, przejdź do wskazanego zgłoszenia lub planu, oznacz wiadomość jako przeczytaną.     | Przejrzyj przypomnienia i czas ostatniego sprawdzenia.                                      | Przypomnienia działają co pięć minut w Supabase i nie wymagają włączonego komputera.                          |
+| Powiadomienia          | Otwórz skrzynkę, przejdź do wskazanego zgłoszenia lub planu, oznacz wiadomość jako przeczytaną.     | Przejrzyj przypomnienia i czas ostatniego sprawdzenia.                                      | Przypomnienia mają niezależny proces Supabase co pięć minut; harmonogram HTTP obsługuje przypomnienia i Web Push co minutę. |
 
 ## Zakres tej walidacji
 
 Logowanie hasłem i skrzynki w aplikacji działają dla kont testowych. Zaproszenia nowych klientów i wysyłka biznesowych powiadomień e-mailem pozostają wyłączone do konfiguracji poczty. [Domyślna poczta Supabase](https://supabase.com/docs/guides/auth/auth-smtp) obsługuje wyłącznie Auth, z ograniczeniem odbiorców i liczby wiadomości; fikcyjne adresy `.test` nie mają skrzynek.
+
+Skrzynka aplikacji, Web Push i e-mail są osobnymi kanałami. Publikacja
+rozszerzenia 13.10 nie uruchamia SMTP, WhatsApp ani push aplikacji natywnej.
+Dotychczasowy proces `psi-pilot-reminders` pozostaje aktywny co pięć minut.
+Nowy `psi-pilot-push` działa co minutę. Jego rzeczywiste przebiegi 13.10
+o 18:34 i 18:35 UTC oraz osobne wywołanie maintenance zwróciły HTTP 200,
+`push.configured=true` i wszystkie liczniki równe zero. Nie wysłano wtedy
+żadnego push. Ten wynik potwierdza działanie harmonogramu i skonfigurowanego
+workera, a próba odbioru systemowego na fizycznym urządzeniu pozostaje
+do wykonania.
 
 Automatyczne fizyczne usuwanie nieużywanych zdjęć jest wyłączone. Zmiana i usunięcie zdjęcia w profilu nadal są dostępne; kontrolowane sprzątanie plików wymaga osobnej decyzji operacyjnej.
 

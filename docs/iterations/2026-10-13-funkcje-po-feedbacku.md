@@ -1,9 +1,10 @@
 # Rozszerzenie funkcji po feedbacku behawiorystki
 
-Status: implementacja i odbiór lokalny ukończone, 13.10.2026. Użytkownik zlecił pozostałe punkty przeglądu
+Status: implementacja, odbiór lokalny i publikacja ukończone 13.10.2026. Użytkownik zlecił pozostałe punkty przeglądu
 feedbacku; logo, hasło, ClickMeeting i MailerLite pozostawił na koniec.
-Nie obejmuje to publikacji, zmiany produkcyjnych kont ani wysyłki do testerów.
-Dotychczasowe zmiany „Spokojny start” pozostają częścią lokalnej wersji.
+Po lokalnym odbiorze osobno autoryzował publikację. Rozszerzenie i „Spokojny start”
+działają online; zachowano konta i hasła, bez wysyłki do testerów.
+[Odbiór hostingu, migracje i ograniczenia](../VERCEL-SUPABASE-PILOT.md#rozszerzenie-po-feedbacku--13102026).
 
 ## Decyzje i granice
 
@@ -93,7 +94,7 @@ testy mają nadal sprawdzać historię, uprawnienia i bezpieczne ponowienia.
 
 ## Wyniki
 
-Implementacja AC-01–10 jest dostępna w lokalnym podglądzie. Odbiór obejmuje:
+Implementacja AC-01–10 jest dostępna lokalnie i online. Poniższy zapis dotyczy wcześniejszego, lokalnego odbioru przed publikacją:
 
 - Sprawdzoną kopię z odtworzeniem 124 tabel w osobnej bazie; po porównaniu
   zastosowano osiem nowych migracji tylko lokalnie. Lokalny Supabase ma
@@ -151,7 +152,7 @@ zmienione są tylko techniczne `reminder_jobs` i `reminder_attempts`; konta
 oraz pozostałe wcześniejsze dane biznesowe nadal są zgodne z kopią.
 Są to procesy tej sesji, a nie usługi uruchamiane automatycznie po restarcie.
 
-Nie publikowano kodu ani migracji w chmurze. Instrukcje lokalnych procesów
+Na tym etapie lokalnego odbioru nie publikowano jeszcze kodu ani migracji w chmurze. Późniejsze wdrożenie opisano na początku dokumentu. Instrukcje lokalnych procesów
 przypomnień i push są w [LOCAL-DEVELOPMENT](../LOCAL-DEVELOPMENT.md).
 Prywatne logi, kopie, konta i zrzuty pozostają poza repozytorium w `.local/`,
 `test-results/` i `output/`.

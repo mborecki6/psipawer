@@ -100,5 +100,7 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 [Funkcje po feedbacku](iterations/2026-10-13-funkcje-po-feedbacku.md):
 rozdzielenie zaleceń według usług, dostępna oferta i Web Push; dalsze reguły
 kontroli, Psiutków i raportowania zgodnie z odpowiedziami użytkownika.
-Zachowujemy wynik „Spokojnego startu”. Praca i odbiór są lokalne.
+Zachowujemy wynik „Spokojnego startu”. Po lokalnym odbiorze użytkownik osobno
+autoryzował publikację; wydanie z 13.10 jest online. Kolejne zmiany nadal
+powstają lokalnie i nie dziedziczą automatycznie zgody na publikację.
 Logo, hasło, ClickMeeting i MailerLite pozostają na koniec.
