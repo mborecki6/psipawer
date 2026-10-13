@@ -169,7 +169,7 @@ async function acceptedCourse() {
 
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`create role anon;create role authenticated;create schema auth;
+  await db.exec(`create role anon;create role authenticated; create role service_role;create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;
@@ -820,6 +820,10 @@ describe.sequential(
         expect((await state(id)).status).toBe("accepted");
         expect((await state(third)).status).toBe("waitlisted");
       } finally {
+        await db.query(
+          "delete from public.care_reporting_entitlements where course_enrollment_id in(select id from public.course_enrollments where course_id=$1)",
+          [cycle],
+        );
         await db.query("delete from public.courses where id=$1", [cycle]);
         await db.query("delete from public.dogs where id=$1", [reserveDog]);
       }
@@ -1482,6 +1486,10 @@ describe.sequential(
             .every((j) => j.attempts === 1),
         ).toBe(true);
       } finally {
+        await db.query(
+          "delete from public.care_reporting_entitlements where course_enrollment_id in(select id from public.course_enrollments where course_id=$1)",
+          [cycle],
+        );
         await db.query("delete from public.courses where id=$1", [cycle]);
         await db.query("delete from public.dogs where id=any($1)", [dogIds]);
       }

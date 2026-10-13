@@ -1,5 +1,6 @@
 import "server-only";
 import { requireSession } from "@/lib/auth/session";
+import type { ChatState } from "@/modules/community-chat/types";
 import {
   buildCommunityData,
   type CommunityProfile,
@@ -27,39 +28,43 @@ async function allRows<T>(
 
 export async function getCommunityData() {
   const { db, user, role } = await requireSession();
-  const [profiles, reviews, dogs, guardians, interests] = await Promise.all([
-    allRows<CommunityProfile>((a, b) =>
-      db
-        .from("psiutki_profiles")
-        .select(
-          "dog_id,display_name,area,headline,seeking,traits,likes,dislikes,avatar_path,moderation_status,published,created_at,updated_at",
-        )
-        .order("dog_id")
-        .range(a, b),
-    ),
-    allRows<CommunityReview>((a, b) =>
-      db
-        .from("psiutki_profile_reviews")
-        .select("dog_id,consented_at,moderation_note,reviewed_at")
-        .order("dog_id")
-        .range(a, b),
-    ),
-    allRows<{ id: string; name: string; guardian_id: string }>((a, b) =>
-      db.from("dogs").select("id,name,guardian_id").order("id").range(a, b),
-    ),
-    allRows<{ id: string; full_name: string | null }>((a, b) =>
-      db.from("profiles").select("id,full_name").order("id").range(a, b),
-    ),
-    allRows<CommunityInterestRecord>((a, b) =>
-      db
-        .from("psiutki_interests")
-        .select(
-          "id,from_dog_id,to_dog_id,status,created_at,updated_at,review_note,reviewed_at,confirmed_at,rejection_active",
-        )
-        .order("id")
-        .range(a, b),
-    ),
-  ]);
+  const [profiles, reviews, dogs, guardians, interests, chats] =
+    await Promise.all([
+      allRows<CommunityProfile>((a, b) =>
+        db
+          .from("psiutki_profiles")
+          .select(
+            "dog_id,display_name,area,headline,seeking,traits,likes,dislikes,avatar_path,moderation_status,published,created_at,updated_at",
+          )
+          .order("dog_id")
+          .range(a, b),
+      ),
+      allRows<CommunityReview>((a, b) =>
+        db
+          .from("psiutki_profile_reviews")
+          .select("dog_id,consented_at,moderation_note,reviewed_at")
+          .order("dog_id")
+          .range(a, b),
+      ),
+      allRows<{ id: string; name: string; guardian_id: string }>((a, b) =>
+        db.from("dogs").select("id,name,guardian_id").order("id").range(a, b),
+      ),
+      allRows<{ id: string; full_name: string | null }>((a, b) =>
+        db.from("profiles").select("id,full_name").order("id").range(a, b),
+      ),
+      allRows<CommunityInterestRecord>((a, b) =>
+        db
+          .from("psiutki_interests")
+          .select(
+            "id,from_dog_id,to_dog_id,status,created_at,updated_at,review_note,reviewed_at,confirmed_at,rejection_active",
+          )
+          .order("id")
+          .range(a, b),
+      ),
+      db.rpc("community_chat_links"),
+    ]);
+  if (chats.error || !Array.isArray(chats.data))
+    throw new Error("Nie udało się pobrać stanu rozmów Psiutków.");
   const paths = [
     ...new Set(profiles.flatMap((p) => (p.avatar_path ? [p.avatar_path] : []))),
   ];
@@ -80,13 +85,16 @@ export async function getCommunityData() {
   profiles.sort((a, b) => a.display_name.localeCompare(b.display_name, "pl"));
   dogs.sort((a, b) => a.name.localeCompare(b.name, "pl"));
   interests.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
-  return buildCommunityData({
-    profiles,
-    reviews,
-    dogs,
-    guardians,
-    interests,
-    userId: user.id,
-    admin: role === "admin",
-  });
+  return {
+    ...buildCommunityData({
+      profiles,
+      reviews,
+      dogs,
+      guardians,
+      interests,
+      userId: user.id,
+      admin: role === "admin",
+    }),
+    chatLinks: chats.data as ChatState[],
+  };
 }

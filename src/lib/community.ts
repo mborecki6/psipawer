@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ChatState } from "@/modules/community-chat/types";
 
 export const communityProfileSchema = z.object({
   display_name: z.string().trim().min(1, "Podaj imię psa.").max(80),
@@ -56,6 +57,7 @@ export type CommunityInterest = CommunityInterestRecord & {
   needsConfirmation: boolean;
 };
 export type CommunityData = {
+  chatLinks?: ChatState[];
   catalog: CommunityProfile[];
   mine: CommunityManagedProfile[];
   moderation: CommunityManagedProfile[];

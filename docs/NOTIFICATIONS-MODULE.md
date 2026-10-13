@@ -1,5 +1,34 @@
 # Powiadomienia w aplikacji
 
+## Rozszerzenie lokalne 13.10.2026
+
+Nowy zakres opisuje [brief odbioru](iterations/2026-10-13-funkcje-po-feedbacku.md).
+Skrzynkę uzupełnia osobna kolejka Web Push (`src/modules/push/`, migracja
+`202610130002`), a migracja `202610130008` dodaje konteksty zaproszenia na
+kontrolę i prywatnego czatu. Stan implementacji i weryfikacji należy sprawdzać
+w briefie; ta sekcja nie oznacza wdrożenia w chmurze.
+
+Push włącza się świadomie w rozwijanych ustawieniach na stronie powiadomień,
+osobno na każdym urządzeniu. Dostawca otrzymuje ogólny komunikat o nowej
+wiadomości, bez tekstu rozmowy, zaleceń, danych kontaktowych i nazwy psa.
+Próby mają własną kolejkę i ponowienia; błąd transportu nie wycofuje skrzynki.
+Wylogowanie, brak aktualnej sesji lub utrata dostępu do źródła wstrzymują
+dalszą wysyłkę. Włączenie urządzenia nie rozsyła archiwalnych wpisów.
+
+Powiadomienie czatu wymaga aktualnej zgody obu uczestników i dostępu do
+rozmowy; prowadząca nie uzyskuje wglądu tylko dzięki swojej roli. Zaproszenie
+na kontrolę prowadzi do zgłoszenia konsultacji dla wskazanego psa, z ponownym
+sprawdzeniem stanu zaproszenia. Licznik, lista i otwarcie stosują wspólne
+reguły dostępu. Żaden z tych kanałów nie uruchamia poczty SMTP, WhatsApp,
+ClickMeeting, MailerLite ani aplikacji natywnej.
+
+Lokalny proces uruchamia się przez `pnpm local:push` lub
+`pnpm local:push:watch`; szczegóły konfiguracji zawiera
+[rozwój lokalny](LOCAL-DEVELOPMENT.md). Test transportu z podstawionym
+dostawcą potwierdza przetwarzanie kolejki, nie dostarczenie na fizyczny telefon.
+
+## Poprzedni zakres skrzynki
+
 Stan lokalny: 03.10.2026. Moduł `src/modules/notifications/`, migracje `202609190004_in_app_notifications.sql`, `202610030001_course_notifications.sql` oraz `202610030006_fitness_notifications_work.sql`, z rozszerzeniami edycji/powrotu kursów. Nie zastosowano migracji w chmurze, nie wykonano wdrożenia ani wysyłki wiadomości poza aplikację.
 
 ## Obsługa skrzynki

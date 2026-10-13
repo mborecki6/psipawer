@@ -30,6 +30,8 @@
     "local:backup-recovery": "node tests/local/backup-recovery.mjs",
     "local:reminders": "node scripts/reminders.mjs --once",
     "local:reminders:watch": "node scripts/reminders.mjs --watch",
+    "local:push": "node scripts/push.mjs --once",
+    "local:push:watch": "node scripts/push.mjs --watch",
     "local:reminders-test": "node tests/local/reminder-lifecycle.mjs",
     "local:reminders-queue-test": "node tests/local/reminder-queue.mjs",
     "local:avatar-cleanup": "node scripts/avatar-cleanup.mjs",
@@ -44,6 +46,7 @@
     "react-dom": "^19.2.0",
     "server-only": "^0.0.1",
     "sharp": "0.35.4",
+    "web-push": "3.6.7",
     "zod": "^4.3.0"
   },
   "devDependencies": {
@@ -52,6 +55,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.0",
     "eslint-config-next": "16.3.4",
     "prettier": "^3.9.6",

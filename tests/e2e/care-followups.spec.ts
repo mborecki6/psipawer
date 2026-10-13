@@ -269,7 +269,9 @@ test("follow-up lifecycle preserves private notes, original plan and stale edits
     await notice
       .getByRole("button", { name: "Otwórz sprawę", exact: true })
       .click();
-    await expect(guardian).toHaveURL(`/app/dogs/${dog}/care`);
+    await expect(guardian).toHaveURL(
+      `/app/dogs/${dog}/care?plan=${task!.plan_id}`,
+    );
     const contact = guardian.locator("article").filter({
       has: guardian.getByRole("heading", {
         name: "Kontakt kontrolny",
@@ -521,7 +523,9 @@ test("an older guardian response keeps its plan and explicit review clears only 
     await staff
       .getByRole("link", { name: "Otwórz plan i historię psa →" })
       .click();
-    await expect(staff).toHaveURL(`/admin/dogs/${dog}/care`);
+    await expect(staff).toHaveURL(
+      `/admin/dogs/${dog}/care?plan=${planId}#postepy`,
+    );
     await expect(staff.locator(`#progress-${responseId}`)).toContainText(
       "Przeczytana",
     );

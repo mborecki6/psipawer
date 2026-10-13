@@ -1,5 +1,6 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
+import { processPushDeliveries } from "./push-delivery";
 
 type Values = Record<string, string | undefined>;
 
@@ -73,7 +74,14 @@ export async function processMaintenance(values: Values, request = fetch) {
     skipped: counts.skipped,
   };
 
-  return { reminder };
+  // Inbox reminders have already committed. A transport failure must be
+  // reported independently and must not obscure that successful work.
+  try {
+    const push = await processPushDeliveries(config, values, request);
+    return push.configured ? { reminder, push } : { reminder };
+  } catch {
+    return { reminder, push: { configured: true, error: "Push unavailable" } };
+  }
 }
 
 export async function handleMaintenance(
@@ -88,7 +96,12 @@ export async function handleMaintenance(
     const result = await processMaintenance(values, send);
     return Response.json(result, {
       headers,
-      status: result.reminder.failed ? 503 : 200,
+      status:
+        result.reminder.failed ||
+        (result.push &&
+          ("error" in result.push || result.push.failed || result.push.retry))
+          ? 503
+          : 200,
     });
   } catch {
     return Response.json(

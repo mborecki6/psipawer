@@ -258,3 +258,21 @@
     font-size: 20px;
   }
 }
+
+.contexts {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.contexts a {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.contexts a[aria-current="page"] {
+  background: var(--sage-2);
+  box-shadow: inset 3px 0 var(--forest);
+}

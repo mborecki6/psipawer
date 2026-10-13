@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Bell, CheckCheck, ArrowDown } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import { dateLabel } from "@/lib/domain";
@@ -20,6 +21,7 @@ export function NotificationInboxView({
   more,
   before,
   resetRequired,
+  deviceSettings,
 }: {
   role: Role;
   items: Notification[];
@@ -28,6 +30,7 @@ export function NotificationInboxView({
   more: boolean;
   before?: string;
   resetRequired: boolean;
+  deviceSettings?: ReactNode;
 }) {
   const base = role === "admin" ? "/admin" : "/app";
   const href = `${base}/notifications`;
@@ -52,6 +55,7 @@ export function NotificationInboxView({
           <RefreshInbox />
         </div>
       </header>
+      {deviceSettings}
       <nav className={styles.tabs} aria-label="Filtr powiadomień">
         <Link
           href={href}

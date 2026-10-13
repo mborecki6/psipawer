@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import type { Service, ServiceRevision } from "./types";
 const columns =
-  "id,name,description,kind,booking_flow,meeting_mode,price_cents,price_unit,duration_minutes,sessions_count,active,is_test_price,source_url,source_note,version,updated_at,course_format";
+  "id,name,description,kind,booking_flow,meeting_mode,price_cents,price_unit,duration_minutes,sessions_count,active,is_test_price,source_url,source_note,version,updated_at,course_format,reporting_included,reporting_days";
 export async function getServices(
   staff = false,
   flow?: Service["booking_flow"],

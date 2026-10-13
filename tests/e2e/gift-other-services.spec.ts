@@ -57,11 +57,9 @@ test("a gift pays consultation, course and entry package in real panels and each
     );
     async function cashTotal() {
       await j.staff.goto("/admin/finance");
-      const card = j.staff
-        .getByRole("link")
-        .filter({
-          has: j.staff.getByText("Otrzymane wpłaty", { exact: true }),
-        });
+      const card = j.staff.getByRole("link").filter({
+        has: j.staff.getByText("Otrzymane wpłaty", { exact: true }),
+      });
       await expect(card).toBeVisible();
       const text = (await card.locator("strong").innerText()).replace(
         /[^\d,]/g,
@@ -185,6 +183,10 @@ test("a gift pays consultation, course and entry package in real panels and each
       await checked(j.db.from("payments").delete().in("gift_card_id", cards));
       await checked(j.db.from("gift_cards").delete().in("id", cards));
     }
+    if (j.dogs.length)
+      await checked(
+        j.db.from("care_reporting_entitlements").delete().in("dog_id", j.dogs),
+      );
     if (courses.length)
       await checked(j.db.from("courses").delete().in("id", courses));
     await sql.close();

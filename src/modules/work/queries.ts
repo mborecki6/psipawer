@@ -13,7 +13,7 @@ import type {
 } from "./types";
 import type { CareProgress } from "@/modules/care/types";
 const followupColumns =
-  "id,plan_id,dog_id,due_on,status,version,created_at,closed_at";
+  "id,plan_id,dog_id,context_key,due_on,status,version,created_at,closed_at";
 export async function getWorkQueue(filter: WorkKind | "all", page: number) {
   const { db } = await requireSession("admin");
   const failure = () => new Error("Nie udało się pobrać listy spraw.");
@@ -71,6 +71,7 @@ export async function getFollowUp(id: string, page: number) {
       .from("care_plan_versions")
       .select("id")
       .eq("dog_id", item.data.dog_id)
+      .eq("context_key", item.data.context_key)
       .order("revision", { ascending: false })
       .limit(1)
       .maybeSingle(),

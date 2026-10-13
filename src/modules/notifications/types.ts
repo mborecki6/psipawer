@@ -1,6 +1,8 @@
 import type { Role } from "@/lib/auth/session";
 
 export const notificationLabels = {
+  community_chat_message: "Nowa wiadomość w rozmowie Psiutków",
+  control_invitation_due: "Zaproszenie do umówienia kontroli",
   plan_published: "Nowa wersja zaleceń",
   progress_submitted: "Nowa odpowiedź o postępach",
   progress_reviewed: "Prowadząca przeczytała odpowiedź",
@@ -69,6 +71,8 @@ export type Notification = {
   course_session_id?: string | null;
   fitness_package_id?: string | null;
   fitness_session_id?: string | null;
+  invitation_id?: string | null;
+  chat_id?: string | null;
 };
 export type NotificationFilter = "unread" | "all";
 export function notificationFilter(raw?: string): NotificationFilter {
@@ -84,10 +88,17 @@ export function notificationHref(
     | "course_session_id"
     | "fitness_package_id"
     | "fitness_session_id"
+    | "invitation_id"
+    | "chat_id"
   >,
   role: Role,
+  planId?: string,
 ) {
   const base = role === "admin" ? "/admin" : "/app";
+  if (item.kind === "community_chat_message")
+    return `${base}/community/chat/${item.chat_id || item.entity_id}`;
+  if (item.kind === "control_invitation_due")
+    return `/app/consultations/new?control=${item.invitation_id || item.entity_id}`;
   if (item.kind.startsWith("fitness_")) {
     const id = item.fitness_package_id || item.entity_id;
     const href = `${base}/fitness/${id}`;
@@ -134,6 +145,8 @@ export function notificationHref(
     role === "admin"
   )
     return `/admin/work/follow-ups/${item.entity_id}`;
+  if (planId)
+    return `${base}/dogs/${item.dog_id}/care?plan=${planId}${item.kind === "progress_reviewed" ? "#postepy" : ""}`;
   return `${base}/dogs/${item.dog_id}/care`;
 }
 export function notificationCountLabel(count: number | null) {

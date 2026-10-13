@@ -2,8 +2,11 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/session";
+import { readWithGatewayRetry } from "@/lib/data/read-retry";
+import { reportDataReadError } from "@/lib/observability/server-errors";
 import { getBookingChoices } from "@/modules/calendar/booking-queries";
 import type { ConsultationBalance } from "@/lib/finance";
+import type { ControlInvitation } from "@/modules/care/types";
 import {
   consultationFilter,
   type Consultation,
@@ -11,6 +14,32 @@ import {
 } from "./types";
 const columns =
   "id,dog_id,topic,availability,status,starts_at,duration_minutes,meeting_mode,location,version,created_at,dogs(name),service_name,agreed_price_cents,service_duration_minutes,service_meeting_mode,is_test_price";
+export async function getControlInvitation(id: string) {
+  if (!z.uuid().safeParse(id).success) notFound();
+  const { db } = await requireSession("client");
+  let result;
+  try {
+    result = await readWithGatewayRetry("care.invitation", () =>
+      db
+        .from("care_control_invitations")
+        .select(
+          "id,plan_id,dog_id,guardian_id,due_on,status,version,consultation_id",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+    );
+  } catch (error) {
+    reportDataReadError("care.invitation", error);
+    throw new Error("Nie udało się pobrać zaproszenia do kontroli.");
+  }
+  const { data, error, status } = result;
+  if (error) {
+    reportDataReadError("care.invitation", error, status);
+    throw new Error("Nie udało się pobrać zaproszenia do kontroli.");
+  }
+  if (!data) notFound();
+  return data as ControlInvitation;
+}
 export async function getConsultations(
   filter: ReturnType<typeof consultationFilter>,
   page: number,

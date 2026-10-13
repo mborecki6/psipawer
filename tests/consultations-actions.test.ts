@@ -39,6 +39,38 @@ beforeEach(() => {
   });
 });
 describe("consultation actions", () => {
+  it("uses the invitation command and redirects both submitted forms to its original consultation", async () => {
+    const invitation = "33000000-0000-4000-8000-000000000001";
+    const original = "34000000-0000-4000-8000-000000000001";
+    mocks.rpc.mockResolvedValue({ data: original, error: null });
+    await expect(
+      requestConsultation(
+        {},
+        form({
+          id,
+          dog_id: dog,
+          service_id: id,
+          service_version: "2",
+          control_invitation_id: invitation,
+          topic: "Konsultacja kontrolna",
+          availability: "",
+        }),
+      ),
+    ).rejects.toThrow("redirect");
+    expect(mocks.session).toHaveBeenCalledWith("client");
+    expect(mocks.rpc).toHaveBeenCalledWith("request_control_consultation", {
+      p_invitation: invitation,
+      p_id: id,
+      p_dog: dog,
+      p_service: id,
+      p_expected_service_version: 2,
+      p_topic: "Konsultacja kontrolna",
+      p_availability: "",
+    });
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      `/app/consultations/${original}`,
+    );
+  });
   const price = {
     id,
     expected_version: "2",

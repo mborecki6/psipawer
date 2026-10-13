@@ -42,7 +42,12 @@ try {
   const buildIdPath = resolve(root, ".next-local/BUILD_ID");
   const fingerprint = createHash("sha256")
     .update(
-      JSON.stringify([api, app, values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY]),
+      JSON.stringify([
+        api,
+        app,
+        values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        values.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+      ]),
     )
     .digest("hex");
   function saveManifest(status, buildId = null) {
@@ -76,6 +81,11 @@ try {
     NEXT_PUBLIC_APP_URL: app,
     AUTH_EMAIL_ENABLED: "true",
     CLIENT_INVITATIONS_ENABLED: "true",
+    // Explicit empty values also stop Next's dotenv loader from falling back
+    // to a hosted project's push identity in .env.local.
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: values.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+    VAPID_PRIVATE_KEY: values.VAPID_PRIVATE_KEY || "",
+    VAPID_SUBJECT: values.VAPID_SUBJECT || "",
     NEXT_TELEMETRY_DISABLED: "1",
     NODE_ENV:
       command === "dev" ? "development" : preview ? "production" : "test",

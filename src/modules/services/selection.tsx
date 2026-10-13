@@ -1,7 +1,7 @@
 "use client";
 import { useState, useId } from "react";
 import { money } from "@/lib/domain";
-import { serviceTime, type Service } from "./types";
+import { serviceTime, serviceReporting, type Service } from "./types";
 import { useHydrated } from "@/components/use-hydrated";
 export function ConsultationServicePicker({
   services,
@@ -53,6 +53,7 @@ export function ConsultationServicePicker({
             {current.meeting_mode === "online" ? "Online" : "Na miejscu"}
           </p>
           {current.is_test_price && <small>Cena robocza do testów.</small>}
+          <p>{serviceReporting(current)}</p>
           <p>
             Ta kwota zostanie zachowana przy zgłoszeniu. Płatność ustalisz z
             prowadzącą.

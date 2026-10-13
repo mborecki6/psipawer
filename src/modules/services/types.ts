@@ -16,6 +16,8 @@ export type Service = {
   source_note: string;
   version: number;
   updated_at: string;
+  reporting_included?: boolean;
+  reporting_days?: number | null;
 };
 export type ServiceRevision = Pick<
   Service,
@@ -28,6 +30,15 @@ export const serviceKinds = {
   package: "Pakiet",
   voucher: "Karta podarunkowa",
 };
+export function serviceReporting(
+  s: Pick<Service, "reporting_included" | "reporting_days">,
+) {
+  return s.reporting_included === false
+    ? "Raportowanie postępów nie jest włączone."
+    : s.reporting_days
+      ? `Raportowanie postępów: ${s.reporting_days} dni od pierwszych opublikowanych zaleceń.`
+      : "Raportowanie postępów bez limitu czasu.";
+}
 export function serviceTime(
   s: Pick<Service, "sessions_count" | "duration_minutes">,
 ) {

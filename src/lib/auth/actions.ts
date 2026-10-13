@@ -72,6 +72,13 @@ export async function saveProfile(
 }
 export async function signOut() {
   const { db } = await requireSession(undefined, false);
+  // Best-effort early cancellation; the worker also rejects deleted/expired
+  // auth sessions, so a push outage cannot prevent the user from signing out.
+  try {
+    await db.rpc("disable_session_push_subscriptions");
+  } catch {
+    /* Sign out below. */
+  }
   await db.auth.signOut();
   redirect("/login");
 }

@@ -1,0 +1,45 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.lead {
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.request {
+  overflow-wrap: anywhere;
+  scroll-margin-top: 20px;
+}
+.request h3 {
+  margin: 16px 0 10px;
+}
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.response {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--sage-2);
+  margin: 16px 0;
+}
+.response p {
+  margin-bottom: 0;
+}
+.history {
+  margin-top: 20px;
+}
+.history ol {
+  padding-left: 20px;
+}
+.history li {
+  margin-bottom: 12px;
+}
+.history small {
+  display: block;
+  color: var(--ink-soft);
+  margin: 4px 0;
+}

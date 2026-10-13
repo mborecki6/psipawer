@@ -325,6 +325,10 @@ test("course API: frozen cycle price and privacy → concurrent last seat, closu
     ).toBe(10000);
   } finally {
     await observer.close();
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     if (courses.length)
       await checked(db.from("courses").delete().in("id", courses));
     if (blocks.length)

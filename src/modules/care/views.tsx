@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ControlInvitationCard, ReportingPanel } from "./access-panels";
+import type { ControlInvitation, ReportingAccess } from "./types";
 import { BookOpen, ClipboardList, MessageCircle } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import type { Role } from "@/lib/auth/session";
@@ -6,6 +8,11 @@ import { reviewProgress, submitProgress } from "./actions";
 import { CareEditorDisclosure, CareEditor, TemplateEditor } from "./editor";
 import {
   careDate,
+  careContextKey,
+  careContextLabel,
+  careContextSearch,
+  type CareContext,
+  type CareContextSummary,
   type CareDraft,
   type CarePlan,
   type CareProgress,
@@ -100,8 +107,11 @@ export function CarePublicationView({
   const base = role === "admin" ? "/admin" : "/app";
   return (
     <div className="stack">
-      <Link className="ghost-button" href={`${base}/dogs/${plan.dog_id}/care`}>
-        ← Aktualny plan i postępy psa
+      <Link
+        className="ghost-button"
+        href={`${base}/dogs/${plan.dog_id}/care?${careContextSearch(plan)}`}
+      >
+        ← Aktualny plan i postępy tej usługi
       </Link>
       <header className={`card pad ${styles.header}`}>
         <div>
@@ -112,7 +122,7 @@ export function CarePublicationView({
           {!current && (
             <p className="muted">
               To wcześniejsza wersja. Nowsze wskazówki znajdziesz w aktualnym
-              planie psa.
+              planie tej usługi.
             </p>
           )}
         </div>
@@ -169,7 +179,7 @@ export function ProgressCard({
       {showDog && (
         <Link
           className="ghost-button"
-          href={`/admin/dogs/${progress.dog_id}/care`}
+          href={`/admin/dogs/${progress.dog_id}/care?plan=${progress.plan_id}#postepy`}
         >
           Otwórz plan i historię psa →
         </Link>
@@ -235,6 +245,10 @@ export function DogCareView({
   requestedFitness = null,
   requestedFitnessSession,
   requestedFitnessUnavailable = false,
+  contexts = [],
+  context,
+  controlInvitation,
+  reporting,
 }: {
   role: Role;
   dog: { id: string; name: string };
@@ -260,9 +274,18 @@ export function DogCareView({
   requestedFitness?: CareFitness | null;
   requestedFitnessSession?: string;
   requestedFitnessUnavailable?: boolean;
+  contexts?: CareContextSummary[];
+  context?: CareContext;
+  controlInvitation?: ControlInvitation | null;
+  reporting?: ReportingAccess | null;
 }) {
   const base = role === "admin" ? "/admin" : "/app";
   const path = `${base}/dogs/${dog.id}/care`;
+  const selectedContext = context ||
+    draft ||
+    latest || { consultation_id: null };
+  const selectedKey = careContextKey(selectedContext);
+  const contextSearch = careContextSearch(selectedContext);
   return (
     <div className="stack">
       <Link className="ghost-button" href={`${base}/dogs/${dog.id}`}>
@@ -294,7 +317,126 @@ export function DogCareView({
           </div>
         )}
       </header>
+      <section className="card pad stack" aria-label="Plany według usługi">
+        <h2>Plany według usługi</h2>
+        <p className="muted">
+          Każda usługa i każde spotkanie mają osobny plan, historię i
+          odpowiedzi.
+        </p>
+        <nav className={styles.contexts} aria-label="Wybierz plan psa">
+          {contexts.map((item) => (
+            <Link
+              key={item.context_key}
+              className="ghost-button"
+              aria-current={
+                item.context_key === selectedKey ? "page" : undefined
+              }
+              href={`${path}?${careContextSearch(item)}`}
+            >
+              {item.title} · {careContextLabel(item)}
+              {role === "admin" && item.has_draft ? " · szkic" : ""}
+            </Link>
+          ))}
+          {!contexts.some((item) => item.context_key === "general") &&
+            role === "admin" && (
+              <Link
+                className="ghost-button"
+                aria-current={selectedKey === "general" ? "page" : undefined}
+                href={`${path}?context=general`}
+              >
+                Ogólny plan pracy
+              </Link>
+            )}
+          {!contexts.length && role === "client" && (
+            <p className="muted">Opublikowane plany pojawią się tutaj.</p>
+          )}
+        </nav>
+        {role === "admin" && (
+          <details className={styles.disclosure}>
+            <summary>Przygotuj plan innej usługi</summary>
+            <div className={styles.contexts}>
+              <Link
+                className="ghost-button"
+                href={`${path}?context=general#szkic`}
+              >
+                Ogólny plan pracy
+              </Link>
+              {consultations
+                .filter((item) =>
+                  ["scheduled", "completed"].includes(item.status),
+                )
+                .map((item) => (
+                  <Link
+                    key={item.id}
+                    className="ghost-button"
+                    href={`${path}?consultation=${item.id}#szkic`}
+                  >
+                    {item.service_name || "Konsultacja"}
+                    {item.starts_at ? ` · ${careDate(item.starts_at)}` : ""}
+                  </Link>
+                ))}
+              {courses.map((item) => (
+                <div className="stack" key={item.id}>
+                  <Link
+                    className="ghost-button"
+                    href={`${path}?enrollment=${item.id}#szkic`}
+                  >
+                    {item.title} · cały kurs
+                  </Link>
+                  {item.sessions
+                    .filter((session) => session.status !== "cancelled")
+                    .map((session) => (
+                      <Link
+                        key={session.id}
+                        className="ghost-button"
+                        href={`${path}?enrollment=${item.id}&session=${session.id}#szkic`}
+                      >
+                        {item.title} · spotkanie {session.ordinal} ·{" "}
+                        {careDate(session.starts_at)}
+                      </Link>
+                    ))}
+                </div>
+              ))}
+              {fitness.map((item) => (
+                <div className="stack" key={item.id}>
+                  <Link
+                    className="ghost-button"
+                    href={`${path}?fitness=${item.id}#szkic`}
+                  >
+                    {item.title} · cały pakiet
+                  </Link>
+                  {item.sessions
+                    .filter((session) =>
+                      ["scheduled", "completed"].includes(session.status),
+                    )
+                    .map((session) => (
+                      <Link
+                        key={session.id}
+                        className="ghost-button"
+                        href={`${path}?fitness=${item.id}&fitness_session=${session.id}#szkic`}
+                      >
+                        {item.title} · spotkanie {session.ordinal}
+                        {session.starts_at
+                          ? ` · ${careDate(session.starts_at)}`
+                          : ""}
+                      </Link>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+        <p>
+          <strong>Otwarty plan: {careContextLabel(selectedContext)}</strong>
+        </p>
+      </section>
       {followUp && <ContactCard item={followUp} admin={role === "admin"} />}
+      {controlInvitation && (
+        <ControlInvitationCard
+          invitation={controlInvitation}
+          admin={role === "admin"}
+        />
+      )}
       {latest ? (
         <PlanDocument plan={latest} role={role} current />
       ) : (
@@ -318,25 +460,25 @@ export function DogCareView({
           {requestedUnavailable && (
             <p className="alert">
               Nie znaleziono dostępnej konsultacji tego psa. Wybierz spotkanie w
-              formularzu; zapisany szkic pozostaje bez zmian.
+              liście usług; zapisany szkic pozostaje bez zmian.
             </p>
           )}
           {requestedCourseUnavailable && (
             <p className="alert">
               Nie znaleziono dostępnego zgłoszenia lub spotkania kursu dla tego
-              psa. Wybierz powiązanie w formularzu; zapisany szkic pozostaje bez
+              psa. Wybierz plan na liście usług; zapisany szkic pozostaje bez
               zmian.
             </p>
           )}
           {requestedFitnessUnavailable && (
             <p className="alert">
               Nie znaleziono dostępnego pakietu lub umówionego spotkania fitness
-              tego psa. Wybierz powiązanie w formularzu; zapisany szkic
-              pozostaje bez zmian.
+              tego psa. Wybierz plan na liście usług; zapisany szkic pozostaje
+              bez zmian.
             </p>
           )}
           <CareEditorDisclosure
-            key={dog.id}
+            key={`${dog.id}:${selectedKey}`}
             initiallyOpen={
               !latest ||
               Boolean(requestedConsultation) ||
@@ -363,7 +505,8 @@ export function DogCareView({
             }
           >
             <CareEditor
-              key={dog.id}
+              key={`${dog.id}:${selectedKey}`}
+              context={selectedContext}
               dogId={dog.id}
               draft={draft}
               templates={templates}
@@ -379,7 +522,10 @@ export function DogCareView({
           </CareEditorDisclosure>
         </article>
       )}
-      {role === "client" && latest && (
+      {reporting && (
+        <ReportingPanel access={reporting} admin={role === "admin"} />
+      )}
+      {role === "client" && latest && reporting?.allowed !== false && (
         <article className="card pad" id="odpowiedz">
           <h2>Jak Wam idzie?</h2>
           <p className="muted">
@@ -387,6 +533,7 @@ export function DogCareView({
             dalszą pracę.
           </p>
           <ActionForm
+            key={`${dog.id}:${selectedKey}`}
             action={submitProgress}
             label="Przekaż odpowiedź prowadzącej"
           >
@@ -434,7 +581,7 @@ export function DogCareView({
           page={progressPage}
           more={moreProgress}
           href={(page) =>
-            `${path}?history=${historyPage}&progress=${page}#postepy`
+            `${path}?${contextSearch}&history=${historyPage}&progress=${page}#postepy`
           }
         />
       </section>
@@ -451,7 +598,7 @@ export function DogCareView({
               page={historyPage}
               more={moreHistory}
               href={(page) =>
-                `${path}?history=${page}&progress=${progressPage}#historia`
+                `${path}?${contextSearch}&history=${page}&progress=${progressPage}#historia`
               }
             />
           </details>
@@ -548,7 +695,7 @@ export function CareOverviewView({
             <Link
               key={plan.id}
               className={styles.planLink}
-              href={`${base}/dogs/${plan.dog_id}/care`}
+              href={`${base}/dogs/${plan.dog_id}/care?plan=${plan.id}`}
             >
               <div className={styles.meta}>
                 <span className={styles.pill}>{plan.dog_name}</span>

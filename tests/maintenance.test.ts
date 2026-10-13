@@ -60,12 +60,10 @@ it.each([
   },
 );
 it("delivers reminders and returns only validated counters", async () => {
-  const send = vi
-    .fn()
-    .mockResolvedValue({
-      ok: true,
-      json: async () => ({ ...counts, private: "hidden" }),
-    });
+  const send = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ ...counts, private: "hidden" }),
+  });
   const response = await handleMaintenance(request(), values, send);
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("private, no-store");
@@ -79,15 +77,57 @@ it("delivers reminders and returns only validated counters", async () => {
   });
 });
 it("reports a failed durable reminder attempt for operations to inspect", async () => {
-  const send = vi
-    .fn()
-    .mockResolvedValue({
-      ok: true,
-      json: async () => ({ ...counts, failed: 1 }),
-    });
+  const send = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ ...counts, failed: 1 }),
+  });
   const response = await handleMaintenance(request(), values, send);
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ reminder: { ...counts, failed: 1 } });
+});
+const pushValues = {
+  ...values,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: "a".repeat(87),
+  VAPID_PRIVATE_KEY: "b".repeat(43),
+  VAPID_SUBJECT: "https://app.example",
+};
+it("processes the separately configured push queue after inbox reminders commit", async () => {
+  const send = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => counts })
+    .mockResolvedValueOnce({ ok: true, json: async () => [] });
+  const response = await handleMaintenance(request(), pushValues, send);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    reminder: counts,
+    push: {
+      configured: true,
+      accepted: 0,
+      retry: 0,
+      failed: 0,
+      expired: 0,
+      skipped: 0,
+    },
+  });
+  expect(send.mock.calls.map(([url]) => url)).toEqual([
+    `${values.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/worker_process_due_reminders`,
+    `${values.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/worker_claim_push_deliveries`,
+  ]);
+});
+it("preserves reminder results and sanitizes an independent push failure", async () => {
+  const send = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => counts })
+    .mockRejectedValueOnce(new Error("private endpoint and key"));
+  const response = await handleMaintenance(request(), pushValues, send);
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({
+    reminder: counts,
+    push: {
+      configured: true,
+      error: "Push unavailable",
+    },
+  });
 });
 it("does not expose upstream errors or accept malformed reminder counts", async () => {
   for (const result of [

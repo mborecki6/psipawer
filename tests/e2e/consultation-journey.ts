@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checked } from "./local-fixtures";
-import { careEditor, careSourcePicker } from "./care-journey";
+import { careEditor } from "./care-journey";
 
 // The same journey runs for a provisioned fixture and a newly invited guardian.
 // All business operations use the UI; only elapsed time is simulated on the
@@ -144,13 +144,10 @@ export async function consultationJourney({
   await expect(
     careForm.getByRole("region", { name: "Powiązanie planu", exact: true }),
   ).toContainText("Konsultacja");
-  await expect(
-    careForm.getByLabel("Konsultacja, której dotyczą zalecenia"),
-  ).toBeHidden();
-  await careSourcePicker(careForm);
-  await expect(
-    staff.getByLabel("Konsultacja, której dotyczą zalecenia"),
-  ).toHaveValue(consultation);
+  await expect(careForm.locator('input[name="consultation_id"]')).toBeHidden();
+  await expect(staff.locator('input[name="consultation_id"]')).toHaveValue(
+    consultation,
+  );
   const title = `Plan testowy ${suffix}`;
   const draft = `Prywatny szkic ${suffix}, jeszcze niegotowy do przekazania.`;
   await staff.getByLabel("Tytuł planu", { exact: true }).fill(title);
@@ -228,7 +225,7 @@ export async function consultationJourney({
   await expect(guardian).toHaveURL(`/app/care/plans/${plan!.id}`);
   await expect(guardian.getByText(published, { exact: true })).toBeVisible();
   await guardian
-    .getByRole("link", { name: "← Aktualny plan i postępy psa" })
+    .getByRole("link", { name: "← Aktualny plan i postępy tej usługi" })
     .click();
   const response = `Testowa odpowiedź opiekuna ${suffix}. Udało się otworzyć i przeczytać plan.`;
   await guardian

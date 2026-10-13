@@ -42,6 +42,8 @@ function failure(message?: string): ActionState {
     "Odwołane spotkanie nie wymaga ustalania należności.",
     "Uzgodniona kwota nie może być niższa od zapisanych wpłat.",
     "Ten identyfikator uzgodnienia został już użyty dla innych danych.",
+    "Nie znaleziono zaproszenia dla Twojego psa.",
+    "To zaproszenie zostało wycofane. Otwórz aktualny plan.",
   ];
   return {
     error:
@@ -93,21 +95,34 @@ export async function requestConsultation(
         "Wybierz psa i opisz potrzebę konsultacji (3–3000 znaków). Dostępność może mieć do 1000 znaków.",
     };
   const p = parsed.data;
+  let resultId = p.id;
   try {
-    const { error } = await db.rpc("request_consultation", {
-      p_id: p.id,
-      p_dog: p.dog_id,
-      p_topic: p.topic,
-      p_availability: p.availability,
-      p_service: p.service_id,
-      p_expected_service_version: p.service_version,
-    });
+    const { data, error } = await db.rpc(
+      p.control_invitation_id
+        ? "request_control_consultation"
+        : "request_consultation",
+      {
+        ...(p.control_invitation_id
+          ? { p_invitation: p.control_invitation_id }
+          : {}),
+        p_id: p.id,
+        p_dog: p.dog_id,
+        p_topic: p.topic,
+        p_availability: p.availability,
+        p_service: p.service_id,
+        p_expected_service_version: p.service_version,
+      },
+    );
     if (error) return failure(error.message);
+    if (p.control_invitation_id) {
+      if (typeof data !== "string") return failure();
+      resultId = data;
+    }
   } catch {
     return failure();
   }
   refresh();
-  redirect(`/app/consultations/${p.id}`);
+  redirect(`/app/consultations/${resultId}`);
 }
 export async function scheduleConsultation(
   _: ActionState,

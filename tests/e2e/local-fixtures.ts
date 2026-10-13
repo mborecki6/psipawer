@@ -108,6 +108,8 @@ export async function disposeCareFixtures(
           ),
       );
     for (const table of [
+      "care_control_invitations",
+      "care_reporting_entitlements",
       "care_follow_ups",
       "care_progress",
       "care_events",

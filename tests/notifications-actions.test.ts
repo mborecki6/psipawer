@@ -29,6 +29,71 @@ const dog = "23000000-0000-4000-8000-000000000001";
 const entity = "33000000-0000-4000-8000-000000000001";
 const enrollment = "43000000-0000-4000-8000-000000000001";
 const meeting = "53000000-0000-4000-8000-000000000001";
+const publication = "63000000-0000-4000-8000-000000000001";
+it.each([
+  ["progress_reviewed", "care_progress", "#postepy"],
+  ["follow_up_changed", "care_follow_ups", ""],
+  ["follow_up_reminder", "care_follow_ups", ""],
+])(
+  "opens %s in its authorized publication context",
+  async (kind, table, anchor) => {
+    const f = form();
+    f.set("plan_id", entity);
+    f.set("dog_id", entity);
+    mocks.one
+      .mockResolvedValueOnce({
+        data: { kind, dog_id: dog, entity_id: entity },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { plan_id: publication, dog_id: dog },
+        error: null,
+      });
+    await expect(openNotification({}, f)).rejects.toThrow(
+      `REDIRECT:/app/dogs/${dog}/care?plan=${publication}${anchor}`,
+    );
+    expect(mocks.from).toHaveBeenNthCalledWith(2, table);
+    expect(mocks.select).toHaveBeenNthCalledWith(2, "plan_id,dog_id");
+    expect(mocks.eq).toHaveBeenNthCalledWith(2, "id", entity);
+    expect(mocks.rpc).toHaveBeenCalledWith("read_notifications", {
+      p_ids: [id],
+    });
+  },
+);
+it("does not read or redirect when the care event is inaccessible, mismatched or malformed", async () => {
+  for (const context of [
+    { data: null, error: null },
+    { data: { plan_id: publication, dog_id: entity }, error: null },
+    { data: { plan_id: "https://evil.example", dog_id: dog }, error: null },
+    { data: null, error: { message: "PRIVATE record" } },
+  ]) {
+    mocks.one
+      .mockResolvedValueOnce({
+        data: { kind: "progress_reviewed", dog_id: dog, entity_id: entity },
+        error: null,
+      })
+      .mockResolvedValueOnce(context);
+    const result = await openNotification({}, form());
+    expect(result.error).toBeTruthy();
+    expect(result.error).not.toContain("PRIVATE");
+  }
+  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(mocks.redirect).not.toHaveBeenCalled();
+});
+it("keeps the staff follow-up workflow without looking up client care context", async () => {
+  mocks.session.mockResolvedValue({
+    db: { from: mocks.from, rpc: mocks.rpc },
+    role: "admin",
+  });
+  mocks.one.mockResolvedValueOnce({
+    data: { kind: "follow_up_changed", dog_id: dog, entity_id: entity },
+    error: null,
+  });
+  await expect(openNotification({}, form())).rejects.toThrow(
+    `REDIRECT:/admin/work/follow-ups/${entity}`,
+  );
+  expect(mocks.from).toHaveBeenCalledTimes(1);
+});
 it.each([
   ["fitness_session_scheduled", meeting, `#spotkanie-${meeting}`],
   ["fitness_payment_refunded", null, `#rozliczenie-${entity}`],
@@ -276,4 +341,33 @@ it("links all event families to the correct role's existing screen", () => {
   expect(notificationCountLabel(null)).toContain("niedostępny");
   expect(notificationCountLabel(0)).toContain("wszystkie przeczytane");
   expect(notificationCountLabel(1005)).toContain("1005");
+});
+it.each([
+  ["community_chat_message", "chat_id", `/app/community/chat/${entity}`],
+  [
+    "control_invitation_due",
+    "invitation_id",
+    `/app/consultations/new?control=${entity}`,
+  ],
+])("opens %s from the authorized stored context", async (kind, field, href) => {
+  const f = form();
+  f.set(field, id);
+  mocks.one.mockResolvedValueOnce({
+    data: { kind, dog_id: dog, entity_id: entity, [field]: entity },
+    error: null,
+  });
+  await expect(openNotification({}, f)).rejects.toThrow(`REDIRECT:${href}`);
+  expect(mocks.rpc).toHaveBeenCalledWith("read_notifications", { p_ids: [id] });
+});
+it.each([
+  ["community_chat_message", "chat_id"],
+  ["control_invitation_due", "invitation_id"],
+])("does not open or mark a mismatched %s context", async (kind, field) => {
+  mocks.one.mockResolvedValueOnce({
+    data: { kind, dog_id: dog, entity_id: entity, [field]: id },
+    error: null,
+  });
+  expect(await openNotification({}, form())).toHaveProperty("error");
+  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(mocks.redirect).not.toHaveBeenCalled();
 });

@@ -6,6 +6,7 @@ export const requestSchema = z.object({
   dog_id: z.uuid(),
   service_id: z.uuid(),
   service_version: z.coerce.number().int().min(1).max(2147483647),
+  control_invitation_id: z.union([z.literal(""), z.uuid()]).default(""),
   topic: z.string().trim().min(3).max(3000),
   availability: z.string().trim().max(1000),
 });

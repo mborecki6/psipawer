@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ControlInvitation } from "@/modules/care/types";
 import { CalendarDays, Clock3, ArrowRight, MessageCircle } from "lucide-react";
 import type { Role } from "@/lib/auth/session";
 import type { ConsultationBalance } from "@/lib/finance";
@@ -190,12 +191,14 @@ export function ConsultationRequestView({
   dogId,
   services,
   serviceId,
+  controlInvitation,
 }: {
   dogs: { id: string; name: string }[];
   services: Service[];
   serviceId?: string;
   id: string;
   dogId?: string;
+  controlInvitation?: ControlInvitation | null;
 }) {
   return (
     <div className="stack">
@@ -207,7 +210,11 @@ export function ConsultationRequestView({
           <span className={styles.eyebrow}>
             <MessageCircle size={17} /> Zacznijmy od Was
           </span>
-          <h2>W czym możemy pomóc?</h2>
+          <h2>
+            {controlInvitation
+              ? "Zgłoś konsultację kontrolną"
+              : "W czym możemy pomóc?"}
+          </h2>
           <p className="muted">
             Krótki opis wystarczy. Szczegóły omówicie z prowadzącą.
           </p>
@@ -215,9 +222,27 @@ export function ConsultationRequestView({
       </header>
       <div className={styles.detailGrid}>
         <article className="card pad">
-          {dogs.length && services.length ? (
+          {controlInvitation && controlInvitation.status !== "open" ? (
+            <>
+              <h3>Zaproszenie zostało wycofane</h3>
+              <p>Sprawdź aktualny plan psa lub skontaktuj się z prowadzącą.</p>
+              <Link
+                className="ghost-button"
+                href={`/app/dogs/${controlInvitation.dog_id}/care?plan=${controlInvitation.plan_id}`}
+              >
+                Otwórz plan →
+              </Link>
+            </>
+          ) : dogs.length && services.length ? (
             <ActionForm action={requestConsultation} label="Przekaż zgłoszenie">
               <input type="hidden" name="id" value={id} />
+              {controlInvitation && (
+                <input
+                  type="hidden"
+                  name="control_invitation_id"
+                  value={controlInvitation.id}
+                />
+              )}
               <ConsultationServicePicker
                 services={services}
                 serviceId={serviceId}
@@ -246,6 +271,11 @@ export function ConsultationRequestView({
                   maxLength={3000}
                   rows={6}
                   required
+                  defaultValue={
+                    controlInvitation
+                      ? "Konsultacja kontrolna — omówienie postępów i dalszych zaleceń."
+                      : undefined
+                  }
                   placeholder="Napisz, z czym przychodzicie i czego potrzebujesz."
                 />
               </label>

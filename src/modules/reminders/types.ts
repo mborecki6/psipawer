@@ -4,6 +4,7 @@ export const reminderKinds = {
   follow_up: "Kontakt kontrolny",
   course: "Przed spotkaniem kursu",
   fitness: "Przed spotkaniem PSI FITNESS",
+  control_invitation: "Zaproszenie opiekuna do kontroli",
 };
 export const reminderStatuses = {
   pending: "Zaplanowane",
@@ -77,5 +78,7 @@ export function reminderHref(
   if (r.kind === "course")
     return `/admin/courses/${r.entity_id}${r.course_enrollment_id ? `?enrollment=${r.course_enrollment_id}` : ""}${r.course_session_id ? `#spotkanie-${r.course_session_id}` : ""}`;
   if (r.kind === "follow_up") return `/admin/work/follow-ups/${r.entity_id}`;
+  if (r.kind === "control_invitation")
+    return `/admin/care/control-invitations/${r.entity_id}`;
   return `/admin/${r.kind === "walk" ? "walks" : "consultations"}/${r.entity_id}`;
 }

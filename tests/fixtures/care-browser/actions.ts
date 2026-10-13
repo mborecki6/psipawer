@@ -30,4 +30,10 @@ export async function submitProgress(_: unknown, form: FormData) {
 export async function reviewProgress(_: unknown, form: FormData) {
   return record("review", form);
 }
+export async function changeControlInvitation(_: unknown, form: FormData) {
+  return record("control", form);
+}
+export async function changeReporting(_: unknown, form: FormData) {
+  return record("reporting", form);
+}
 export async function signOut() {}

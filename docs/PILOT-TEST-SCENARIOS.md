@@ -20,7 +20,52 @@ Główne menu obejmuje **Pulpit, Kalendarz, Zajęcia, Psy i opiekunowie, Plany i
 
 **Więcej** otwiera karty podarunkowe, relacje psów i Psiutki. Dzwonek u góry prowadzi do skrzynki powiadomień; **Moje konto** rozwija dane i zmianę hasła. Menu opiekuna zachowuje dotychczasowy układ. Funkcje i dane pozostają dostępne także przez wcześniejsze adresy.
 
+## Lokalny wariant „Spokojny start” — 13.10.2026
+
+Wariant jest gotowy lokalnie i nie zastępuje jeszcze wydania online
+opisanego powyżej. Menu opiekuna ma sześć głównych linków: **Mój start,
+Kalendarz, Moje psy, Plany i postępy, Oferta, Moje rozliczenia**. Rozwiń
+**Zajęcia**, aby wejść w spacery, kursy, PSI FITNESS lub konsultacje;
+**Więcej** zawiera karty podarunkowe i Psiutki. Skrzynkę otwiera dzwonek.
+Dane konta i zmiana hasła są na dole przewijanego menu.
+
+Pulpit prowadzącej ma jaśniejszą kartę najbliższego terminu i krótsze wiersze
+spraw. W odbiorze lokalnym sprawdź pełną datę, tekstowe oznaczenie zaległości,
+rozwijane podsumowanie oraz dostęp do wszystkich funkcji na telefonie.
+[Zakres i dowody odbioru](iterations/2026-10-13-spokojny-start.md).
+
 ## Scenariusze obu ról
+
+### Rozszerzenie po feedbacku — do odbioru lokalnego
+
+Poniższe nowe scenariusze odnoszą się do lokalnej iteracji 13.10, nie do
+aktualnego wydania online. [Bieżący stan odbioru](iterations/2026-10-13-funkcje-po-feedbacku.md).
+
+- **Niezależne zalecenia:** opublikuj plan po konsultacji oraz osobny plan po
+  kursie lub fitness tego samego psa. Oba zachowują własny szkic, historię
+  odpowiedzi i kontakt kontrolny. Otwórz starsze powiadomienie i jego plan.
+- **Oferta i zgłoszenie terminu:** w kalendarzu opiekuna otwórz dostępną
+  ofertę. Wybierz usługę indywidualną bez opublikowanego cyklu, zgłoś potrzebę
+  terminu i obsłuż ją jako prowadząca przez Zajęcia. Nie powstaje rezerwacja
+  ani płatność. Opiekun widzi notatkę prowadzącej; obce konto jej nie widzi.
+- **Zaproszenie na kontrolę:** prowadząca ustawia przy publikacji osobną datę
+  zaproszenia opiekuna. To inna data niż zadanie kontaktu dla zespołu.
+  Zgłoszenie kontroli wymaga dalszego uzgodnienia terminu; ponowienie nie
+  dubluje konsultacji. Przełożenie lub wycofanie unieważnia stary komunikat.
+- **Raportowanie:** w ustawieniach konkretnej usługi zmień dostęp i okres.
+  Nowe przypisanie otrzymuje nowe warunki, poprzednie zachowuje swoje.
+  Przy zaleceniach prowadząca może wprowadzić uzasadniony wyjątek. Wygaśnięcie
+  blokuje nowe odpowiedzi, lecz zachowuje odczyt planów i wcześniejsze raporty.
+- **Psiutki:** dwa zatwierdzone profile wyrażają wzajemne zainteresowanie,
+  a następnie obaj opiekunowie osobno zgadzają się na czat. Sprawdź wiadomości,
+  starszą historię, ponowienie po przerwie w połączeniu i cofnięcie zgody.
+  Trzecie konto oraz prowadząca niebędąca uczestnikiem nie odczytują rozmowy.
+- **Powiadomienia urządzenia:** rozwiń ustawienia pod dzwonkiem; sprawdź
+  obsługę przeglądarki, dobrowolne włączenie i wyłączenie. Systemowy komunikat
+  nie zawiera prywatnej treści. Próbę dostarczenia na rzeczywisty telefon
+  odróżniamy od testu kolejki z podstawionym dostawcą.
+
+### Dotychczasowe scenariusze pilota
 
 | Obszar                 | Opiekun                                                                                             | Prowadząca                                                                                  | Co sprawdzić                                                                                                  |
 | ---------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |

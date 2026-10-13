@@ -1,6 +1,31 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 10.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano.
+Aktualizacja: 13.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie online pochodzi z 10.10 i ma 49 migracji. „Spokojny start” oraz poniższe rozszerzenie funkcji są dostępne wyłącznie lokalnie, z 57 migracjami.
+
+## Rozszerzenie funkcji po feedbacku — lokalnie, 13.10.2026
+
+Iteracja zachowuje lżejszy interfejs „Spokojnego startu” i obejmuje sześć obszarów:
+
+- **Konteksty zaleceń:** osobne szkice i bieżące publikacje dla psa oraz konkretnej konsultacji, zgłoszenia kursowego lub pakietu fitness, także z powiązaniem spotkania. Odpowiedzi, wcześniejsze wersje i kontakty kontrolne pozostają przy właściwym kontekście.
+- **Dostępna oferta:** miesiąc i lista przyszłych zajęć, oddzielone od własnych potwierdzonych terminów. Indywidualna usługa bez publicznego terminu ma prywatne zgłoszenie obsługiwane przez prowadzącą w Zajęciach; nie tworzy automatycznie rezerwacji ani płatności.
+- **Dobrowolny Web Push:** osobna zgoda na konkretnym urządzeniu, prywatne subskrypcje, niezależna kolejka z ograniczonymi ponowieniami i ogólny komunikat bez treści zaleceń lub rozmowy. Skrzynka aplikacji działa niezależnie, bez rozsyłania archiwum po włączeniu push.
+- **Zaproszenie na kontrolę:** osobną datę ustala prowadząca. Opiekun otrzymuje prośbę o zgłoszenie kontroli właściwego psa i kontekstu; samo zaproszenie nie rezerwuje terminu ani nie zamyka kontaktu prowadzącej.
+- **Prywatny czat Psiutków:** po wzajemnym zainteresowaniu oboje opiekunowie świadomie włączają rozmowę, bez obowiązkowego pośrednictwa prowadzącej. Zgody nie wynikają ze starych dopasowań; wycofanie zgody lub zainteresowania, ukrycie profilu i zmiana opiekuna odbierają dostęp. Nowy właściciel nie dziedziczy historii; czat nie udostępnia telefonu ani e-maila i nie ma załączników.
+- **Konfiguracja raportowania:** dostęp i jego okres są określane dla nowych przypisań usługi, z jawną możliwością zmiany konkretnego uprawnienia przez prowadzącą. Istniejące przypisania zachowują dotychczasowy dostęp; wygaśnięcie blokuje nowe odpowiedzi, pozostawiając historię oraz odczyt zaleceń.
+
+Lokalny Supabase ma **57 migracji**, w tym osiem nowych do `202610130008_notification_contexts.sql`. Chmura pozostaje na **49 migracjach** do `202610100001_calendar_team.sql`; nie publikowano rozszerzenia ani nie zmieniano danych pilota. Fizyczne dostarczenie Web Push na telefonie nie zostało odebrane. Zewnętrzny SMTP, branding (logo i hasło), ClickMeeting i MailerLite pozostają poza zakresem tej iteracji; nie powstaje aplikacja natywna.
+
+Kryteria oraz końcowe wyniki i granice odbioru są prowadzone w [dokumencie rozszerzenia po feedbacku](iterations/2026-10-13-funkcje-po-feedbacku.md). Wyniki „Spokojnego startu” i wcześniejszych publikacji poniżej pozostają osobnymi przebiegami historycznymi.
+
+## Spokojny start i praca zespołu agentów — lokalnie, 13.10.2026
+
+Zapisano projektowe role biznesową, techniczną i recenzenta oraz [proces ich pracy](AGENT-WORKFLOW.md). Pierwsza wspólna iteracja ma niezależne propozycje, uzgodnione kryteria i osobny przegląd kodu. Profile dziedziczą model sesji; nie uruchamiają pracy w tle.
+
+Pulpit prowadzącej ma jasną kartę terminu z pełną datą i czytelniejsze cztery sprawy. Menu opiekuna ma sześć linków oraz grupy Zajęcia i Więcej; powiadomienia są pod dzwonkiem. Zachowano stare adresy, dane, akcje i zwinięte podsumowanie. Odbiór ujawnił również zbyt mały kontrast drugiej akcji karty opiekuna — poprawiono go w obrębie tego komponentu.
+
+Przeszły lint, TypeScript, końcowa lokalna kompilacja, 70 testów autora i osobny przebieg 61 testów recenzenta (częściowo wspólne zestawy). Rzeczywista lokalna aplikacja przeszła kontrolę 21 tras, 8 wariantów responsywności i 6 scenariuszy mobilnego menu. Po korekcie kontrastu powtórzono 8 widoków pulpitów. Dodatkowe 16 przypadków izolowanych komponentów sprawdziło skrajne treści, puste stany i daty Warszawy. Biznes oraz recenzent nie zgłosili pozostałych problemów blokujących ten zakres. [Szczegółowe kryteria i granice dowodów](iterations/2026-10-13-spokojny-start.md).
+
+Podgląd działa na localhost:3000. Nie publikowano aplikacji ani nie zmieniano migracji, konfiguracji chmury i danych biznesowych. Poprzednie wyniki pełnych E2E, obciążenia i kopii pozostają odrębnymi historycznymi przebiegami.
 
 ## Publikacja aktualizacji po feedbacku — 10.10.2026
 

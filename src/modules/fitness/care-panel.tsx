@@ -72,11 +72,25 @@ export function FitnessCarePanel({
               Jest zapisany szkic dla tego pakietu. Opiekun go nie widzi.
             </p>
           )}
-          <Link className="secondary-button" href={`${editor}#szkic`}>
-            {care.hasDraft
-              ? "Otwórz szkic zaleceń fitness"
-              : "Przygotuj plan całego pakietu"}
-          </Link>
+          {(care.canPrepare || care.draftSessions?.includes(null)) && (
+            <Link className="secondary-button" href={`${editor}#szkic`}>
+              {care.draftSessions?.includes(null)
+                ? "Otwórz plan całego pakietu"
+                : "Przygotuj plan całego pakietu"}
+            </Link>
+          )}
+          {care.draftSessions
+            ?.filter((id) => id !== null)
+            .map((id) => (
+              <Link
+                key={id}
+                className="secondary-button"
+                href={`${editor}&fitness_session=${id}#szkic`}
+              >
+                Otwórz szkic po spotkaniu fitness{" "}
+                {sessions.find((session) => session.id === id)?.ordinal || ""}
+              </Link>
+            ))}
           {care.canPrepare &&
             sessions.some((s) =>
               ["scheduled", "completed"].includes(s.status),

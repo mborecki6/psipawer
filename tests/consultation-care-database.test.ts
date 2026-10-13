@@ -24,7 +24,7 @@ async function asUser<T>(id: string, fn: () => Promise<T>) {
 }
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create schema auth;
+  await db.exec(`create role service_role; create role anon; create role authenticated; create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;
@@ -193,12 +193,12 @@ describe("consultation → private draft → publication", () => {
       ),
     ).rejects.toThrow(/foreign key/);
   });
-  it("retains every published association when the draft moves to a subsequent meeting", async () => {
+  it("retains independent drafts and publications for subsequent meetings and general care", async () => {
     await consultation();
     await consultation("completed", another, dog, 24);
     await save();
-    await save(1, true, another);
-    await save(2, true, null);
+    await save(0, true, another);
+    await save(0, true, null);
     expect(
       (
         await db.query(
@@ -216,22 +216,26 @@ describe("consultation → private draft → publication", () => {
       ),
     ).rejects.toThrow(/permission denied/);
   });
-  it("recognizes a retry only when text AND the consultation match", async () => {
+  it("recognizes retries independently for each exact context", async () => {
     await consultation();
     await consultation("completed", another, dog, 24);
     const first = await save();
     expect(await save()).toEqual(first);
-    await expect(save(0, true, another)).rejects.toThrow("Plan zmienił się");
-    await expect(save(0, true, null)).rejects.toThrow("Plan zmienił się");
+    const second = await save(0, true, another);
+    const general = await save(0, true, null);
+    expect(second.published_id).not.toBe(first.published_id);
+    expect(general.published_id).not.toBe(first.published_id);
+    expect(await save(0, true, another)).toEqual(second);
+    expect(await save(0, true, null)).toEqual(general);
     expect(
       (
         await db.query(
           "select * from public.care_events where kind='plan_published'",
         )
       ).rows,
-    ).toHaveLength(1);
+    ).toHaveLength(3);
   });
-  it("allows unlinking a cancelled meeting while preserving the private draft's content", async () => {
+  it("preserves a cancelled meeting draft when creating an independent general plan", async () => {
     await consultation("scheduled");
     await save(0, false);
     await asUser(admin, () =>
@@ -241,7 +245,7 @@ describe("consultation → private draft → publication", () => {
       ),
     );
     await expect(save(1)).rejects.toThrow("Wybierz umówioną lub zakończoną");
-    await save(1, true, null);
+    await save(0, true, null);
     expect(
       (
         await db.query(

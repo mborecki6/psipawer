@@ -33,6 +33,12 @@ function failure(message?: string): ActionState {
     "Wybierz przyjęte zgłoszenie aktualnego opiekuna na aktywny lub zakończony kurs.",
     "To spotkanie kursu jest odwołane. Wybierz inne powiązanie.",
     "Najpierw zakończ spotkanie kursu. Teraz możesz zapisać szkic.",
+    "Wybierz dzisiejszą lub przyszłą datę zaproszenia na kontrolę.",
+    "Zaproszenie wymaga aktualnego opiekuna psa.",
+    "Zaproszenie zmieniło się. Otwórz aktualny plan tej usługi.",
+    "Wybierz inną datę zaproszenia.",
+    "Uprawnienie zmieniło się. Odśwież widok przed zapisem.",
+    "Raportowanie dla tej usługi jest wyłączone lub zakończone. Wcześniejsze odpowiedzi i zalecenia pozostają dostępne.",
   ];
   return {
     error:
@@ -75,6 +81,7 @@ export async function savePlan(
       p_title: p.title,
       p_body: p.body,
       p_follow_up_on: p.follow_up_on || null,
+      p_control_invite_on: p.control_invite_on || null,
       p_publish: p.intent === "publish",
     });
     if (error) return { ...failure(error.message), version: previous.version };
@@ -90,6 +97,83 @@ export async function savePlan(
     };
   } catch {
     return { ...failure(), version: previous.version };
+  }
+}
+
+export async function changeControlInvitation(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const { db } = await requireSession("admin");
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      expected_version: z.coerce.number().int().min(1).max(2147483646),
+      intent: z.enum(["reschedule", "cancel"]),
+      due_on: z.union([z.literal(""), z.iso.date()]),
+      note: z.string().trim().min(3).max(2000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (
+    !parsed.success ||
+    (parsed.data.intent === "reschedule" && !parsed.data.due_on)
+  )
+    return {
+      error: "Podaj datę zaproszenia i notatkę albo wybierz wycofanie.",
+    };
+  const p = parsed.data;
+  try {
+    const { error } = await db.rpc("change_control_invitation", {
+      p_id: p.id,
+      p_expected_version: p.expected_version,
+      p_due_on: p.intent === "cancel" ? null : p.due_on,
+      p_note: p.note,
+    });
+    if (error) return failure(error.message);
+    refresh();
+    return {
+      success:
+        p.intent === "cancel"
+          ? "Zaproszenie wycofane."
+          : "Data zaproszenia zmieniona.",
+    };
+  } catch {
+    return failure();
+  }
+}
+
+export async function changeReporting(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const { db } = await requireSession("admin");
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      expected_version: z.coerce.number().int().min(1).max(2147483646),
+      included: z.enum(["true", "false"]),
+      expires_on: z.union([z.literal(""), z.iso.date()]),
+      note: z.string().trim().min(3).max(2000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success)
+    return { error: "Sprawdź dostęp, datę końca i notatkę." };
+  const p = parsed.data;
+  try {
+    const { error } = await db.rpc("change_care_reporting", {
+      p_id: p.id,
+      p_expected_version: p.expected_version,
+      p_included: p.included === "true",
+      p_expires_on: p.expires_on || null,
+      p_note: p.note,
+    });
+    if (error) return failure(error.message);
+    refresh();
+    return {
+      success: "Uprawnienie do raportowania zmienione dla tej usługi psa.",
+    };
+  } catch {
+    return failure();
   }
 }
 

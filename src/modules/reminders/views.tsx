@@ -42,7 +42,13 @@ function JobSummary({ job: j }: { job: Reminder }) {
       </h3>
       <dl className={styles.facts}>
         <div>
-          <dt>{j.kind === "follow_up" ? "Dzień kontaktu" : "Spotkanie"}</dt>
+          <dt>
+            {j.kind === "control_invitation"
+              ? "Dzień zaproszenia"
+              : j.kind === "follow_up"
+                ? "Dzień kontaktu"
+                : "Spotkanie"}
+          </dt>
           <dd>
             {j.kind === "follow_up"
               ? new Intl.DateTimeFormat("pl-PL", {
@@ -117,7 +123,8 @@ export function ReminderQueueView({
           <h2>Przypomnienia</h2>
           <p className="muted">
             Przed spotkaniem — 24 godziny wcześniej. Kontakt kontrolny — w
-            wybranym dniu o 9:00, według czasu w Polsce.
+            wybranym dniu o 9:00, według czasu w Polsce. Zaproszenie opiekuna do
+            zgłoszenia kontroli również w wybranym dniu o 9:00.
           </p>
         </div>
         <RefreshInbox />
@@ -134,7 +141,8 @@ export function ReminderQueueView({
         <p className="muted">
           Przypomnienia trafiają do skrzynki w aplikacji. O spotkaniach
           przypominamy opiekunom, a o kontakcie kontrolnym — zespołowi
-          prowadzącemu.
+          prowadzącemu. Zaproszenia do zgłoszenia kontroli otrzymują
+          opiekunowie.
         </p>
         <ActionForm
           action={processReminders}

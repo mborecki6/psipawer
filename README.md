@@ -2,6 +2,19 @@
 
 Aplikacja do organizacji spacerów socjalizacyjnych i pracy behawiorysty. Stos: Next.js App Router, TypeScript, React, Supabase Auth/PostgreSQL/Storage. Wygląd zachowuje ciepłą paletę i układ dostarczonego prototypu.
 
+## Rozszerzenie po feedbacku — lokalnie, 13.10.2026
+
+Lokalna wersja zachowuje wynik [„Spokojnego startu”](docs/iterations/2026-10-13-spokojny-start.md) i rozszerza funkcje:
+
+- Zalecenia, szkice, publikacje, odpowiedzi i kontakty kontrolne mają osobne konteksty konkretnej usługi lub spotkania, z zachowaniem historii.
+- Kalendarz dostępnej oferty pokazuje miesiąc i listę zajęć. Usługa indywidualna bez publicznego terminu prowadzi do prywatnego zgłoszenia ustalenia terminu, bez automatycznej rezerwacji lub płatności.
+- Dobrowolny Web Push działa jako osobny kanał na wybranym urządzeniu, z niezależną kolejką i ogólną treścią powiadomienia. Skrzynka aplikacji pozostaje niezależna; włączenie urządzenia nie rozsyła archiwum.
+- Prowadząca wybiera osobną datę zaproszenia opiekuna do zgłoszenia kontroli. Zaproszenie zachowuje kontekst zaleceń i nie rezerwuje terminu.
+- Prywatny czat Psiutków wymaga wzajemnego zainteresowania i obu zgód, bez obowiązkowego udziału prowadzącej i ujawniania telefonu lub e-maila. Wycofanie zgody, zainteresowania, ukrycie profilu lub zmiana właściciela odbierają dostęp; stare dopasowania nie uruchamiają rozmów.
+- Dostęp do raportowania i jego okres są konfigurowalne dla usługi oraz konkretnego przypisania. Dotychczasowe przypisania zachowują dostęp; wygaśnięcie blokuje nowe odpowiedzi, zachowując historię i odczyt zaleceń.
+
+Lokalny Supabase ma **57 migracji** do `202610130008_notification_contexts.sql`. Chmura pozostaje przy **49 migracjach** i wydaniu z 10.10.2026; rozszerzenia nie opublikowano. Fizyczne dostarczenie push na telefonie nie zostało odebrane. Zewnętrzny SMTP, branding (logo i hasło), ClickMeeting oraz MailerLite pozostają poza tą iteracją. [Kryteria, wyniki odbioru i ich ograniczenia](docs/iterations/2026-10-13-funkcje-po-feedbacku.md).
+
 ## MVP online do wspólnych testów
 
 Od 06.10.2026 pełny MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login), na Vercel i Supabase we Frankfurcie. Aktualizacja po feedbacku z 10.10.2026 jest opublikowana; baza ma **49 migracji** do `202610100001`. Przed tą zmianą wykonano świeżą kopię chmury z Auth, Storage i historią migracji, odtworzono ją w oddzielnej lokalnej bazie oraz sprawdzono nową migrację. Konta, hasła, terminy, ceny i postęp testerów zostały zachowane. [Przebieg publikacji i jej ograniczenia](docs/VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026).
@@ -13,6 +26,14 @@ Od 09.10.2026 panel prowadzącej ma sześć głównych sekcji. **Zajęcia** grup
 Logowanie odbywa się e-mailem i hasłem. Powiadomienia biznesowe trafiają do skrzynek w aplikacji, a Supabase sprawdza przypomnienia co pięć minut. Zewnętrzny SMTP, e-mailowe zaproszenia i odzyskiwanie hasła w chmurze pozostają wyłączone. Domyślna poczta Supabase obsługuje Auth z ograniczeniami odbiorców i liczby wiadomości, nie wysyła biznesowych przypomnień. Automatyczne fizyczne usuwanie nieużywanych zdjęć pozostaje wyłączone.
 
 Lokalny odbiór 03.10.2026 objął **971 testów**, **45 pełnych scenariuszy obu ról**, próbę 50 kont oraz odtworzenie kopii bazy i zdjęć. Pomiar lokalny nie jest pomiarem wydajności hostingu. [Stan produktu](docs/PRODUCT-STATUS.md) i [obsługa wdrożenia](docs/VERCEL-SUPABASE-PILOT.md) rozdzielają te wyniki i ograniczenia pilota.
+
+## Praca zespołu agentów
+
+Rozwój prowadzimy w Codexie z rolami biznesową, techniczną i niezależnego recenzenta.
+Projektowe profile są w `.codex/agents/`, a zasady delegowania w `AGENTS.md`.
+[Proces i warunki ukończenia](docs/AGENT-WORKFLOW.md) oraz
+[bieżąca iteracja rozszerzenia po feedbacku](docs/iterations/2026-10-13-funkcje-po-feedbacku.md).
+Wynik [Spokojnego startu](docs/iterations/2026-10-13-spokojny-start.md) pozostaje częścią lokalnej wersji.
 
 ## Moduły aplikacji
 
@@ -126,7 +147,7 @@ Bez konfiguracji Supabase dostępny jest tylko `/demo` oraz informacja o braku k
 
 ## Baza danych i migracje
 
-**Pilot ma komplet 49 migracji do `202610100001_calendar_team.sql`.** Kolejne zmiany chmury wykonuj po porównaniu historii i kopii. Do rozwoju używaj poleceń lokalnych opisanych w [LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md).
+**Pilot online ma 49 migracji do `202610100001_calendar_team.sql`, a środowisko lokalne 57 do `202610130008_notification_contexts.sql`.** Migracji rozszerzenia z 13.10 nie stosowano w chmurze. Kolejne zmiany chmury wykonuj po porównaniu historii i kopii oraz autoryzacji publikacji w bieżącym zakresie. Do rozwoju używaj poleceń lokalnych opisanych w [LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md).
 
 Użyj projektu Supabase przeznaczonego dla tej aplikacji. Dla istniejącej bazy sprawdź historię migracji i kopię bezpieczeństwa przed aktualizacją. Zastosuj wszystkie brakujące pliki z `supabase/migrations/` w kolejności nazw; nie wykonuj ponownie migracji już zapisanej w historii.
 
@@ -312,8 +333,8 @@ Końcowa kontrola aktualizacji powinna objąć zgodność migracji, logowanie ob
 Znane ograniczenia:
 
 - Zewnętrzny SMTP i zaproszenia klientów pozostają odłożone. Zaproszenie i samodzielne odzyskanie hasła są zaimplementowane oraz sprawdzane wyłącznie z lokalną skrzynką.
-- Brak wysyłki e-mailowych przypomnień, WhatsApp, czatu, AI, płatności online, faktur i wielofirmowości. Skrzynka powiadomień i [kolejka terminowych przypomnień](docs/REMINDERS-MODULE.md) działają w chmurze przez harmonogram Supabase; lokalnie używają osobnego procesu. Zwroty pieniędzy odbywają się poza aplikacją.
-- Zmiana spaceru lub jego odwołanie zapisuje powiadomienie dla właściwych opiekunów w aplikacji, także w chmurze. Nie wysyła e-maili ani wiadomości poza aplikację.
+- Brak wysyłki e-mailowych przypomnień, WhatsApp, AI, płatności online, faktur i wielofirmowości. Prywatny czat Psiutków i dobrowolny Web Push są częścią lokalnego rozszerzenia z 13.10, bez publikacji i bez odbioru fizycznego push na telefonie. Skrzynka powiadomień i [kolejka terminowych przypomnień](docs/REMINDERS-MODULE.md) działają w chmurze przez harmonogram Supabase; lokalnie używają osobnego procesu. Zwroty pieniędzy odbywają się poza aplikacją.
+- Zmiana spaceru lub jego odwołanie zapisuje powiadomienie dla właściwych opiekunów w aplikacji, także w chmurze. Wydanie online z 10.10 nie wysyła tych wiadomości poza aplikację; lokalny Web Push ma osobną kolejkę dla dobrowolnie włączonych urządzeń. E-mail nie jest włączony.
 - Nie ma automatycznego awansu rezerwy. Kwalifikację, ostrzeżenia relacji i propozycje wspólnych spotkań ocenia behawiorysta.
 - Finanse pokazują po 20 pozycji w trzech niezależnych listach, zachowując pełne sumy i historię. Pozostałe zbiorcze odczyty wymagają dalszej oceny dla większej skali; sam pomiar 50 lokalnych sesji nie dowodzi gotowości dowolnego obciążenia.
 - Sprzątanie zastąpionych zdjęć i zarejestrowanych niedokończonych przesłań działa lokalnie przez trwałą kolejkę i Storage API. W chmurze automatyczne fizyczne usuwanie zdjęć jest wyłączone; pozostają dawne osierocone pliki i ręczne przesłania bez rejestracji.

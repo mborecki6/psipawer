@@ -63,7 +63,7 @@ export async function openNotification(
     const { data: item, error } = await db
       .from("notifications")
       .select(
-        "kind,dog_id,entity_id,course_enrollment_id,course_session_id,fitness_package_id,fitness_session_id",
+        "kind,dog_id,entity_id,course_enrollment_id,course_session_id,fitness_package_id,fitness_session_id,invitation_id,chat_id",
       )
       .eq("id", parsed.data)
       .maybeSingle();
@@ -73,6 +73,15 @@ export async function openNotification(
       !Object.hasOwn(notificationLabels, item.kind) ||
       !z.uuid().safeParse(item.dog_id).success ||
       !z.uuid().safeParse(item.entity_id).success
+    )
+      return failure;
+    if (
+      (item.kind === "community_chat_message" &&
+        (!z.uuid().safeParse(item.chat_id).success ||
+          item.chat_id !== item.entity_id)) ||
+      (item.kind === "control_invitation_due" &&
+        (!z.uuid().safeParse(item.invitation_id).success ||
+          item.invitation_id !== item.entity_id))
     )
       return failure;
     if (
@@ -90,9 +99,34 @@ export async function openNotification(
           !z.uuid().safeParse(item.course_session_id).success))
     )
       return failure;
+    let planId: string | undefined;
+    const careSource =
+      item.kind === "progress_reviewed"
+        ? "care_progress"
+        : role === "client" &&
+            ["follow_up_changed", "follow_up_reminder"].includes(item.kind)
+          ? "care_follow_ups"
+          : null;
+    if (careSource) {
+      // Resolve only the authorized record referenced by this inbox event.
+      // A generic dog URL could otherwise select a different service context.
+      const { data: context, error: contextError } = await db
+        .from(careSource)
+        .select("plan_id,dog_id")
+        .eq("id", item.entity_id)
+        .maybeSingle();
+      if (
+        contextError ||
+        !context ||
+        context.dog_id !== item.dog_id ||
+        !z.uuid().safeParse(context.plan_id).success
+      )
+        return failure;
+      planId = context.plan_id;
+    }
     const read = await db.rpc("read_notifications", { p_ids: [parsed.data] });
     if (read.error || ![0, 1].includes(read.data)) return failure;
-    href = notificationHref(item as Notification, role);
+    href = notificationHref(item as Notification, role, planId);
   } catch {
     return failure;
   }

@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import {
   getConsultations,
   getConsultation,
   getConsultationDogs,
+  getControlInvitation,
 } from "./queries";
 import {
   ConsultationView,
@@ -77,20 +79,26 @@ export async function ConsultationPage({
 export async function ConsultationRequestPage({
   searchParams,
 }: {
-  searchParams: Promise<{ dog?: string; service?: string }>;
+  searchParams: Promise<{ dog?: string; service?: string; control?: string }>;
 }) {
   const [dogs, { services }, search] = await Promise.all([
     getConsultationDogs(),
     getServices(false, "consultation"),
     searchParams,
   ]);
+  const invitation = search.control
+    ? await getControlInvitation(search.control)
+    : null;
+  if (invitation?.consultation_id)
+    redirect(`/app/consultations/${invitation.consultation_id}`);
   return (
     <ConsultationRequestView
-      dogs={dogs}
+      dogs={invitation ? dogs.filter((d) => d.id === invitation.dog_id) : dogs}
+      controlInvitation={invitation}
       services={services}
       serviceId={search.service}
       id={randomUUID()}
-      dogId={search.dog}
+      dogId={invitation?.dog_id || search.dog}
     />
   );
 }

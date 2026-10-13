@@ -1,0 +1,33 @@
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.messages li {
+  max-width: min(90%, 42rem);
+  border: 1px solid var(--line, #ddd);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  overflow-wrap: anywhere;
+}
+.messages p {
+  white-space: pre-wrap;
+  margin: 0.5rem 0 0;
+}
+.own {
+  align-self: flex-end;
+  background: #f4eddc;
+}
+.other {
+  align-self: flex-start;
+  background: var(--card, #fff);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}

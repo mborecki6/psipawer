@@ -12,6 +12,8 @@ import {
   saveTemplate,
   submitProgress,
   reviewProgress,
+  changeControlInvitation,
+  changeReporting,
 } from "../src/modules/care/actions";
 import { carePage, careDate } from "../src/modules/care/types";
 
@@ -46,6 +48,69 @@ beforeEach(() => {
 });
 
 describe("care server actions", () => {
+  it("keeps the guardian invitation date separate from the staff follow-up date", async () => {
+    await savePlan({}, form({ ...plan, control_invite_on: "2099-02-01" }));
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "save_care_plan",
+      expect.objectContaining({
+        p_follow_up_on: "2026-10-01",
+        p_control_invite_on: "2099-02-01",
+      }),
+    );
+  });
+  it("requires staff for invitation changes and clears the date only on explicit cancellation", async () => {
+    await changeControlInvitation(
+      {},
+      form({
+        id: entry,
+        expected_version: "2",
+        intent: "cancel",
+        due_on: "2099-01-01",
+        note: "Wycofane po rozmowie.",
+      }),
+    );
+    expect(mocks.session).toHaveBeenCalledWith("admin");
+    expect(mocks.rpc).toHaveBeenCalledWith("change_control_invitation", {
+      p_id: entry,
+      p_expected_version: 2,
+      p_due_on: null,
+      p_note: "Wycofane po rozmowie.",
+    });
+  });
+  it("passes an explicit reporting exception and retains the server expiry explanation", async () => {
+    await changeReporting(
+      {},
+      form({
+        id: entry,
+        expected_version: "1",
+        included: "true",
+        expires_on: "",
+        note: "Indywidualne przedłużenie.",
+      }),
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith("change_care_reporting", {
+      p_id: entry,
+      p_expected_version: 1,
+      p_included: true,
+      p_expires_on: null,
+      p_note: "Indywidualne przedłużenie.",
+    });
+    const message =
+      "Raportowanie dla tej usługi jest wyłączone lub zakończone. Wcześniejsze odpowiedzi i zalecenia pozostają dostępne.";
+    mocks.rpc.mockResolvedValue({ data: null, error: { message } });
+    expect(
+      await submitProgress(
+        {},
+        form({
+          id: entry,
+          plan_id: planId,
+          attempted: "Wpis ze starej karty.",
+          went_well: "",
+          difficult: "",
+        }),
+      ),
+    ).toEqual({ error: message });
+  });
   it("sends validated fitness context, preserves form version on failure and exposes only the allowed completion message", async () => {
     const error =
       "Najpierw zakończ spotkanie fitness. Teraz możesz zapisać szkic.";
@@ -150,6 +215,7 @@ describe("care server actions", () => {
       p_title: plan.title,
       p_body: plan.body,
       p_follow_up_on: "2026-10-01",
+      p_control_invite_on: null,
       p_publish: true,
     });
     expect(result.version).toBe(5);

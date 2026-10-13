@@ -14,12 +14,15 @@ import {
   ChevronDown,
   MoreHorizontal,
   UserRound,
+  GraduationCap,
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import type { Role } from "@/lib/auth/session";
 import { notificationCountLabel } from "@/modules/notifications/types";
+import { clearBrowserPush } from "@/modules/push/browser";
 import { useHydrated } from "./use-hydrated";
 import { getShellNavigation } from "./shell-navigation";
+import styles from "./shell.module.css";
 export function Shell({
   role,
   name,
@@ -39,11 +42,14 @@ export function Shell({
   const router = useRouter();
   const {
     base,
+    pageTitle,
     careView,
     sections,
     nav,
+    activityNav,
     extraNav,
     settingsView,
+    activitiesView,
     extraView,
     active,
   } = getShellNavigation(role, path);
@@ -181,7 +187,7 @@ export function Shell({
     return () => lifecycle.abort();
   }, [base, router, role]);
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${styles.shell}`}>
       <a className="skip-link" href="#content">
         Przejdź do treści
       </a>
@@ -213,36 +219,40 @@ export function Shell({
             <span>zamieniam problemy w wyzwania</span>
           </div>
         </div>
-        <div className="role-pill">
-          <div className="role-avatar">{name.slice(0, 2).toUpperCase()}</div>
-          <div className="role-copy">
-            <strong>{name}</strong>
-            <span>
-              {role === "admin" ? "Panel behawiorysty" : "Panel opiekuna"}
-            </span>
-          </div>
-        </div>
         <div className="nav-label">Panel</div>
         <nav className="sidebar-nav" aria-label="Główna nawigacja">
           {nav.map(navigationLink)}
-          {role === "admin" && (
+          {role === "client" && (
             <details
+              key={`activities-${path}`}
               className="sidebar-disclosure"
-              open={extraView || undefined}
+              open={activitiesView || undefined}
             >
-              <summary className={`nav-item ${extraView ? "active" : ""}`}>
-                <MoreHorizontal aria-hidden="true" />
-                <span>Więcej</span>
+              <summary className={`nav-item ${activitiesView ? "active" : ""}`}>
+                <GraduationCap aria-hidden="true" />
+                <span>Zajęcia</span>
                 <ChevronDown
                   className="disclosure-chevron"
                   aria-hidden="true"
                 />
               </summary>
               <div className="sidebar-subnav">
-                {extraNav.map(navigationLink)}
+                {activityNav.map(navigationLink)}
               </div>
             </details>
           )}
+          <details
+            key={`extra-${path}`}
+            className="sidebar-disclosure"
+            open={extraView || undefined}
+          >
+            <summary className={`nav-item ${extraView ? "active" : ""}`}>
+              <MoreHorizontal aria-hidden="true" />
+              <span>Więcej</span>
+              <ChevronDown className="disclosure-chevron" aria-hidden="true" />
+            </summary>
+            <div className="sidebar-subnav">{extraNav.map(navigationLink)}</div>
+          </details>
         </nav>
         <div className="sidebar-footer">
           {role === "admin" && (
@@ -301,7 +311,21 @@ export function Shell({
               </Link>
             </>
           )}
-          <form action={signOut}>
+          <div className="role-pill">
+            <div className="role-avatar">{name.slice(0, 2).toUpperCase()}</div>
+            <div className="role-copy">
+              <strong>{name}</strong>
+              <span>
+                {role === "admin" ? "Panel behawiorysty" : "Panel opiekuna"}
+              </span>
+            </div>
+          </div>
+          <form
+            action={signOut}
+            onSubmit={() => {
+              void clearBrowserPush().catch(() => {});
+            }}
+          >
             <button className="nav-item">
               <LogOut />
               <span>Wyloguj się</span>
@@ -332,11 +356,12 @@ export function Shell({
           </button>
           <div className="page-heading">
             <h1>
-              {(careView
-                ? path.endsWith("/library")
-                  ? "Biblioteka zaleceń"
-                  : "Plany i postępy"
-                : sections.find((n) => n.href === path)?.label) ||
+              {pageTitle ||
+                (careView
+                  ? path.endsWith("/library")
+                    ? "Biblioteka zaleceń"
+                    : "Plany i postępy"
+                  : sections.find((n) => n.href === path)?.label) ||
                 (path === "/admin/settings"
                   ? "Ustawienia"
                   : path === "/admin/settings/calendar"
@@ -365,15 +390,21 @@ export function Shell({
                                     ? path.endsWith("/new")
                                       ? "Nowy cykl kursu"
                                       : "Szczegóły kursu"
-                                    : path.includes("/dogs/")
-                                      ? "Profil psa"
-                                      : path.includes("/walks/")
-                                        ? "Szczegóły spaceru"
-                                        : "Psi Pawer")}
+                                    : path.includes("/fitness/")
+                                      ? path.endsWith("/new")
+                                        ? "Nowe zgłoszenie PSI FITNESS"
+                                        : "Szczegóły PSI FITNESS"
+                                      : path.includes("/dogs/")
+                                        ? "Profil psa"
+                                        : path.includes("/walks/")
+                                          ? "Szczegóły spaceru"
+                                          : "Psi Pawer")}
             </h1>
             <p>
               {role === "admin"
-                ? "Dobry plan. Spokojniejszy spacer."
+                ? path === base
+                  ? "Najbliższe spotkanie i sprawy do zrobienia."
+                  : "Dobry plan. Spokojniejszy spacer."
                 : "Małe kroki, wielkie postępy."}
             </p>
           </div>
@@ -382,6 +413,9 @@ export function Shell({
               href={`${base}/notifications`}
               className="notification-button"
               aria-label={notificationCountLabel(unreadNotifications)}
+              aria-current={
+                path === `${base}/notifications` ? "page" : undefined
+              }
             >
               <Bell size={21} aria-hidden="true" />
               {(unreadNotifications === null || unreadNotifications > 0) && (

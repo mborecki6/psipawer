@@ -12,7 +12,10 @@ export function reportDataReadError(
     | "work.items"
     | "work.counts"
     | "notifications.feed"
-    | "notifications.count",
+    | "notifications.count"
+    | "care.contexts"
+    | "care.invitation"
+    | "care.reporting",
   error: unknown,
   status?: number,
   retrying = false,

@@ -74,11 +74,26 @@ export function CourseCarePanel({
               Jest zapisany szkic dla tego kursu. Opiekun go nie widzi.
             </p>
           )}
-          <Link className="secondary-button" href={`${editor}#szkic`}>
-            {care.hasDraft
-              ? "Otwórz szkic zaleceń"
-              : "Przygotuj plan całego kursu"}
-          </Link>
+          {(available || care.draftSessions?.includes(null)) && (
+            <Link className="secondary-button" href={`${editor}#szkic`}>
+              {care.draftSessions?.includes(null)
+                ? "Otwórz plan całego kursu"
+                : "Przygotuj plan całego kursu"}
+            </Link>
+          )}
+          {care.draftSessions
+            ?.filter((id) => id !== null)
+            .map((id) => (
+              <Link
+                key={id}
+                className="secondary-button"
+                href={`${editor}&session=${id}#szkic`}
+              >
+                Otwórz szkic po spotkaniu{" "}
+                {sessions.find((session) => session.id === id)?.ordinal ||
+                  "kursu"}
+              </Link>
+            ))}
           {available && (
             <details>
               <summary>Przygotuj zalecenia po spotkaniu</summary>

@@ -2,6 +2,15 @@
 
 Rozwój i codzienne testy korzystają z oddzielnego lokalnego Supabase. Decyzja użytkownika z 18.09.2026 wymagała lokalnego odbioru oraz nowej zgody przed publikacją; późniejsze zgody objęły MVP i aktualizację po feedbacku z 10.10.2026. Ta wersja jest opublikowana z 49 migracjami. [Aktualny stan hostingu i operacje](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026). Lokalnych launcherów, testów ani seederów nadal nie kierujemy do chmury; nowe etapy nie są publikowane automatycznie przez sam lokalny odbiór.
 
+## Podgląd rozszerzenia po feedbacku — 13.10.2026
+
+Lokalny podgląd na `http://localhost:3000` ma 57 migracji. Odbiór i zakres
+opisuje [iteracja po feedbacku](iterations/2026-10-13-funkcje-po-feedbacku.md).
+W sesji uruchomiono `local:reminders:watch` i `local:push:watch`; nie są to
+usługi systemowe. Po restarcie uruchom je ponownie w osobnych terminalach,
+jeśli sprawdzasz automatyczne przypomnienia lub dostarczenie push. Nie uruchamiaj
+duplikatów. Sam lokalny podgląd i skrzynka działają niezależnie od tych procesów.
+
 ## Lokalny odbiór MVP — 03.10.2026
 
 **Nowsza iteracja 10.10.2026:** lokalny schemat ma 49 migracji do `202610100001_calendar_team.sql`. Obejmuje kalendarz zespołu, sale, własne godziny, preferowane przerwy, miesiąc i całodniowe blokady oraz uproszczony kontekst planu i ofertę. Po lokalnym odbiorze i późniejszej zgodzie użytkownika tę samą wersję zastosowano w chmurze; historia produkcyjna również ma 49 migracji. [Lokalny zakres i odbiór](PRODUCT-STATUS.md#pierwsza-lokalna-iteracja-po-feedbacku--10102026) oraz [osobna kontrola publikacji](PRODUCT-STATUS.md#publikacja-aktualizacji-po-feedbacku--10102026). Wyniki poniżej opisują wcześniejszy odbiór MVP.
@@ -23,6 +32,43 @@ Wcześniejszy etap 03.10.2026: lokalnie zastosowano `202610030008_fitness_care.s
 Testy logiki, danych, uprawnień i interfejsu pozostają częścią każdej zmiany. Końcowy odbiór objął połączony proces obu ról; ograniczamy liczbę wdrożeń, nie odkładamy wykrywania błędów do końca projektu.
 
 ## Izolacja
+
+### Powiadomienia Web Push w lokalnym środowisku
+
+`pnpm local:env` (na przygotowanej maszynie: `node scripts/local-stack.mjs env`)
+tworzy odrębną lokalną parę VAPID i zachowuje ją przy następnym odświeżeniu
+konfiguracji tego samego lokalnego Supabase. Klucz prywatny trafia wyłącznie do
+ignorowanych plików środowiska z uprawnieniami `0600`. Launcher jawnie nadpisuje
+także ustawienia push, aby nie odziedziczyć konfiguracji chmury. Zmiana klucza
+publicznego wymaga ponownej kompilacji lokalnego podglądu.
+
+Po zastosowaniu lokalnych migracji, kompilacji i uruchomieniu podglądu:
+
+```sh
+pnpm local:push
+pnpm local:push:watch
+```
+
+Pierwsze polecenie obsługuje jedną porcję kolejki; drugie ponawia odczyt co
+30 sekund do Ctrl+C. Nie uruchamiamy go automatycznie przy starcie aplikacji.
+Każde urządzenie włącza push samodzielnie w rozwijanych ustawieniach skrzynki
+powiadomień. Bez zgody nie ma subskrypcji ani wysyłki. iPhone/iPad wymagają
+otwarcia aplikacji dodanej do ekranu początkowego; lokalny adres tego komputera
+nie jest adresem telefonu. Rzeczywisty odbiór na telefonie sprawdza się oddzielnie
+na dostępnym dla niego HTTPS.
+
+Skrzynka aplikacji jest niezależna od transportu. Wysłanie do dostawcy push nie
+potwierdza wyświetlenia ani przeczytania. Przed włączeniem urządzenia starsze
+wiadomości nie trafiają do push; kolejka pomija przeczytane wiadomości, wygasłe
+sesje i utracony dostęp. Wiadomość zawiera tylko ogólny komunikat. Service worker
+nie przechowuje stron prywatnych do pracy offline. Transmisja rozpoczęta przed
+wylogowaniem może jeszcze dostarczyć ogólny komunikat, ale otwarcie
+treści wymaga aktualnego zalogowania i uprawnień.
+
+Testy transportu wykorzystują mock dostawcy i prawdziwe szyfrowanie biblioteki
+`web-push`; taki wynik nie jest dowodem odbioru systemowego na telefonie.
+Konfiguracja hostingu, jego harmonogram i klucze pozostają oddzielnym krokiem
+wdrożenia. SMTP, MailerLite i aplikacja natywna nie są częścią tego kanału.
 
 - `next dev` przyjmuje tylko bazę pod `localhost`, `127.0.0.1` lub `[::1]`. Wspólna konfiguracja blokuje klientów Supabase zarówno na serwerze, jak i w przeglądarce przed połączeniem z chmurą. Strona logowania informuje o braku lokalnej bazy.
 - Istniejąca `.env.local` nie została zmieniona. Dane lokalne trafiają do ignorowanej `.env.development.local`, którą Next wczytuje wcześniej.

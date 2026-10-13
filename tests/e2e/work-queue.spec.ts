@@ -22,15 +22,13 @@ test("all six staff queue filters keep global counts, paginate and open the corr
     const profiles = Array.from({ length: 23 }, () => crypto.randomUUID());
     j.dogs.push(...profiles);
     await checked(
-      j.db
-        .from("dogs")
-        .insert(
-          profiles.map((id, n) => ({
-            id,
-            guardian_id: owner.user!.id,
-            name: `Profil kolejki ${n + 1} ${j.suffix}`,
-          })),
-        ),
+      j.db.from("dogs").insert(
+        profiles.map((id, n) => ({
+          id,
+          guardian_id: owner.user!.id,
+          name: `Profil kolejki ${n + 1} ${j.suffix}`,
+        })),
+      ),
     );
     const service = "60000000-0000-4000-8000-000000000010";
     const fitnessService = "60000000-0000-4000-8000-000000000006";
@@ -229,6 +227,10 @@ test("all six staff queue filters keep global counts, paginate and open the corr
       });
     }
   } finally {
+    if (j.dogs.length)
+      await checked(
+        j.db.from("care_reporting_entitlements").delete().in("dog_id", j.dogs),
+      );
     if (packages.length)
       await checked(j.db.from("fitness_packages").delete().in("id", packages));
     await j.dispose();

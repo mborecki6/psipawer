@@ -10,6 +10,7 @@ import {
 import {
   serviceKinds,
   serviceTime,
+  serviceReporting,
   type Service,
   type ServiceRevision,
 } from "./types";
@@ -54,6 +55,16 @@ export function ServicesView({
             ? "Zmieniaj ceny i szczegóły w jednym miejscu. Wcześniejsze zgłoszenia zachowają ustalone kwoty."
             : "Wybierz formę pracy dopasowaną do potrzeb Twojego psa."}
         </p>
+        {!admin && (
+          <div className={styles.badges}>
+            <Link className="ghost-button" href="/app/calendar/offer">
+              Sprawdź terminy w kalendarzu oferty →
+            </Link>
+            <Link className="ghost-button" href="/app/service-requests">
+              Moje zgłoszenia terminów →
+            </Link>
+          </div>
+        )}
       </header>
       {services.some((s) => s.is_test_price) && (
         <div className="alert">
@@ -84,7 +95,11 @@ export function ServicesView({
       )}
       <div className={styles.grid}>
         {visible.map((s) => (
-          <article className={`card pad ${styles.service}`} key={s.id}>
+          <article
+            className={`card pad ${styles.service}`}
+            key={s.id}
+            id={`service-${s.id}`}
+          >
             <div className={styles.badges}>
               <span className="badge">{serviceKinds[s.kind]}</span>
               {["course", "package"].includes(s.kind) &&
@@ -100,6 +115,11 @@ export function ServicesView({
             </div>
             <h3>{s.name}</h3>
             <p className="muted">{s.description}</p>
+            {(s.booking_flow === "consultation" ||
+              s.booking_flow === "fitness" ||
+              s.kind === "course") && (
+              <p className="muted">{serviceReporting(s)}</p>
+            )}
             <div className={styles.duration}>
               <Clock3 size={15} />
               {serviceTime(s)}
@@ -118,12 +138,22 @@ export function ServicesView({
                 Aktywuj kartę lub sprawdź saldo →
               </Link>
             ) : s.kind === "course" ? (
-              <Link
-                className="primary-button"
-                href={`/app/courses?service=${s.id}`}
-              >
-                Zobacz cykle kursu →
-              </Link>
+              <>
+                <Link
+                  className="primary-button"
+                  href={`/app/courses?service=${s.id}`}
+                >
+                  Zobacz cykle kursu →
+                </Link>
+                {s.course_format === "individual" && (
+                  <Link
+                    className="ghost-button"
+                    href={`/app/services/${s.id}/request`}
+                  >
+                    Brak terminu? Zgłoś potrzebę spotkań →
+                  </Link>
+                )}
+              </>
             ) : s.booking_flow === "consultation" ? (
               <Link
                 className="primary-button"
@@ -141,6 +171,13 @@ export function ServicesView({
             ) : s.booking_flow === "walk" ? (
               <Link className="ghost-button" href="/app/walks">
                 Zobacz terminy spacerów →
+              </Link>
+            ) : s.kind === "individual" ? (
+              <Link
+                className="ghost-button"
+                href={`/app/services/${s.id}/request`}
+              >
+                Uzgodnij termin →
               </Link>
             ) : (
               <p className={styles.catalogueHint}>
@@ -189,6 +226,16 @@ export function ServiceDetailView({
       <header className={styles.header}>
         <span className={styles.eyebrow}>{serviceKinds[s.kind]}</span>
         <h2>{s.name}</h2>
+        {(s.booking_flow === "consultation" ||
+          s.booking_flow === "fitness" ||
+          s.kind === "course") && (
+          <Link
+            className="ghost-button"
+            href={`/admin/services/${s.id}/reporting`}
+          >
+            Zasady raportowania postępów →
+          </Link>
+        )}
       </header>
       <div className={styles.detail}>
         <article className="card pad">

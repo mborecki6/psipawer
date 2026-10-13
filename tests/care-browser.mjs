@@ -83,6 +83,10 @@ try {
   });
   const page = await browser.newPage();
   const errors = [];
+  let allowNavigation = true;
+  page.on("dialog", (dialog) =>
+    allowNavigation ? dialog.accept() : dialog.dismiss(),
+  );
   page.on("pageerror", (error) => errors.push(error.message));
   const base = "http://127.0.0.1:4178";
   const output = resolve(cwd, "test-results/care-ui");
@@ -128,8 +132,9 @@ try {
   await page
     .getByLabel("Zacznij od materiału z biblioteki")
     .selectOption("50000000-0000-4000-8000-000000000001");
-  page.once("dialog", (dialog) => dialog.dismiss());
+  allowNavigation = false;
   await page.getByRole("button", { name: "Użyj materiału" }).click();
+  allowNavigation = true;
   await expect(page.getByLabel("Zalecenia dla opiekuna")).toHaveValue(
     "Nowa treść, opublikowana prosto z formularza.",
   );
@@ -230,51 +235,21 @@ try {
     await page.evaluate(() => window.careCalls.at(-1).expected_version),
   ).toBe("2");
 
-  // Navigating from a different consultation cannot silently rebind a draft.
-  await page.goto(`${base}/?meeting=scheduled`);
-  const association = page.getByLabel("Konsultacja, której dotyczą zalecenia");
+  // Exact contexts load their own text and version. Changing source navigates;
+  // a saved general or consultation draft is never relabelled as a meeting.
   const body = page.getByLabel("Zalecenia dla opiekuna");
-  await expect(association).toHaveValue("80000000-0000-4000-8000-000000000001");
-  const originalBody = await body.inputValue();
-  await page
-    .getByRole("button", { name: "Powiąż ten szkic z wybranym spotkaniem" })
-    .click();
-  await expect(body).toHaveValue(originalBody);
-  await expect(association).toHaveValue("80000000-0000-4000-8000-000000000002");
-  await expect(
-    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
-  ).toBeDisabled();
-  await page.evaluate(() => {
-    window.careFail = true;
-  });
-  await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
-  await expect(association).toHaveValue("80000000-0000-4000-8000-000000000002");
-  await expect(body).toHaveValue(originalBody);
-  await page.evaluate(() => {
-    window.careFail = false;
-  });
-  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
-  await association.selectOption("80000000-0000-4000-8000-000000000001");
-  await page.getByRole("button", { name: "Opublikuj dla opiekuna" }).click();
-  await expect(page.getByRole("status")).toContainText("Zapisano");
-  expect(await page.evaluate(() => window.careCalls.at(-1))).toMatchObject({
-    consultation_id: "80000000-0000-4000-8000-000000000001",
-    expected_version: "3",
-    intent: "publish",
-  });
-  await page.goto(`${base}/?meeting=scheduled&empty=1`);
-  await expect(association).toHaveValue("80000000-0000-4000-8000-000000000002");
-  await expect(
-    page.getByRole("region", { name: "Powiązanie planu" }),
-  ).toContainText("Kolejna konsultacja testowa");
-  await expect(association).toBeHidden();
-
-  // Contextual entry starts with the requested source only if there is no
-  // saved draft. The actual hidden binding is independent of picker visibility.
   const binding = (name) => page.locator(`input[type=hidden][name="${name}"]`);
   const context = page.getByRole("region", { name: "Powiązanie planu" });
   for (const [query, name, id, text, sessionName, sessionId, publishable] of [
+    [
+      "meeting=scheduled",
+      "consultation_id",
+      "80000000-0000-4000-8000-000000000002",
+      "Kolejna konsultacja",
+      "course_session_id",
+      "",
+      false,
+    ],
     [
       "fitness=whole",
       "fitness_package_id",
@@ -325,115 +300,54 @@ try {
     await expect(context).toContainText(text);
     await expect(binding(name)).toHaveValue(id);
     await expect(binding(sessionName)).toHaveValue(sessionId);
-    await expect(page.getByLabel("Rodzaj powiązania")).toBeHidden();
-    await expect(
-      page.getByLabel("Konsultacja, której dotyczą zalecenia"),
-    ).toHaveCount(0);
+    await expect(body).toHaveValue("");
+    await expect(binding("expected_version")).toHaveValue("0");
     const publish = page.getByRole("button", {
       name: "Opublikuj dla opiekuna",
     });
     if (publishable) await expect(publish).toBeEnabled();
     else await expect(publish).toBeDisabled();
   }
-
-  // An existing consultation draft cannot silently become a fitness plan.
-  // Even browsing a different service category preserves the source and text.
   await page.goto(`${base}/?fitness=scheduled&saved=consultation`);
-  await expect(context).toContainText("Konsultacja testowa");
-  await expect(binding("consultation_id")).toHaveValue(
-    "80000000-0000-4000-8000-000000000001",
-  );
-  await expect(binding("fitness_package_id")).toHaveValue("");
-  const savedBody = await body.inputValue();
-  await body.fill(`${savedBody}\nDopisek przed zmianą powiązania.`);
-  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
-  await page.getByLabel("Rodzaj powiązania").selectOption("fitness");
-  await expect(context).toContainText("Konsultacja testowa");
-  await expect(binding("consultation_id")).toHaveValue(
-    "80000000-0000-4000-8000-000000000001",
-  );
-  await expect(binding("fitness_package_id")).toHaveValue("");
-  await page
-    .getByRole("button", {
-      name: "Powiąż ten szkic z wybranym pakietem fitness",
-    })
-    .click();
-  await expect(context).toContainText("PSI FITNESS");
+  await expect(context).toContainText("Spotkanie 2");
   await expect(binding("consultation_id")).toHaveValue("");
-  await expect(binding("fitness_session_id")).toHaveValue(
-    "82000000-0000-4000-8000-000000000003",
-  );
-  await expect(body).toHaveValue(
-    `${savedBody}\nDopisek przed zmianą powiązania.`,
-  );
-  await expect(
-    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
-  ).toBeDisabled();
+  await expect(body).toHaveValue("");
+  await page.getByLabel("Tytuł planu").fill("Osobny szkic fitness");
+  await body.fill("Treść wyłącznie tego spotkania fitness.");
   await page.evaluate(() => {
     window.careFail = true;
   });
   await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
-  await expect(body).toHaveValue(
-    `${savedBody}\nDopisek przed zmianą powiązania.`,
-  );
-  await expect(binding("fitness_session_id")).toHaveValue(
-    "82000000-0000-4000-8000-000000000003",
-  );
+  await expect(body).toHaveValue("Treść wyłącznie tego spotkania fitness.");
+  await expect(binding("expected_version")).toHaveValue("0");
   await page.evaluate(() => {
     window.careFail = false;
   });
   await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Zapisano");
-  const rebound = await page.evaluate(() => window.careCalls.at(-1));
-  expect(rebound).toMatchObject({
+  expect(await page.evaluate(() => window.careCalls.at(-1))).toMatchObject({
     consultation_id: "",
     course_enrollment_id: "",
     course_session_id: "",
     fitness_package_id: "82000000-0000-4000-8000-000000000001",
     fitness_session_id: "82000000-0000-4000-8000-000000000003",
-    expected_version: "3",
+    expected_version: "0",
     intent: "draft",
   });
-  expect(
-    await body
-      .locator("xpath=ancestor::form")
-      .evaluate((form) => new FormData(form).getAll("fitness_package_id")),
-  ).toEqual(["82000000-0000-4000-8000-000000000001"]);
-  await page.getByLabel("Zakres zaleceń fitness").selectOption("");
+  await body.fill("Niezapisana zmiana przed przejściem.");
+  await page.getByText("Przygotuj plan innej usługi", { exact: true }).click();
+  const anotherContext = page.getByRole("link", {
+    name: /PSI FITNESS.*cały pakiet/,
+  });
+  allowNavigation = false;
+  await anotherContext.click();
+  await expect(body).toHaveValue("Niezapisana zmiana przed przejściem.");
+  allowNavigation = true;
+  await anotherContext.click();
   await expect(context).toContainText("Plan całego pakietu");
-  await expect(
-    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
-  ).toBeEnabled();
-  await page.getByLabel("Rodzaj powiązania").selectOption("general");
-  await expect(context).toContainText("Ogólny plan pracy");
-  await expect(binding("fitness_package_id")).toHaveValue("");
-  await expect(binding("fitness_session_id")).toHaveValue("");
-  await expect(body).toHaveValue(
-    `${savedBody}\nDopisek przed zmianą powiązania.`,
-  );
-
-  // A whole-course draft also requires explicit confirmation before it becomes
-  // advice for an individual scheduled meeting.
-  await page.goto(`${base}/?course=scheduled&saved=course`);
-  await expect(context).toContainText("Plan całego kursu");
-  await expect(binding("course_session_id")).toHaveValue("");
-  await page
-    .getByRole("button", { name: "Powiąż ten szkic z wybranym kursem" })
-    .click();
-  await expect(context).toContainText("Spotkanie 2");
-  await expect(binding("course_session_id")).toHaveValue(
-    "81000000-0000-4000-8000-000000000004",
-  );
-  await expect(
-    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
-  ).toBeDisabled();
-  await page.getByText("Zmień powiązanie planu", { exact: true }).click();
-  await page.getByLabel("Zakres zaleceń kursowych").selectOption("");
-  await expect(context).toContainText("Plan całego kursu");
-  await expect(
-    page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
-  ).toBeEnabled();
+  await expect(body).toHaveValue("");
+  await expect(binding("expected_version")).toHaveValue("0");
   for (const role of ["admin", "client"]) {
     await page.goto(`${base}/?view=publication&meeting=completed&role=${role}`);
     await expect(
@@ -456,8 +370,8 @@ try {
       ["admin-plan", "role=admin"],
       ["meeting-draft", "meeting=scheduled"],
       ["fitness-context", "fitness=scheduled&empty=1&long=1"],
-      ["fitness-rebind", "fitness=scheduled&saved=consultation"],
-      ["course-rebind", "course=scheduled&saved=course"],
+      ["fitness-independent", "fitness=scheduled&saved=consultation"],
+      ["course-independent", "course=scheduled&saved=course"],
       ["publication", "view=publication&meeting=completed&role=client"],
       ["client-plan", "role=client"],
       ["admin-inbox", "role=admin&view=overview"],
@@ -469,15 +383,43 @@ try {
       await page
         .getByRole("heading", { name: "Plany i postępy", exact: true })
         .waitFor();
-      if (name === "fitness-rebind" || name === "course-rebind")
-        expect(
-          await page
-            .locator(".alert:has(button)")
-            .evaluate((warning) => getComputedStyle(warning).display),
-          `${name} must stack the warning text and action at ${width}px`,
-        ).toBe("grid");
+      if (name === "fitness-independent" || name === "course-independent") {
+        const isFitness = name === "fitness-independent";
+        await expect(context).toContainText("Spotkanie 2");
+        await expect(body).toHaveValue("");
+        await expect(binding("expected_version")).toHaveValue("0");
+        await expect(binding("consultation_id")).toHaveValue("");
+        await expect(
+          binding(isFitness ? "fitness_session_id" : "course_session_id"),
+        ).toHaveValue(
+          isFitness
+            ? "82000000-0000-4000-8000-000000000003"
+            : "81000000-0000-4000-8000-000000000004",
+        );
+        await expect(
+          page
+            .getByRole("navigation", { name: "Wybierz plan psa" })
+            .getByRole("link", { name: /Nasz plan na najbliższe dni/ }),
+        ).toHaveAttribute(
+          "href",
+          `/admin/dogs/20000000-0000-4000-8000-000000000001/care?${
+            isFitness
+              ? "consultation=80000000-0000-4000-8000-000000000001"
+              : "enrollment=81000000-0000-4000-8000-000000000001"
+          }`,
+        );
+        await expect(page.locator("#historia")).toHaveCount(0);
+        await expect(page.locator("#postepy article")).toHaveCount(0);
+        await expect(
+          page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+        ).toBeDisabled();
+      }
       if (
-        ["fitness-context", "fitness-rebind", "course-rebind"].includes(name) &&
+        [
+          "fitness-context",
+          "fitness-independent",
+          "course-independent",
+        ].includes(name) &&
         (width === 390 || width === 1440)
       )
         await page.screenshot({
@@ -519,7 +461,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Care UI: error recovery, publication versions, library, guardian response, contextual consultation/course/fitness binding, safe draft rebinding and 44 responsive scenarios passed.",
+    "Care UI: error recovery, publication versions, library, guardian response, independent consultation/course/fitness drafts, guarded context navigation and 44 responsive scenarios passed.",
   );
   console.log(`Screenshots: ${output}`);
 } finally {

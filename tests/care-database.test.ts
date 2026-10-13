@@ -80,7 +80,7 @@ async function materialState(id: string) {
 }
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create schema auth;
+  await db.exec(`create role service_role; create role anon; create role authenticated; create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;
@@ -112,7 +112,7 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   await db.exec(
-    "truncate public.care_follow_up_history,public.care_follow_ups,public.care_events,public.care_progress,public.care_plan_versions,public.care_drafts,public.care_templates;",
+    "truncate public.care_control_invitations,public.care_reporting_entitlements,public.care_follow_up_history,public.care_follow_ups,public.care_events,public.care_progress,public.care_plan_versions,public.care_drafts,public.care_templates cascade;",
   );
 });
 afterAll(async () => {
@@ -197,7 +197,7 @@ describe.sequential(
     });
     it("gives anonymous users neither table nor RPC access", async () => {
       const grants = await db.query<{ read: boolean; execute: boolean }>(
-        "select has_table_privilege('anon','public.care_plan_versions','select') as read, has_function_privilege('anon','public.save_care_plan(uuid,integer,text,text,date,boolean,uuid,uuid,uuid,uuid,uuid)','execute') as execute",
+        "select has_table_privilege('anon','public.care_plan_versions','select') as read, has_function_privilege('anon','public.save_care_plan(uuid,integer,text,text,date,boolean,uuid,uuid,uuid,uuid,uuid,date)','execute') as execute",
       );
       expect(grants.rows[0]).toEqual({ read: false, execute: false });
     });

@@ -202,7 +202,7 @@ async function pastMeeting(id: string, ordinal = 0) {
 
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`create role anon;create role authenticated;create schema auth;
+  await db.exec(`create role service_role; create role anon;create role authenticated;create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;
@@ -460,8 +460,8 @@ describe.sequential("fitness publications and private drafts", () => {
     expect(
       (await fitnessCare(pack, owner, 5)).rows[0].plans.map((p) => p.title),
     ).toEqual(["Plan numer 1", "Plan numer 0"]);
-    await care(null, null, 7, true, admin, "Ogólny plan");
-    expect((await fitnessCare(pack, admin)).rows[0].has_draft).toBe(false);
+    await care(null, null, 0, true, admin, "Ogólny plan");
+    expect((await fitnessCare(pack, admin)).rows[0].has_draft).toBe(true);
     expect((await fitnessCare(pack)).rows[0].plans).toEqual(first);
   });
   it("enforces composite context foreign keys even for direct privileged writes", async () => {

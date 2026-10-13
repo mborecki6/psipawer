@@ -11,8 +11,10 @@ import type {
   CareTemplate,
   CareCourse,
   CareFitness,
+  CareContext,
 } from "@/modules/care/types";
 import "@/app/globals.css";
+import { careContextKey } from "@/modules/care/types";
 
 const dog = { id: "20000000-0000-4000-8000-000000000001", name: "Kluska" };
 const template: CareTemplate = {
@@ -116,6 +118,27 @@ const requested =
     : search.has("meeting")
       ? meetings[0]
       : null;
+const chosenContext: CareContext = {
+  consultation_id: search.get("consultation") || requested?.id || null,
+  course_enrollment_id:
+    search.get("enrollment") || (search.has("course") ? course.id : null),
+  course_session_id:
+    search.get("session") ||
+    (search.get("course") === "scheduled"
+      ? course.sessions[1].id
+      : search.get("course") === "completed"
+        ? course.sessions[0].id
+        : null),
+  fitness_package_id: search.has("fitness") ? fitness.id : null,
+  fitness_session_id:
+    search.get("fitness_session") ||
+    (search.get("fitness") === "scheduled"
+      ? fitness.sessions[1].id
+      : search.get("fitness") === "completed"
+        ? fitness.sessions[0].id
+        : null),
+};
+const sameContext = careContextKey(chosenContext) === careContextKey(plan);
 const base = role === "admin" ? "/admin" : "/app";
 createRoot(document.getElementById("root")!).render(
   <div className="app-shell">
@@ -175,6 +198,20 @@ createRoot(document.getElementById("root")!).render(
       ) : (
         <DogCareView
           role={role}
+          context={chosenContext}
+          contexts={
+            empty
+              ? []
+              : [
+                  {
+                    ...plan,
+                    context_key: careContextKey(plan),
+                    title: plan.title,
+                    published_id: plan.id,
+                    has_draft: role === "admin",
+                  },
+                ]
+          }
           consultations={meetings}
           requestedConsultation={requested}
           courses={[course]}
@@ -196,15 +233,15 @@ createRoot(document.getElementById("root")!).render(
                 : undefined
           }
           dog={dog}
-          latest={empty ? null : plan}
+          latest={empty || !sameContext ? null : plan}
           draft={
-            empty
+            empty || !sameContext
               ? null
               : { ...plan, version: 3, updated_at: plan.published_at }
           }
           templates={[template]}
           history={
-            empty
+            empty || !sameContext
               ? []
               : [
                   {
@@ -215,7 +252,7 @@ createRoot(document.getElementById("root")!).render(
                 ]
           }
           moreHistory={false}
-          progress={empty ? [] : [response]}
+          progress={empty || !sameContext ? [] : [response]}
           moreProgress={false}
           historyPage={1}
           progressPage={1}

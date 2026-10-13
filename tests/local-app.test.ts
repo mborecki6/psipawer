@@ -46,6 +46,9 @@ it("overrides inherited cloud credentials before Next starts and never prints ei
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://hosted.supabase.co");
   vi.stubEnv("SUPABASE_SECRET_KEY", "hosted-secret");
   vi.stubEnv("NODE_OPTIONS", "--env-file=.env.local");
+  vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "cloud-push-public");
+  vi.stubEnv("VAPID_PRIVATE_KEY", "cloud-push-secret");
+  vi.stubEnv("VAPID_SUBJECT", "https://cloud.example");
   await import("../scripts/local-app.mjs");
   expect(m.read.mock.calls[0][0]).toMatch(/\/\.env\.test\.local$/);
   const [, args, options] = m.spawn.mock.calls[0];
@@ -62,10 +65,28 @@ it("overrides inherited cloud credentials before Next starts and never prints ei
     SUPABASE_SECRET_KEY: "local-private",
     NEXT_PUBLIC_APP_URL: "http://localhost:3000",
     NODE_ENV: "development",
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: "",
+    VAPID_PRIVATE_KEY: "",
+    VAPID_SUBJECT: "",
   });
   expect(options.env.NODE_OPTIONS).toBeUndefined();
   expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(
     /local-private|local-public|hosted-secret/,
+  );
+});
+it("passes push settings only from the explicitly local file", async () => {
+  m.read.mockReturnValue(
+    environment() +
+      "NEXT_PUBLIC_VAPID_PUBLIC_KEY=local-vapid-public\nVAPID_PRIVATE_KEY=local-vapid-private\nVAPID_SUBJECT=https://app.example\n",
+  );
+  await import("../scripts/local-app.mjs");
+  expect(m.spawn.mock.calls[0][2].env).toMatchObject({
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: "local-vapid-public",
+    VAPID_PRIVATE_KEY: "local-vapid-private",
+    VAPID_SUBJECT: "https://app.example",
+  });
+  expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(
+    /local-vapid/,
   );
 });
 it.each([
@@ -149,7 +170,7 @@ it("does not mark a failed build ready", async () => {
   expect(process.exitCode).toBe(1);
 });
 
-it.each(["same", "new-key", "different-build", "unfinished"])(
+it.each(["same", "new-key", "new-push-key", "different-build", "unfinished"])(
   "validates preview provenance: %s",
   async (scenario) => {
     process.argv[2] = "build";
@@ -176,7 +197,9 @@ it.each(["same", "new-key", "different-build", "unfinished"])(
           : "build-fixture";
       return scenario === "new-key"
         ? environment().replace("local-public", "changed-public")
-        : environment();
+        : scenario === "new-push-key"
+          ? environment() + "NEXT_PUBLIC_VAPID_PUBLIC_KEY=changed-push-public\n"
+          : environment();
     });
     await import("../scripts/local-app.mjs");
     if (scenario === "same") {

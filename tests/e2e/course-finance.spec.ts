@@ -327,6 +327,10 @@ test("course finance API: actual parent/key locks prevent overpayment, double re
       await checked(
         db.from("payments").delete().in("course_enrollment_id", enrollments),
       );
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     if (courses.length)
       await checked(db.from("courses").delete().in("id", courses));
     await Promise.all([
@@ -654,6 +658,10 @@ test("course finance browser: partial receipts → cancellation → stale settle
     await checked(
       db.from("payments").delete().eq("course_enrollment_id", enrollment),
     );
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     await checked(db.from("courses").delete().eq("id", cycle));
     await disposeCareFixtures(db, users, dogs);
   }

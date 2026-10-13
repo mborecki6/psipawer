@@ -14,7 +14,15 @@ import {
   type FollowUpHistory,
 } from "./types";
 import styles from "./work.module.css";
-function WorkRow({ item, today }: { item: WorkItem; today: string }) {
+function WorkRow({
+  item,
+  today,
+  preview = false,
+}: {
+  item: WorkItem;
+  today: string;
+  preview?: boolean;
+}) {
   const overdue =
     ["followups", "fitness"].includes(item.kind) &&
     item.due_on !== null &&
@@ -25,22 +33,49 @@ function WorkRow({ item, today }: { item: WorkItem; today: string }) {
         ? "Nowy pies do kwalifikacji"
         : "Kwalifikacja do ponownego sprawdzenia"
       : item.title;
+  const action = {
+    followups: "Skontaktuj się z opiekunem",
+    consultations: "Ustal termin konsultacji",
+    progress: "Przeczytaj odpowiedź opiekuna",
+    profiles: title,
+    walks: "Rozpatrz zgłoszenie na spacer",
+    fitness: title,
+  }[item.kind];
   return (
-    <Link className={styles.row} href={workHref(item)}>
-      <div className={`${styles.mark} ${overdue ? styles.overdue : ""}`}>
-        {item.dog_name.slice(0, 1)}
-      </div>
-      <div className={styles.body}>
-        <div className={styles.tags}>
-          <span>{workKinds[item.kind]}</span>
-          {overdue && <strong>Po terminie</strong>}
-          {["followups", "fitness"].includes(item.kind) &&
-            item.due_on === today && <strong>Na dziś</strong>}
+    <Link
+      className={`${styles.row} ${preview ? styles.previewRow : ""}`}
+      href={workHref(item)}
+    >
+      {!preview && (
+        <div className={`${styles.mark} ${overdue ? styles.overdue : ""}`}>
+          {item.dog_name.slice(0, 1)}
         </div>
-        <h3>
-          {item.dog_name} · {title}
-        </h3>
-        <p>
+      )}
+      <div className={styles.body}>
+        {preview ? (
+          <>
+            <h3>{item.dog_name}</h3>
+            <p className={styles.taskTitle}>{action}</p>
+            {item.kind === "consultations" && <p>{item.title}</p>}
+          </>
+        ) : (
+          <>
+            <div className={styles.tags}>
+              <span>{workKinds[item.kind]}</span>
+              {overdue && <strong>Po terminie</strong>}
+              {["followups", "fitness"].includes(item.kind) &&
+                item.due_on === today && <strong>Na dziś</strong>}
+            </div>
+            <h3>
+              {item.dog_name} · {title}
+            </h3>
+          </>
+        )}
+        <p className={preview && overdue ? styles.overdueText : undefined}>
+          {preview && overdue && <strong>Po terminie · </strong>}
+          {preview &&
+            ["followups", "fitness"].includes(item.kind) &&
+            item.due_on === today && <strong>Na dziś · </strong>}
           {item.due_on
             ? `${item.kind === "walks" ? "Spacer" : item.kind === "fitness" ? "Spotkanie" : "Kontakt"}: ${careDate(item.due_on)}`
             : `Oczekuje od ${careDate(item.created_at)}`}
@@ -62,25 +97,35 @@ export function WorkPreview({
   const total = counts.reduce((s, c) => s + Number(c.total), 0),
     overdue = counts.reduce((s, c) => s + Number(c.overdue), 0);
   return (
-    <article className="card">
-      <div className="card-head">
+    <article className={`card ${styles.preview}`}>
+      <div className={styles.previewHeader}>
         <div>
-          <h3>Do zrobienia</h3>
+          <h2>Do zrobienia</h2>
           <p>
-            {total} otwartych spraw
-            {overdue > 0 ? ` · ${overdue} spraw po terminie` : ""}
+            Otwarte sprawy: {total}
+            {overdue > 0 ? ` · po terminie: ${overdue}` : ""}
           </p>
         </div>
-        <Link className="ghost-button" href="/admin/work">
-          Wszystkie →
+        <Link className={styles.previewLink} href="/admin/work">
+          Wszystkie sprawy →
         </Link>
       </div>
-      <div className="card-body">
+      <div className={styles.previewBody}>
         {items.slice(0, 4).map((item) => (
-          <WorkRow key={item.kind + item.id} item={item} today={today} />
+          <WorkRow
+            key={item.kind + item.id}
+            item={item}
+            today={today}
+            preview
+          />
         ))}
         {!items.length && (
-          <p className="muted">Wszystkie bieżące sprawy są obsłużone.</p>
+          <div className={styles.previewEmpty}>
+            <p>Wszystkie bieżące sprawy są obsłużone.</p>
+            <Link className={styles.previewLink} href="/admin/calendar">
+              Sprawdź kalendarz →
+            </Link>
+          </div>
         )}
       </div>
     </article>
@@ -244,7 +289,7 @@ export function FollowUpView({
         <div className={styles.links}>
           <Link
             className="ghost-button"
-            href={`/admin/dogs/${item.dog_id}/care`}
+            href={`/admin/dogs/${item.dog_id}/care?plan=${item.plan_id}`}
           >
             Plan i odpowiedzi opiekuna →
           </Link>

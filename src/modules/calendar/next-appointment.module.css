@@ -1,0 +1,138 @@
+.clientAppointment :global(.hero-actions .ghost-button) {
+  color: #fffaf4;
+  border: 1px solid #ffffff66;
+  background: #ffffff0d;
+}
+
+.clientAppointment :global(.hero-actions .ghost-button:hover) {
+  background: #ffffff20;
+}
+
+.clientAppointment :global(.hero-actions a:focus-visible) {
+  outline-color: #fffaf4;
+}
+
+.appointment {
+  min-width: 0;
+  padding: 26px;
+  color: var(--ink);
+  background: #e7eee5;
+  border-radius: 16px;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.eyebrow svg {
+  flex-shrink: 0;
+}
+
+.time {
+  margin: 0;
+  font-size: clamp(30px, 3vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.time > span {
+  display: inline-block;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+.date {
+  margin: 8px 0 24px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: 23px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.details {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.details dt {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.details dd {
+  margin: 2px 0 0;
+}
+
+.actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 26px;
+}
+
+.primaryLink,
+.quietLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.primaryLink {
+  border: 1px solid #cbd5c8;
+  background: #fffdf9;
+}
+
+.primaryLink:hover,
+.quietLink:hover {
+  background: #f5f8f3;
+}
+
+.quietLink {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.empty {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .appointment {
+    padding: 20px;
+  }
+
+  .eyebrow {
+    margin-bottom: 18px;
+  }
+}

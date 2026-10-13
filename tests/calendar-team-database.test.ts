@@ -123,7 +123,7 @@ async function team(actor = staffA, from = at, to = plus(1440)) {
 }
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`set timezone='UTC';create role anon;create role authenticated;create schema auth;
+  await db.exec(`set timezone='UTC';create role anon;create role authenticated; create role service_role;create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;

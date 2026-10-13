@@ -9,7 +9,7 @@ vi.mock("@/lib/auth/session", () => ({ requireSession: m.session }));
 vi.mock("@/lib/observability/server-errors", () => ({
   reportDataReadError: m.report,
 }));
-import { getWorkQueue } from "../src/modules/work/queries";
+import { getWorkQueue, getFollowUp } from "../src/modules/work/queries";
 vi.mock(
   "@/lib/data/read-retry",
   async () => import("../src/lib/data/read-retry"),
@@ -109,4 +109,53 @@ it("reports a rejected read without leaking its cause to the page or pretending 
     "Nie udało się pobrać listy spraw",
   );
   expect(m.report).toHaveBeenCalledWith("work.queue", error);
+});
+
+it("keeps a follow-up current when a newer publication belongs to another service", async () => {
+  const id = "10000000-0000-4000-8000-000000000001";
+  const item = {
+    id,
+    dog_id: "dog",
+    plan_id: "consultation-plan",
+    context_key: "consultation:meeting",
+    status: "open",
+  };
+  let newerSameContext = false;
+  const from = (table: string) => {
+    const filters = new Map<string, unknown>();
+    const query: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "order",
+      "range",
+      "limit",
+      "maybeSingle",
+    ])
+      query[method] = (...args: unknown[]) => {
+        if (method === "eq") filters.set(String(args[0]), args[1]);
+        return query;
+      };
+    query.then = (resolve: (value: unknown) => void) =>
+      Promise.resolve({
+        error: null,
+        data:
+          table === "care_follow_ups"
+            ? item
+            : table === "care_follow_up_history"
+              ? []
+              : {
+                  id:
+                    filters.get("context_key") === item.context_key &&
+                    !newerSameContext
+                      ? item.plan_id
+                      : "newer-plan",
+                },
+      }).then(resolve);
+    return query;
+  };
+  m.session.mockResolvedValue({ db: { from } });
+  expect((await getFollowUp(id, 1)).isCurrent).toBe(true);
+  newerSameContext = true;
+  expect((await getFollowUp(id, 1)).isCurrent).toBe(false);
 });

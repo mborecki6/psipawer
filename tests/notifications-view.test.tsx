@@ -12,6 +12,7 @@ vi.mock(
   async () => import("../src/modules/notifications/types"),
 );
 vi.mock("@/lib/auth/actions", () => ({ signOut: vi.fn() }));
+vi.mock("@/modules/push/browser", () => ({ clearBrowserPush: vi.fn() }));
 vi.mock("next/navigation", () => ({
   usePathname: mocks.path,
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -31,6 +32,7 @@ vi.mock("@/components/action-form", () => ({
 }));
 import { NotificationInboxView } from "../src/modules/notifications/views";
 import { Shell } from "../src/components/shell";
+import { getShellNavigation } from "../src/components/shell-navigation";
 import type { Notification } from "../src/modules/notifications/types";
 const first: Notification = {
   id: "one",
@@ -125,17 +127,107 @@ it("has distinct empty, older-page and unavailable-cursor states without falsely
   expect(reset).toContain("Pokaż początek listy");
   expect(reset).not.toContain("Otwórz sprawę");
 });
-it("shows a compact count in both navigation entries with an exact accessible label", () => {
+it("keeps one notification bell with the exact unread count after simplifying the owner menu", () => {
   const html = renderToStaticMarkup(
     <Shell role="client" name="Opiekun" unreadNotifications={1005}>
       Treść
     </Shell>,
   );
-  expect(html.match(/class="notification-count"/g)).toHaveLength(2);
-  expect(html.match(/99\+/g)).toHaveLength(2);
+  expect(html.match(/class="notification-count"/g)).toHaveLength(1);
+  expect(html.match(/99\+/g)).toHaveLength(1);
   expect(html).toContain("nieprzeczytane: 1005");
   expect(html).toContain('href="/app/notifications"');
   expect(html).not.toContain('href="/admin/notifications"');
+  expect(html).toMatch(/aria-current="page"[^>]*href="\/app\/notifications"/);
+});
+it("keeps every owner destination within the six main links, two groups, and the bell", () => {
+  const { nav, activityNav, extraNav } = getShellNavigation("client", "/app");
+  expect(nav).toHaveLength(6);
+  const reachable = [
+    ...nav,
+    ...activityNav,
+    ...extraNav,
+    { href: "/app/notifications" },
+  ].map((item) => item.href);
+  expect(new Set(reachable).size).toBe(reachable.length);
+  expect(reachable.sort()).toEqual(
+    [
+      "/app",
+      "/app/calendar",
+      "/app/dogs",
+      "/app/care",
+      "/app/services",
+      "/app/finance",
+      "/app/walks",
+      "/app/courses",
+      "/app/fitness",
+      "/app/consultations",
+      "/app/gifts",
+      "/app/community",
+      "/app/notifications",
+    ].sort(),
+  );
+});
+it("identifies owner deep links inside their group and marks care rather than the dog profile", () => {
+  for (const section of ["walks", "courses", "fitness", "consultations"]) {
+    const navigation = getShellNavigation("client", `/app/${section}/item`);
+    expect(navigation.activitiesView).toBe(true);
+    expect(navigation.extraView).toBe(false);
+    expect(navigation.active(`/app/${section}`)).toBe(true);
+    expect(navigation.active("/app")).toBe(false);
+  }
+  for (const section of ["gifts", "community"]) {
+    const navigation = getShellNavigation("client", `/app/${section}/item`);
+    expect(navigation.extraView).toBe(true);
+    expect(navigation.activitiesView).toBe(false);
+    expect(navigation.active(`/app/${section}`)).toBe(true);
+  }
+  const care = getShellNavigation("client", "/app/dogs/dog/care");
+  expect(care.active("/app/care")).toBe(true);
+  expect(care.active("/app/dogs")).toBe(false);
+});
+it("opens the owner's active group on a direct visit and keeps account and primary actions", () => {
+  for (const [path, group] of [
+    ["/app/fitness/package", "Zajęcia"],
+    ["/app/gifts/card", "Więcej"],
+  ]) {
+    mocks.path.mockReturnValue(path);
+    const html = renderToStaticMarkup(
+      <Shell role="client" name="Opiekun" unreadNotifications={0}>
+        Treść
+      </Shell>,
+    );
+    const opened = html.match(
+      /<details[^>]*open=""[^>]*>(.*?)<\/details>/,
+    )?.[1];
+    expect(opened).toContain(`<span>${group}</span>`);
+    expect(html).toContain('href="/complete-profile"');
+    expect(html).toContain('href="/account/security"');
+    expect(html).toContain("Wyloguj się");
+    expect(html).toContain('aria-label="Znajdź spacer"');
+  }
+});
+it("keeps staff activity and settings selection independent of the owner's groups", () => {
+  const activities = getShellNavigation("admin", "/admin/fitness/package");
+  expect(activities.active("/admin/activities")).toBe(true);
+  expect(activities.nav).toHaveLength(6);
+  expect(
+    getShellNavigation("admin", "/admin/services/service").settingsView,
+  ).toBe(true);
+  expect(getShellNavigation("admin", "/admin/relations").extraView).toBe(true);
+  expect(
+    getShellNavigation("client", "/app/fitness-other").activitiesView,
+  ).toBe(false);
+  expect(
+    getShellNavigation("admin", "/admin/service-requests").active(
+      "/admin/activities",
+    ),
+  ).toBe(true);
+  expect(
+    getShellNavigation("client", "/app/service-requests").active(
+      "/app/services",
+    ),
+  ).toBe(true);
 });
 it("does not show zero unread when the navigation count is unavailable", () => {
   const unknown = renderToStaticMarkup(
@@ -153,3 +245,20 @@ it("does not show zero unread when the navigation count is unavailable", () => {
   expect(zero).toContain("wszystkie przeczytane");
   expect(zero).not.toContain('class="notification-count"');
 });
+it.each([
+  ["/app/calendar/offer", "Oferta w kalendarzu"],
+  ["/app/services/service/request", "Uzgodnij termin"],
+  ["/app/community/chat/thread", "Rozmowa w Psiutkach"],
+])(
+  "names a nested destination without expanding the primary navigation: %s",
+  (path, title) => {
+    mocks.path.mockReturnValue(path);
+    const html = renderToStaticMarkup(
+      <Shell role="client" name="Opiekun">
+        Treść
+      </Shell>,
+    );
+    expect(html).toContain(`<h1>${title}</h1>`);
+    expect(getShellNavigation("client", path).nav).toHaveLength(6);
+  },
+);

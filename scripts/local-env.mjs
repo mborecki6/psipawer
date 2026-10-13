@@ -1,7 +1,14 @@
 // Reads only the local CLI status; never links, migrates, resets or contacts a hosted project.
 import { execFileSync } from "node:child_process";
-import { writeFileSync, openSync, fchmodSync, closeSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  openSync,
+  fchmodSync,
+  closeSync,
+} from "node:fs";
 import { parseEnv } from "node:util";
+import { localPushValues } from "./lib/local-push-config.mjs";
 
 function writePrivateEnv(path, content) {
   const fd = openSync(path, "w", 0o600);
@@ -37,13 +44,22 @@ try {
     "AUTH_EMAIL_ENABLED=true",
     "CLIENT_INVITATIONS_ENABLED=true",
   ].join("\n");
+  let previous = {};
+  try {
+    previous = parseEnv(readFileSync(".env.test.local", "utf8"));
+  } catch {
+    /* First local setup. */
+  }
+  const pushEnv = Object.entries(localPushValues(previous, url.origin))
+    .map(([name, value]) => `${name}=${value}`)
+    .join("\n");
   writePrivateEnv(
     ".env.development.local",
-    `${publicEnv}\nSUPABASE_SECRET_KEY=${values.SERVICE_ROLE_KEY}\n`,
+    `${publicEnv}\nSUPABASE_SECRET_KEY=${values.SERVICE_ROLE_KEY}\n${pushEnv}\n`,
   );
   writePrivateEnv(
     ".env.test.local",
-    `${publicEnv}\nSUPABASE_SECRET_KEY=${values.SERVICE_ROLE_KEY}\n`,
+    `${publicEnv}\nSUPABASE_SECRET_KEY=${values.SERVICE_ROLE_KEY}\n${pushEnv}\n`,
   );
   console.log(
     "Lokalna aplikacja i testy wskazują lokalny Supabase. Konfiguracja chmury pozostaje bez zmian.",

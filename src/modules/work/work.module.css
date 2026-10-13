@@ -168,12 +168,110 @@
 .list {
   min-width: 0;
 }
+
+.preview.preview {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf9;
+  box-shadow: none;
+  overflow: visible;
+}
+.previewHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 4px;
+}
+.previewHeader > div {
+  min-width: 0;
+}
+.preview .previewHeader h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.4;
+}
+.previewHeader p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.previewLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.previewLink:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.previewBody {
+  min-width: 0;
+}
+.previewRow {
+  gap: 12px;
+  padding: 20px 0;
+}
+.previewRow:last-child {
+  padding-bottom: 2px;
+}
+.previewRow .body h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.previewRow .body .taskTitle {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.previewRow .body p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.previewRow .body .overdueText {
+  color: #87442c;
+}
+.previewRow:hover h3 {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.previewRow > svg {
+  width: 17px;
+  color: var(--ink-soft);
+}
+.previewEmpty {
+  padding-top: 16px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.previewEmpty p {
+  margin: 0 0 8px;
+}
 @media (max-width: 1000px) {
   .detail {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 600px) {
+  .preview.preview {
+    padding: 20px;
+  }
   .filters a {
     padding: 10px 12px;
   }

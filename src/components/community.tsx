@@ -15,6 +15,8 @@ import {
 import { ActionForm, Field } from "@/components/action-form";
 import { AvatarEditor } from "@/components/avatar-editor";
 import { CommunityModerationList } from "./community-moderation-list";
+import { ChatEntry } from "@/modules/community-chat/entry";
+import type { ChatState } from "@/modules/community-chat/types";
 import { Empty } from "@/components/ui";
 import { dateLabel } from "@/lib/domain";
 import type {
@@ -219,7 +221,7 @@ function InterestButton({
     <Details title="Chcemy Was poznać" icon={<Heart aria-hidden="true" />}>
       <p>
         Wybierz psa, który chce poznać {profile.display_name}. Jeśli sympatia
-        będzie wzajemna, propozycję sprawdzi behawiorysta.
+        będzie wzajemna, oboje możecie zdecydować o rozmowie w aplikacji.
       </p>
       {reconfirming && (
         <p className={styles.notice}>
@@ -605,9 +607,11 @@ const interestLabels: Record<CommunityInterest["status"], string> = {
 function InterestCard({
   interest,
   admin,
+  chat,
 }: {
   interest: CommunityInterest;
   admin: boolean;
+  chat?: ChatState;
 }) {
   const statusClass =
     interest.status === "matched"
@@ -657,8 +661,8 @@ function InterestCard({
         interest.profilesAvailable &&
         !admin && (
           <p className={`${styles.notice} ${styles.noticeAmber}`}>
-            Sympatia jest wzajemna. Przed ustaleniem wspólnego spaceru
-            propozycję sprawdzi behawiorysta.
+            Sympatia jest wzajemna. Możecie dobrowolnie włączyć rozmowę i poznać
+            potrzeby psów przed planowaniem spotkania.
           </p>
         )}
       {interest.review_note && (
@@ -674,6 +678,18 @@ function InterestCard({
             </>
           )}
         </p>
+      )}
+      {(chat ||
+        (interest.canWithdraw &&
+          interest.profilesAvailable &&
+          !interest.rejection_active &&
+          ["matched", "reviewed"].includes(interest.status))) && (
+        <ChatEntry
+          from={interest.from_dog_id}
+          to={interest.to_dog_id}
+          chat={chat}
+          base={admin ? "/admin" : "/app"}
+        />
       )}
       {!admin &&
         interest.needsConfirmation &&
@@ -946,14 +962,23 @@ export function CommunityView({
               <p>
                 {admin
                   ? "Wzajemne zainteresowanie jest początkiem rozmowy o wspólnym spacerze. Sprawdź potrzeby i relacje psów przed ustaleniem kolejnego kroku."
-                  : "Tutaj znajdziesz zainteresowania zgłoszone przez Twoje psy oraz wskazówki prowadzącej, gdy sympatia będzie wzajemna."}
+                  : "Tutaj znajdziesz propozycje Twoich psów, rozmowy po wzajemnej zgodzie i wskazówki prowadzącej."}
               </p>
             </div>
           </div>
           {interests.length ? (
             <div className={styles.interestList}>
               {interests.map((item) => (
-                <InterestCard key={item.id} interest={item} admin={admin} />
+                <InterestCard
+                  key={item.id}
+                  interest={item}
+                  admin={admin}
+                  chat={data.chatLinks?.find(
+                    (chat) =>
+                      chat.ownDog === item.from_dog_id &&
+                      chat.otherDog === item.to_dog_id,
+                  )}
+                />
               ))}
             </div>
           ) : (
@@ -979,9 +1004,10 @@ export function CommunityView({
       <p className={styles.privacyNote}>
         <ShieldCheck aria-hidden="true" />
         <span>
-          Kontakt i wspólne spacery ustalacie z behawiorystą. W Psiutkach nie
-          pokazujemy numerów telefonów, dokładnych adresów ani prywatnych
-          notatek o psach.
+          Po wzajemnym zainteresowaniu możecie włączyć rozmowę za zgodą obojga.
+          Nie pokazujemy automatycznie telefonów, e-maili, adresów ani
+          prywatnych notatek o psach. Prowadząca nadal dba o moderację
+          wizytówek.
         </span>
       </p>
     </div>

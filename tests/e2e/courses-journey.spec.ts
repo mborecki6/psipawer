@@ -366,6 +366,10 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await staffContext.close();
     await ownContext.close();
     await otherContext.close();
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     if (courses.length)
       await checked(db.from("courses").delete().in("id", courses));
     await disposeCareFixtures(db, users, dogs);
@@ -597,6 +601,10 @@ test("course attendance panels: started meeting → recorded attendance → comp
     await context.close();
     await ownContext.close();
     await api.auth.signOut();
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     if (courses.length)
       await checked(db.from("courses").delete().in("id", courses));
     await disposeCareFixtures(db, users, dogs);

@@ -5,12 +5,7 @@ import {
   literal as q,
   waitForLock,
 } from "../helpers/local-postgres.mjs";
-import {
-  careEditor,
-  careFixture,
-  careScreenshot,
-  careSourcePicker,
-} from "./care-journey";
+import { careEditor, careFixture, careScreenshot } from "./care-journey";
 import {
   account,
   checked,
@@ -54,13 +49,14 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       form.getByRole("region", { name: "Powiązanie planu", exact: true }),
     ).toContainText("Plan całego kursu");
     await expect(
-      form.getByLabel("Kurs, którego dotyczą zalecenia"),
+      form.locator('input[name="course_enrollment_id"]'),
     ).toBeHidden();
-    await careSourcePicker(form);
     await expect(
-      form.getByLabel("Kurs, którego dotyczą zalecenia"),
+      form.locator('input[name="course_enrollment_id"]'),
     ).toHaveValue(cycle.enrollment);
-    await expect(form.getByLabel("Zakres zaleceń kursowych")).toHaveValue("");
+    await expect(form.locator('input[name="course_session_id"]')).toHaveValue(
+      "",
+    );
     await form
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Plan całego kursu");
@@ -72,7 +68,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       .click();
     await expect(form.getByRole("status")).toContainText("Szkic zapisany");
     await expect(
-      form.getByLabel("Kurs, którego dotyczą zalecenia"),
+      form.locator('input[name="course_enrollment_id"]'),
     ).toHaveValue(cycle.enrollment);
     expect(
       await checked(
@@ -95,7 +91,6 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       `/admin/dogs/${f.dog}/care?enrollment=${cycle.enrollment}`,
     );
     const staleForm = await careEditor(stale);
-    await careSourcePicker(staleForm);
     await staleForm
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Moja starsza karta");
@@ -122,7 +117,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       staleForm.getByLabel("Zalecenia dla opiekuna", { exact: true }),
     ).toHaveValue("Treść, którą należy zachować po konflikcie.");
     await expect(
-      staleForm.getByLabel("Kurs, którego dotyczą zalecenia"),
+      staleForm.locator('input[name="course_enrollment_id"]'),
     ).toHaveValue(cycle.enrollment);
     await stale.close();
 
@@ -132,35 +127,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       .click();
     await panel.getByRole("link", { name: /^Spotkanie 1 ·/ }).click();
     const meetingForm = await careEditor(f.staff);
-    // Opening another source must preserve the saved whole-cycle draft.
-    await expect(
-      meetingForm.getByRole("region", {
-        name: "Powiązanie planu",
-        exact: true,
-      }),
-    ).toContainText("Plan całego kursu");
-    const savedBody = await meetingForm
-      .getByLabel("Zalecenia dla opiekuna", { exact: true })
-      .inputValue();
-    const savedVersion = await meetingForm
-      .locator('input[name="expected_version"]')
-      .inputValue();
-    expect(savedBody).toBe(
-      "Ćwicz trzy spokojne podejścia. Zakończ przed zmęczeniem psa.",
-    );
-    await careSourcePicker(meetingForm);
-    await expect(
-      meetingForm.getByLabel("Zakres zaleceń kursowych"),
-    ).toHaveValue("");
-    await meetingForm
-      .getByRole("button", {
-        name: "Powiąż ten szkic z wybranym kursem",
-        exact: true,
-      })
-      .click();
-    await expect(
-      meetingForm.getByLabel("Zakres zaleceń kursowych"),
-    ).toHaveValue(cycle.sessions[0].id);
+    // The meeting has its own blank draft and starts its own version count.
     await expect(
       meetingForm.getByRole("region", {
         name: "Powiązanie planu",
@@ -169,10 +136,13 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     ).toContainText("Spotkanie 1");
     await expect(
       meetingForm.getByLabel("Zalecenia dla opiekuna", { exact: true }),
-    ).toHaveValue(savedBody);
+    ).toHaveValue("");
     await expect(
       meetingForm.locator('input[name="expected_version"]'),
-    ).toHaveValue(savedVersion);
+    ).toHaveValue("0");
+    await expect(
+      meetingForm.locator('input[name="course_session_id"]'),
+    ).toHaveValue(cycle.sessions[0].id);
     await expect(
       meetingForm.getByRole("button", {
         name: "Opublikuj dla opiekuna",
@@ -194,7 +164,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       "Szkic zapisany",
     );
     await expect(
-      meetingForm.getByLabel("Zakres zaleceń kursowych"),
+      meetingForm.locator('input[name="course_session_id"]'),
     ).toHaveValue(cycle.sessions[0].id);
     await careScreenshot(
       f.staff,
@@ -238,12 +208,11 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       "Zmiana spotkania zapisana.",
     );
     await panel
-      .getByRole("link", { name: "Otwórz szkic zaleceń", exact: true })
+      .getByRole("link", { name: "Otwórz szkic po spotkaniu 1", exact: true })
       .click();
     const completedForm = await careEditor(f.staff);
-    await careSourcePicker(completedForm);
     await expect(
-      completedForm.getByLabel("Zakres zaleceń kursowych"),
+      completedForm.locator('input[name="course_session_id"]'),
     ).toHaveValue(cycle.sessions[0].id);
     await completedForm
       .getByRole("button", { name: "Opublikuj dla opiekuna", exact: true })
@@ -309,7 +278,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       new RegExp(`/app/care/plans/${versions![0].id}$`),
     );
     await expect(
-      f.guardian.getByText("Wcześniejsza wersja", { exact: true }),
+      f.guardian.getByText("Aktualny plan", { exact: true }),
     ).toBeVisible();
     await expect(
       f.guardian.getByText(versions![0].body, { exact: true }),
@@ -468,7 +437,7 @@ test("course care: observed PostgreSQL locks serialize publication, cancellation
       await cancelFirst.asUser(owner.id);
       await cancelFirst.query(cancel(second.enrollment));
       await publishSecond.asUser(admin.id);
-      rejected = publishSecond.query(publish(second.enrollment, 1)).then(
+      rejected = publishSecond.query(publish(second.enrollment, 0)).then(
         () => ({ error: null }),
         (error) => ({ error }),
       );
@@ -506,7 +475,7 @@ test("course care: observed PostgreSQL locks serialize publication, cancellation
         `select public.request_course_enrollment(${q(third.enrollment)},${q(third.id)},${q(dog.id)},2);`,
       );
       await advice.asUser(admin.id);
-      pending = advice.query(publish(third.enrollment, 1));
+      pending = advice.query(publish(third.enrollment, 0));
       pending.catch(() => {});
       await waitForLock(observer, request, advice);
       await request.query("commit;");
@@ -532,9 +501,10 @@ test("course care: observed PostgreSQL locks serialize publication, cancellation
           .from("care_drafts")
           .select("version,course_enrollment_id")
           .eq("dog_id", dog.id)
+          .eq("course_enrollment_id", third.enrollment)
           .single(),
       ),
-    ).toMatchObject({ version: 2, course_enrollment_id: third.enrollment });
+    ).toMatchObject({ version: 1, course_enrollment_id: third.enrollment });
   } finally {
     await observer.close();
     await Promise.all([staff.auth.signOut(), ownerApi.auth.signOut()]);

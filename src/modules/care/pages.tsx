@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import {
   getCareLibrary,
   getCareOverview,
@@ -11,7 +12,7 @@ import {
   DogCareView,
   CarePublicationView,
 } from "./views";
-import { carePage } from "./types";
+import { carePage, careContextSearch } from "./types";
 
 export async function DogCarePage({
   params,
@@ -26,6 +27,8 @@ export async function DogCarePage({
     session?: string;
     fitness?: string;
     fitness_session?: string;
+    context?: string;
+    plan?: string;
   }>;
 }) {
   const { id } = await params;
@@ -41,7 +44,26 @@ export async function DogCarePage({
     search.session,
     search.fitness,
     search.fitness_session,
+    search.context,
+    search.plan,
   );
+  // Keep a form on its chosen context even when another plan is published
+  // while this page is open and a later action refreshes the server tree.
+  if (
+    [
+      search.consultation,
+      search.enrollment,
+      search.session,
+      search.fitness,
+      search.fitness_session,
+      search.context,
+      search.plan,
+    ].every((value) => value === undefined)
+  ) {
+    redirect(
+      `${data.role === "admin" ? "/admin" : "/app"}/dogs/${id}/care?${careContextSearch(data.context)}&history=${historyPage}&progress=${progressPage}`,
+    );
+  }
   return (
     <DogCareView
       {...data}

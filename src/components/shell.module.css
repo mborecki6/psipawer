@@ -1,0 +1,101 @@
+.shell {
+  background: #f4f0e9;
+}
+
+.shell :global(.sidebar) {
+  background: #fffdf9;
+  box-shadow: none;
+}
+
+.shell :global(.brand) {
+  padding-bottom: 20px;
+}
+
+.shell :global(.nav-label) {
+  margin-top: 4px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.shell :global(.nav-item) {
+  min-height: 44px;
+  border-radius: 9px;
+  color: var(--ink-soft);
+}
+
+.shell :global(.nav-item span) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 550;
+}
+
+.shell :global(.nav-item.active) {
+  color: var(--ink);
+  background: #e7eee5;
+  box-shadow: none;
+}
+
+.shell :global(.nav-item:hover) {
+  color: var(--ink);
+  background: #edf2eb;
+}
+
+.shell :global(.sidebar-footer) {
+  gap: 3px;
+  padding-top: 28px;
+}
+
+.shell :global(.role-pill) {
+  margin: 12px 0 4px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+}
+
+.shell :global(.role-avatar) {
+  border-radius: 50%;
+  background: #e7eee5;
+}
+
+.shell :global(.role-copy strong) {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.shell :global(.topbar) {
+  margin-bottom: 8px;
+  background: #f4f0e9f5;
+}
+
+.shell :global(.page-heading h1) {
+  font-weight: 650;
+}
+
+.shell :global(.topbar-actions .primary-button) {
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.shell :global(.notification-button) {
+  color: var(--ink);
+  border-color: var(--line);
+  background: #fffdf9;
+  border-radius: 10px;
+}
+
+.shell :global(.notification-button:hover),
+.shell :global(.notification-button[aria-current="page"]) {
+  background: #e7eee5;
+}
+
+.shell :global(:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .shell :global(.sidebar-footer) {
+    padding-top: 18px;
+  }
+}

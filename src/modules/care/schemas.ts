@@ -31,6 +31,7 @@ export const planSchema = z
     expected_version: version,
     ...careText,
     follow_up_on: z.union([z.literal(""), z.iso.date()]),
+    control_invite_on: z.union([z.literal(""), z.iso.date()]).default(""),
     intent: z.enum(["draft", "publish"]),
   })
   .refine(

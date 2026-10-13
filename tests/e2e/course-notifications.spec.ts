@@ -406,6 +406,10 @@ test("course messages: real delivery locks, fresh meeting links, cancellation an
     ]);
     if (dogs.length)
       await checked(db.from("payments").delete().in("dog_id", dogs));
+    if (dogs.length)
+      await checked(
+        db.from("care_reporting_entitlements").delete().in("dog_id", dogs),
+      );
     if (courses.length)
       await checked(db.from("courses").delete().in("id", courses));
     await disposeCareFixtures(db, users, dogs);

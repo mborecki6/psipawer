@@ -88,6 +88,11 @@ export function CalendarView({
             ? "Spacery, konsultacje, kursy, fitness i dostępność zespołu. Prowadzący i sala mają osobne rezerwacje."
             : "Potwierdzone spacery, kursy i umówione spotkania Twoich psów. Zgłoszenia oczekujące znajdziesz w odpowiednich zakładkach."}
         </p>
+        {!admin && (
+          <Link className="ghost-button" href="/app/calendar/offer">
+            Znajdź zajęcia w kalendarzu oferty →
+          </Link>
+        )}
       </header>
       <div className={styles.toolbar}>
         <nav aria-label="Widok kalendarza" className={styles.controls}>
