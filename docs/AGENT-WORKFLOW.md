@@ -97,6 +97,12 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Spokojny kalendarz](iterations/2026-10-14-spokojny-kalendarz.md): miesiąc jako
+widok początkowy, pasek dni z agendą tygodnia i płynne tło. Asia jest jedyną
+prowadzącą, wybraną w DB. Autor będący administratorem nie zostaje prowadzącym.
+Globalna dostępność obejmuje także zachowane historyczne UUID/null. Publikacja
+14.10 po osobnej zgodzie użytkownika, z testami migracji i konkurencji.
+
 [Marka, oferta i profil](iterations/2026-10-14-marka-oferta-profil.md): oryginalne
 logo i hasło, fotografie, uproszczony wybór formy pracy, edycja własnego profilu
 oraz bezpośredni kontakt WhatsApp. Lokalny odbiór i publikacja po osobnej zgodzie

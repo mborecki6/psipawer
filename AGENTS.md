@@ -26,7 +26,9 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
-- Bieżący zakres opisuje `docs/iterations/2026-10-14-marka-oferta-profil.md`.
+- Bieżący zakres opisuje `docs/iterations/2026-10-14-spokojny-kalendarz.md`.
+  Asia jest jedyną prowadzącą; administrator organizujący wpis pozostaje autorem.
+  Konfiguracja primary jest w DB, a dostępność jest wspólna także dla dawnych UUID/null.
   Iteracje z 13 i 14.10 opublikowano po osobnych zgodach użytkownika. Kolejne
   funkcje rozwijamy lokalnie, zachowując lżejszy interfejs. Logo i hasło są
   już wdrożone; ClickMeeting i MailerLite pozostają na koniec. Otwarte decyzje produktowe

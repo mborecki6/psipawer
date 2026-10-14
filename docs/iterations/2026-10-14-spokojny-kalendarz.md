@@ -71,7 +71,7 @@ Jawna zmiana przypisania blokady dopisuje audyt także przez formularz blokady.
 Lokalna baza nie ma konta z rzeczywistym adresem Asi. Automatyczna kontrola
 odrzuciła tworzenie nowego konta z rolą administratora i zapisanym hasłem,
 wskazując brak osobnej zgody na tę zmianę dostępu. Użytkownik potwierdził
-rzeczywisty adres konta Asi: `asiakostrzanowska@gmail.com`. Nie tworzymy
+istniejące konto Asi. Nie tworzymy
 alternatywnego konta; zwykłe obiekty w fixture UI nie tworzą kont ani uprawnień.
 
 Właścicielstwo: agent techniczny — kalendarz, wybór prowadzącej, ustawienia
@@ -110,4 +110,18 @@ Zrzut: `test-results/calendar-ui/week-proposal-1440.png`.
   Bezpieczniejsza kopia obejmuje tylko definicje kalendarza i agregowane sumy
   kontrolne; migracja jest ćwiczona na syntetycznych rekordach, bez eksportu klientów.
 
-Stan publikacji zostanie uzupełniony po przełączeniu Vercel i odbiorze live.
+## Publikacja 14.10.2026
+
+Migracja została zastosowana transakcyjnie w produkcyjnym Supabase. Wskazano
+istniejące konto Asi jako primary. Kontrola potwierdziła niezmienione dane
+85 istniejących tabel, źródłowe terminy, przypisania, hasła, role, konfigurację
+Auth i harmonogram workerów. Historia migracji ma 58 wpisów.
+
+Pierwszy build nowego kalendarza opublikowano na `https://psipawer.vercel.app`.
+Odbiór obu ról: 10 tras, 30 wariantów responsywnych, 3 blokady dostępu anonimowego,
+zero błędów przeglądarki i zero zapisów biznesowych. Administrator w nowych
+formularzach widzi wyłącznie Asię jako prowadzącą. Zmieniono także neutralny
+podpis roli administratora na „Panel zarządzania”. Końcowy build ma status READY,
+ID `dpl_7S4dFhxgAAaZH2drVUwjSf1NFG2B` i kod aplikacji `bee1072`. Po zmianie
+podpisu odbiór 3 tras oraz 9 wariantów ekranów zaliczony; zero błędów i zapisów
+biznesowych. Publiczny alias wskazuje ten build.
