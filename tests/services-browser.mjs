@@ -128,8 +128,37 @@ try {
   await page.goto(`${base}/?role=client`);
   await expect(page.getByText("Edytuj usługę i cenę")).toHaveCount(0);
   await expect(
+    page.getByRole("heading", { name: "Wybierz formę pracy" }),
+  ).toBeVisible();
+  await expect(page.locator('article[id^="service-"]')).toHaveCount(0);
+  const chooser = page.getByRole("navigation", { name: "Forma usług" });
+  await expect(chooser.getByRole("link")).toHaveCount(2);
+  await expect(
+    chooser.getByRole("link", { name: /^Indywidualne/ }),
+  ).toContainText("Usługi: 4");
+  await expect(chooser.getByRole("link", { name: /^Grupowe/ })).toContainText(
+    "Usługi: 2",
+  );
+  await expect(
+    page.getByRole("link", { name: /^Pozostała oferta/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /^Karty podarunkowe/ }),
+  ).toHaveCount(0);
+  await chooser.getByRole("link", { name: /^Indywidualne/ }).focus();
+  await expect(
+    chooser.getByRole("link", { name: /^Indywidualne/ }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/category=individual/);
+  await expect(
     page.getByRole("link", { name: "Wybierz spotkanie →" }),
   ).toHaveCount(2);
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Wybierz formę pracy" }),
+  ).toBeVisible();
+  await expect(page.locator('article[id^="service-"]')).toHaveCount(0);
   for (const role of ["admin", "client"]) {
     await page.goto(`${base}/?role=${role}`);
     const forms = page.getByRole("navigation", { name: "Forma usług" });
@@ -173,19 +202,89 @@ try {
     await expect(
       forms.getByRole("link", { name: /^Indywidualne/ }),
     ).toHaveAttribute("aria-current", "page");
-    await forms.getByRole("link", { name: /^Karty podarunkowe/ }).click();
-    await expect(
-      page.getByRole("heading", { name: "Karta podarunkowa", exact: true }),
-    ).toBeVisible();
-    await expect(page.locator("article.card")).toHaveCount(1);
-    await forms.getByRole("link", { name: /^Pozostałe/ }).click();
+    if (role === "admin") {
+      await forms.getByRole("link", { name: /^Karty podarunkowe/ }).click();
+      await expect(
+        page.getByRole("heading", { name: "Karta podarunkowa", exact: true }),
+      ).toBeVisible();
+      await expect(page.locator("article.card")).toHaveCount(1);
+      await expect(
+        page.getByRole("link", { name: "Edytuj usługę i cenę" }),
+      ).toHaveAttribute(
+        "href",
+        "/admin/services/60000000-0000-4000-8000-000000000017",
+      );
+    } else {
+      await expect(forms.getByRole("link")).toHaveCount(2);
+      await expect(
+        page.getByRole("link", { name: /^Karty podarunkowe/ }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { name: "Karta podarunkowa", exact: true }),
+      ).toHaveCount(0);
+    }
+    await page
+      .getByRole("link", {
+        name: role === "admin" ? /^Pozostałe/ : /^Pozostała oferta/,
+      })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Pakiet do uzgodnienia", exact: true }),
     ).toBeVisible();
     await expect(page.locator("article.card")).toHaveCount(1);
-    await forms.getByRole("link", { name: /^Wszystkie/ }).click();
-    await expect(page.locator("article.card")).toHaveCount(8);
+    if (role === "admin") {
+      await forms.getByRole("link", { name: /^Wszystkie/ }).click();
+      await expect(page.locator("article.card")).toHaveCount(8);
+    } else {
+      await expect(
+        page.getByRole("link", { name: /^Pozostała oferta/ }),
+      ).toHaveAttribute("aria-current", "page");
+      await page.getByRole("link", { name: "← Zmień formę pracy" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Wybierz formę pracy" }),
+      ).toBeVisible();
+      await expect(page.locator('article[id^="service-"]')).toHaveCount(0);
+    }
   }
+  await page.goto(`${base}/?role=client&category=group`);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Forma usług" })
+      .getByRole("link", { name: /^Grupowe/ }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('article[id^="service-"]')).toHaveCount(2);
+  for (const query of [
+    "category=all",
+    "category=unexpected",
+    "category=individual&category=group",
+  ]) {
+    await page.goto(`${base}/?role=client&${query}`);
+    await expect(
+      page.getByRole("heading", { name: "Wybierz formę pracy" }),
+    ).toBeVisible();
+    await expect(page.locator('article[id^="service-"]')).toHaveCount(0);
+  }
+  await page.goto(`${base}/?role=client&individual-only=1&category=group`);
+  await expect(
+    page.getByRole("heading", { name: "Brak usług w tej kategorii" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /^Pozostała oferta/ }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Zmień formę pracy →" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Wybierz formę pracy" }),
+  ).toBeVisible();
+  await page.goto(`${base}/?role=client&voucher-only=1`);
+  await expect(
+    page.getByRole("heading", { name: "Oferta jest w przygotowaniu" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Forma usług" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Karta podarunkowa", exact: true }),
+  ).toHaveCount(0);
   await page.goto(`${base}/?category=unexpected`);
   await expect(page.locator("article.card")).toHaveCount(8);
   await page.goto(`${base}/?category=individual&category=group`);
@@ -210,6 +309,7 @@ try {
     for (const [name, query] of [
       ["catalogue", "view=list"],
       ["guardian", "role=client"],
+      ["guardian-category", "role=client&category=individual"],
       ["editor", "view=detail"],
       ["long", "view=list&long=1"],
       ["empty", "empty=1"],
@@ -218,7 +318,7 @@ try {
       await page.goto(`${base}/?${query}`);
       await page
         .getByRole("heading", {
-          name: name === "guardian" ? "Oferta" : "Usługi i cennik",
+          name: name.startsWith("guardian") ? "Oferta" : "Usługi i cennik",
           exact: true,
         })
         .first()
@@ -241,7 +341,9 @@ try {
         );
       expect(clipped, `${name} clipped at ${width}`).toEqual([]);
       if (
-        ["catalogue", "editor", "guardian"].includes(name) &&
+        ["catalogue", "editor", "guardian", "guardian-category"].includes(
+          name,
+        ) &&
         [390, 1440].includes(width)
       )
         await page.screenshot({
@@ -252,7 +354,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Services UI: editor recovery, version acknowledgement, role controls, catalogue form filters with back navigation, walk price defaults and 24 responsive scenarios passed.",
+    "Services UI: editor recovery, version acknowledgement, role controls, client form chooser, direct categories, keyboard and back navigation, separate vouchers, empty categories, walk price defaults and 28 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

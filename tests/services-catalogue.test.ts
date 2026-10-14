@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   serviceCategory,
   serviceFilter,
+  clientServiceFilter,
 } from "../src/modules/services/catalogue";
 
 describe("service catalogue forms", () => {
@@ -59,5 +60,20 @@ describe("service catalogue forms", () => {
     expect(serviceFilter("group")).toBe("group");
     expect(serviceFilter("voucher")).toBe("voucher");
     expect(serviceFilter("other")).toBe("other");
+  });
+
+  it("requires an explicit work form for the client catalogue", () => {
+    for (const value of [
+      undefined,
+      "all",
+      "voucher",
+      "future-form",
+      "toString",
+    ])
+      expect(clientServiceFilter(value)).toBeNull();
+    expect(clientServiceFilter(["individual", "group"])).toBeNull();
+    expect(clientServiceFilter("individual")).toBe("individual");
+    expect(clientServiceFilter("group")).toBe("group");
+    expect(clientServiceFilter("other")).toBe("other");
   });
 });

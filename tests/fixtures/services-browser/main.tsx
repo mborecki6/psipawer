@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ServicesView, ServiceDetailView } from "@/modules/services/views";
 import { WalkServiceFields } from "@/modules/services/selection";
-import { serviceFilter } from "@/modules/services/catalogue";
+import { serviceCategory, serviceFilter } from "@/modules/services/catalogue";
 import type { Service } from "@/modules/services/types";
 import { testServices } from "../services-data";
 import "@/app/globals.css";
@@ -126,7 +126,13 @@ function Fixture() {
             services={
               search.has("empty")
                 ? []
-                : [service, ...catalogueServices.slice(1)]
+                : [service, ...catalogueServices.slice(1)].filter((s) =>
+                    search.has("individual-only")
+                      ? serviceCategory(s) === "individual"
+                      : search.has("voucher-only")
+                        ? s.kind === "voucher"
+                        : true,
+                  )
             }
             admin={admin}
             filter={serviceFilter(category.length > 1 ? category : category[0])}

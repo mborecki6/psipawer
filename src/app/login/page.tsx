@@ -1,10 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
-import { CalendarDays, HeartHandshake, Mail, PawPrint } from "lucide-react";
+import { Mail } from "lucide-react";
 import { isConfigured, isRemoteDevelopment } from "@/lib/supabase/config";
 import { ActionForm, Field } from "@/components/action-form";
 import { signInWithPassword } from "@/lib/auth/access-actions";
 import { authEmailOrigin } from "@/lib/auth/email-config";
+import { Brand, brandSlogan } from "@/components/brand";
+import styles from "./login.module.css";
 
 export const metadata: Metadata = {
   title: "Zaloguj się — Psi Pawer",
@@ -19,61 +22,44 @@ export default async function Login({
   const recoveryAvailable = Boolean(authEmailOrigin());
   const error = (await searchParams).error;
   return (
-    <main className="auth-page login-page">
-      <div className="login-shell">
-        <header className="brand auth-brand login-brand">
-          <div className="brand-mark" aria-hidden="true">
-            <PawPrint strokeWidth={1.7} />
-          </div>
-          <div className="brand-copy">
-            <strong>Psi Pawer</strong>
-            <span>zamieniam problemy w wyzwania</span>
-          </div>
+    <main className={`auth-page ${styles.page}`}>
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <Brand showSlogan={false} className={styles.brand} />
+          <p>Twój pies. Wasza wspólna droga.</p>
         </header>
-        <div className="login-layout">
-          <section className="login-intro" aria-labelledby="login-heading">
+        <div className={styles.layout}>
+          <section className={styles.intro} aria-labelledby="login-heading">
             <span className="eyebrow">DOBRZE CIĘ WIDZIEĆ</span>
-            <h1 id="login-heading">
-              Małe kroki.
-              <br />
-              Wielki psi pawer.
-            </h1>
-            <p className="login-lead">
-              Twoje psy, wspólne spacery i spokojniejsza codzienność — w jednym
-              miejscu.
+            <h1 id="login-heading">{brandSlogan}</h1>
+            <p className={styles.lead}>
+              Wspólne spotkania, wskazówki i postępy Twojego psa — blisko
+              Ciebie, ze wsparciem Asi.
             </p>
-            <ul className="login-benefits">
-              <li>
-                <span className="login-benefit-icon" aria-hidden="true">
-                  <PawPrint />
-                </span>
-                <div>
-                  <strong>Każdy pies ma swoją historię</strong>
-                  <span>Profil, potrzeby i postępy Twojego psa.</span>
-                </div>
-              </li>
-              <li>
-                <span className="login-benefit-icon" aria-hidden="true">
-                  <CalendarDays />
-                </span>
-                <div>
-                  <strong>Więcej wspólnych spacerów</strong>
-                  <span>Terminy, zgłoszenia i informacje o spotkaniach.</span>
-                </div>
-              </li>
-              <li>
-                <span className="login-benefit-icon" aria-hidden="true">
-                  <HeartHandshake />
-                </span>
-                <div>
-                  <strong>Ze wsparciem behawiorysty</strong>
-                  <span>Wskazówki, do których możesz wrócić.</span>
-                </div>
-              </li>
-            </ul>
+            <div className={styles.photo}>
+              <Image
+                src="/brand/joanna-and-dogs.webp"
+                alt="Asia z Psi Pawer ze swoimi dwoma owczarkami na łące"
+                fill
+                sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1200px) 50vw, 560px"
+                fetchPriority="high"
+              />
+            </div>
+            <div className={styles.guide}>
+              <Image
+                src="/brand/joanna-portrait.webp"
+                alt=""
+                width={48}
+                height={48}
+              />
+              <div>
+                <strong>Asia · Psi Pawer</strong>
+                <span>Razem zadbamy o spokojniejszą codzienność.</span>
+              </div>
+            </div>
           </section>
           <section
-            className="card auth-card login-card"
+            className={`card auth-card login-card ${styles.card}`}
             aria-labelledby="sign-in-heading"
           >
             <div className="login-mail-mark" aria-hidden="true">
@@ -157,7 +143,7 @@ export default async function Login({
             </p>
           </section>
         </div>
-        <footer className="login-footer">
+        <footer className={styles.footer}>
           Z troską o psy. Z myślą o ich opiekunach.
         </footer>
       </div>

@@ -1,6 +1,7 @@
 import { getServices, getService } from "./queries";
 import { ServicesView, ServiceDetailView } from "./views";
 import { serviceFilter } from "./catalogue";
+import { redirect } from "next/navigation";
 type CataloguePageProps = {
   searchParams: Promise<{ category?: string | string[] }>;
 };
@@ -16,6 +17,7 @@ export async function AdminServicesPage({ searchParams }: CataloguePageProps) {
 }
 export async function ClientServicesPage({ searchParams }: CataloguePageProps) {
   const filter = serviceFilter((await searchParams).category);
+  if (filter === "voucher") redirect("/app/gifts");
   return (
     <ServicesView
       services={(await getServices()).services}

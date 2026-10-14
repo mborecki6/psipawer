@@ -5,6 +5,7 @@ import { ServiceEditor } from "./editor";
 import {
   serviceCategories,
   serviceCategory,
+  clientServiceFilter,
   type ServiceCategory,
 } from "./catalogue";
 import {
@@ -25,17 +26,26 @@ export function ServicesView({
   filter?: ServiceCategory;
 }) {
   const base = admin ? "/admin/services" : "/app/services";
+  const catalogue = admin
+    ? services
+    : services.filter((service) => service.kind !== "voucher");
+  const clientFilter = clientServiceFilter(filter);
+  const choosing = !admin && clientFilter === null;
+  const currentFilter = admin ? filter : clientFilter;
   const counts = {
-    all: services.length,
+    all: catalogue.length,
     individual: 0,
     group: 0,
     voucher: 0,
     other: 0,
   };
-  for (const service of services) counts[serviceCategory(service)] += 1;
-  const visible = services.filter(
-    (service) => filter === "all" || serviceCategory(service) === filter,
-  );
+  for (const service of catalogue) counts[serviceCategory(service)] += 1;
+  const visible = choosing
+    ? []
+    : catalogue.filter(
+        (service) =>
+          currentFilter === "all" || serviceCategory(service) === currentFilter,
+      );
   return (
     <div className="stack">
       {admin && (
@@ -66,13 +76,13 @@ export function ServicesView({
           </div>
         )}
       </header>
-      {services.some((s) => s.is_test_price) && (
+      {catalogue.some((s) => s.is_test_price) && !choosing && (
         <div className="alert">
           Ceny oznaczone jako robocze służą do testów aplikacji. Nie są
           aktualnym cennikiem ze strony Psi Pawer.
         </div>
       )}
-      {services.length > 0 && (
+      {admin && catalogue.length > 0 && (
         <nav className={styles.filters} aria-label="Forma usług">
           {(Object.keys(serviceCategories) as ServiceCategory[])
             .filter(
@@ -92,6 +102,65 @@ export function ServicesView({
               </Link>
             ))}
         </nav>
+      )}
+      {!admin && catalogue.length > 0 && (
+        <div className="stack-sm">
+          {choosing ? (
+            <>
+              <h3 className={styles.choiceHeading}>Wybierz formę pracy</h3>
+              <nav className={styles.choices} aria-label="Forma usług">
+                {(["individual", "group"] as const).map((category) => (
+                  <Link key={category} href={`${base}?category=${category}`}>
+                    <strong>{serviceCategories[category]}</strong>
+                    <p className="muted">
+                      {category === "individual"
+                        ? "Praca dopasowana do potrzeb Twojego psa."
+                        : "Zajęcia z innymi psami i ich opiekunami."}
+                    </p>
+                    <span>
+                      Usługi: {counts[category]} <ArrowRight size={18} />
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </>
+          ) : (
+            <>
+              <div>
+                <Link className="text-button" href={base}>
+                  ← Zmień formę pracy
+                </Link>
+              </div>
+              <nav className={styles.filters} aria-label="Forma usług">
+                {(["individual", "group"] as const).map((category) => (
+                  <Link
+                    key={category}
+                    href={`${base}?category=${category}`}
+                    className={clientFilter === category ? styles.active : ""}
+                    aria-current={
+                      clientFilter === category ? "page" : undefined
+                    }
+                  >
+                    {serviceCategories[category]}{" "}
+                    <span>{counts[category]}</span>
+                  </Link>
+                ))}
+              </nav>
+            </>
+          )}
+          {counts.other > 0 && (
+            <div>
+              <Link
+                className={styles.otherLink}
+                href={`${base}?category=other`}
+                aria-current={clientFilter === "other" ? "page" : undefined}
+              >
+                Pozostała oferta <span>{counts.other}</span>{" "}
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          )}
+        </div>
       )}
       <div className={styles.grid}>
         {visible.map((s) => (
@@ -132,10 +201,6 @@ export function ServicesView({
             {admin ? (
               <Link className="ghost-button" href={`/admin/services/${s.id}`}>
                 Edytuj usługę i cenę <ArrowRight size={16} />
-              </Link>
-            ) : s.kind === "voucher" ? (
-              <Link className="primary-button" href="/app/gifts">
-                Aktywuj kartę lub sprawdź saldo →
               </Link>
             ) : s.kind === "course" ? (
               <>
@@ -187,20 +252,22 @@ export function ServicesView({
           </article>
         ))}
       </div>
-      {!services.length && (
+      {!catalogue.length && (
         <article className="card pad">
           <h3>Oferta jest w przygotowaniu</h3>
           <p>Wróć tutaj później lub skontaktuj się z prowadzącą.</p>
         </article>
       )}
-      {services.length > 0 && !visible.length && (
+      {catalogue.length > 0 && !choosing && !visible.length && (
         <article className="card pad">
           <h3>Brak usług w tej kategorii</h3>
           <p className="muted">
-            Wybierz inną formę pracy lub zobacz całą ofertę.
+            {admin
+              ? "Wybierz inną formę pracy lub zobacz całą ofertę."
+              : "Wybierz inną formę pracy."}
           </p>
           <Link className="ghost-button" href={base}>
-            Pokaż wszystkie usługi →
+            {admin ? "Pokaż wszystkie usługi →" : "Zmień formę pracy →"}
           </Link>
         </article>
       )}

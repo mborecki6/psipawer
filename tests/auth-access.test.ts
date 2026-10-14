@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/supabase/config", () => ({ isConfigured: mocks.isConfigured }));
 vi.mock("@/lib/auth/email-config", () => ({ authEmailOrigin: () => null }));
+vi.mock("@/components/brand", async () => import("../src/components/brand"));
 vi.mock("../src/lib/auth/session", () => ({
   requireSession: mocks.requireSession,
 }));

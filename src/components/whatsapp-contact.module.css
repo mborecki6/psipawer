@@ -1,0 +1,46 @@
+.contact {
+  position: fixed;
+  z-index: 30;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 12px 18px;
+  border: 1px solid #c4dbc8;
+  border-radius: 999px;
+  color: #fff;
+  background: #1e5c42;
+  box-shadow: 0 4px 18px #243e2d24;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.contact:hover {
+  background: #174b35;
+}
+
+.contact:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.contact svg {
+  width: 23px;
+  height: 23px;
+}
+
+@media (max-width: 760px) {
+  .contact {
+    right: max(16px, env(safe-area-inset-right));
+    min-width: 52px;
+    padding: 13px;
+  }
+
+  .contact span {
+    display: none;
+  }
+}

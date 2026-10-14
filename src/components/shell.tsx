@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  PawPrint,
   LogOut,
   Menu,
   X,
@@ -15,6 +14,7 @@ import {
   MoreHorizontal,
   UserRound,
   GraduationCap,
+  Pencil,
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import type { Role } from "@/lib/auth/session";
@@ -22,6 +22,8 @@ import { notificationCountLabel } from "@/modules/notifications/types";
 import { clearBrowserPush } from "@/modules/push/browser";
 import { useHydrated } from "./use-hydrated";
 import { getShellNavigation } from "./shell-navigation";
+import { Brand } from "./brand";
+import { WhatsAppContact } from "./whatsapp-contact";
 import styles from "./shell.module.css";
 export function Shell({
   role,
@@ -210,15 +212,7 @@ export function Shell({
             <X aria-hidden="true" />
           </button>
         </div>
-        <div className="brand">
-          <div className="brand-mark">
-            <PawPrint />
-          </div>
-          <div className="brand-copy">
-            <strong>Psi Pawer</strong>
-            <span>zamieniam problemy w wyzwania</span>
-          </div>
-        </div>
+        <Brand />
         <div className="nav-label">Panel</div>
         <nav className="sidebar-nav" aria-label="Główna nawigacja">
           {nav.map(navigationLink)}
@@ -279,7 +273,7 @@ export function Shell({
               <div className="sidebar-subnav">
                 <Link
                   className="nav-item"
-                  href="/complete-profile"
+                  href="/profile"
                   onClick={() => setOpen(false)}
                 >
                   Moje dane
@@ -297,7 +291,7 @@ export function Shell({
             <>
               <Link
                 className="nav-item"
-                href="/complete-profile"
+                href="/profile"
                 onClick={() => setOpen(false)}
               >
                 Moje dane
@@ -311,7 +305,12 @@ export function Shell({
               </Link>
             </>
           )}
-          <div className="role-pill">
+          <Link
+            className="role-pill"
+            href="/profile"
+            onClick={() => setOpen(false)}
+            aria-label={`Edytuj profil: ${name}`}
+          >
             <div className="role-avatar">{name.slice(0, 2).toUpperCase()}</div>
             <div className="role-copy">
               <strong>{name}</strong>
@@ -319,7 +318,12 @@ export function Shell({
                 {role === "admin" ? "Panel behawiorysty" : "Panel opiekuna"}
               </span>
             </div>
-          </div>
+            <Pencil
+              size={15}
+              className={styles.profileEdit}
+              aria-hidden="true"
+            />
+          </Link>
           <form
             action={signOut}
             onSubmit={() => {
@@ -472,6 +476,9 @@ export function Shell({
             </nav>
           )}
         {children}
+        {role === "client" && !path.includes("/community/chat/") && (
+          <WhatsAppContact />
+        )}
       </main>
     </div>
   );

@@ -50,6 +50,38 @@
   padding: 10px 12px;
   border: 0;
   background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.shell :global(.role-pill:hover) {
+  background: #edf2eb;
+}
+
+.profileEdit {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+
+.shell :global(.main) {
+  position: relative;
+  isolation: isolate;
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.shell :global(.main)::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: min(100%, 650px);
+  height: 430px;
+  pointer-events: none;
+  background: url("/brand/dogs-meadow.webp") center 60% / cover no-repeat;
+  opacity: 0.12;
+  mask-image: linear-gradient(180deg, #000, transparent);
 }
 
 .shell :global(.role-avatar) {
@@ -65,7 +97,7 @@
 
 .shell :global(.topbar) {
   margin-bottom: 8px;
-  background: #f4f0e9f5;
+  background: #f4f0e9de;
 }
 
 .shell :global(.page-heading h1) {
@@ -97,5 +129,18 @@
 @media (max-width: 760px) {
   .shell :global(.sidebar-footer) {
     padding-top: 18px;
+  }
+
+  .shell :global(.main)::before {
+    height: 320px;
+    opacity: 0.09;
+  }
+
+  .shell
+    :global(
+      .main:has(input:focus, textarea:focus, select:focus)
+        a[href^="https://wa.me/"]
+    ) {
+    visibility: hidden;
   }
 }
