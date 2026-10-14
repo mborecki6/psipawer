@@ -1,6 +1,7 @@
 # Marka, spokojniejsza oferta i edycja profilu
 
-Zakres użytkownika z 14 października 2026. Zmiany przygotowujemy lokalnie.
+Zakres użytkownika z 14 października 2026. Po lokalnym odbiorze użytkownik
+zatwierdził wygląd i osobno zlecił publikację. Wersja działa online.
 Logo i hasło zostały teraz wyraźnie zlecone; wcześniejsze odłożenie ich na koniec
 nie obowiązuje w tym zakresie. ClickMeeting i MailerLite pozostają poza iteracją.
 
@@ -68,3 +69,29 @@ do WebP; logo zachowuje oryginalną przezroczystość i proporcje.
   bazy oraz publikacji produkcyjnej. Tymczasowe konta testowe były lokalne.
 
 Logi i zrzuty pozostają w .local/brand-refresh-20261014 oraz test-results.
+
+## Publikacja i odbiór hostingu — 14.10.2026
+
+Kod `9a2a60e` opublikowano na produkcyjnej gałęzi `main`. Vercel zakończył
+build `dpl_Cio7PTJqANyejY6VoaB1BPJBAV4J` ze stanem READY; publiczny alias
+[psipawer.vercel.app](https://psipawer.vercel.app/login) wskazywał ten build.
+Późniejszy commit dokumentacji może utworzyć kolejny build z tym samym kodem.
+
+Odczytowy test hostingu przeszedł 11 kontroli tras (w tym przekierowanie
+vouchera) i 30 wariantów responsywności: 10 ekranów przy 320/390/1440 px.
+Sprawdzono logowanie, oba panele, ofertę i obie kategorie, karty podarunkowe,
+własny profil, odnośniki edycji i powrotu oraz WhatsApp. Trzy anonimowe
+wejścia do stron chronionych przekierowano do logowania. Cztery publiczne
+zasoby marki mają te same skróty co pliki przygotowane lokalnie.
+
+Nie wystąpiły błędy skryptów ani konsoli i nie wykonywano zapisów biznesowych.
+Użyto istniejących kont i własnych tymczasowych sesji Auth, bez zmiany haseł,
+zaproszeń lub wysyłania e-maili. Sesje tej próby zakończono. Zapis profilu
+oraz odmowę zmiany cudzego sprawdzono wcześniej w lokalnym E2E; odbiór online
+był odczytowy. Nie klikał on kontaktu WhatsApp ani nie wysyłał wiadomości.
+
+Wydanie nie zawiera migracji ani zmian konfiguracji Supabase/Vercel;
+baza nadal korzysta z 57 wcześniejszych migracji. Publiczny przycisk kontaktu
+nie jest integracją wysyłającą automatyczne wiadomości WhatsApp. Prywatny czat
+Psiutków i kanały powiadomień zachowują dotychczasową implementację.
+Raport i zrzuty pozostają w ignorowanym .local/brand-release-20261014.

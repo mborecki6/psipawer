@@ -97,10 +97,18 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Marka, oferta i profil](iterations/2026-10-14-marka-oferta-profil.md): oryginalne
+logo i hasło, fotografie, uproszczony wybór formy pracy, edycja własnego profilu
+oraz bezpośredni kontakt WhatsApp. Lokalny odbiór i publikacja po osobnej zgodzie
+użytkownika są zakończone. Kolejne zmiany nadal powstają lokalnie i wymagają
+autoryzacji publikacji w swoim zakresie. ClickMeeting i MailerLite pozostają
+na koniec.
+
 [Funkcje po feedbacku](iterations/2026-10-13-funkcje-po-feedbacku.md):
 rozdzielenie zaleceń według usług, dostępna oferta i Web Push; dalsze reguły
 kontroli, Psiutków i raportowania zgodnie z odpowiedziami użytkownika.
 Zachowujemy wynik „Spokojnego startu”. Po lokalnym odbiorze użytkownik osobno
 autoryzował publikację; wydanie z 13.10 jest online. Kolejne zmiany nadal
 powstają lokalnie i nie dziedziczą automatycznie zgody na publikację.
-Logo, hasło, ClickMeeting i MailerLite pozostają na koniec.
+Logo i hasło dodano w późniejszej iteracji z 14.10; ClickMeeting i MailerLite
+pozostają odłożone.

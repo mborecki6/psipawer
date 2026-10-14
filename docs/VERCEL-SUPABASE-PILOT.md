@@ -2,6 +2,28 @@
 
 Pilot od 06.10.2026 działa pod [psipawer.vercel.app](https://psipawer.vercel.app/login). Jest przeznaczony do walidacji MVP przez administratora, behawiorystkę i fikcyjne konta opiekunów. Kwoty i spotkania DEMO nie stanowią rzeczywistych transakcji ani rezerwacji. [Scenariusze testów](PILOT-TEST-SCENARIOS.md) opisują oba panele.
 
+## Marka, oferta i profil — 14.10.2026
+
+Po zatwierdzeniu lokalnego podglądu opublikowano oryginalne logo, hasło
+behawiorystki i fotografie Psi Pawer, wybór Indywidualne / Grupowe przed
+listą usług, osobne karty podarunkowe w Więcej, edycję własnego profilu oraz
+przycisk bezpośredniego kontaktu WhatsApp. Kod `9a2a60e`, pierwszy build
+`dpl_Cio7PTJqANyejY6VoaB1BPJBAV4J` w stanie READY. Publiczny alias:
+[psipawer.vercel.app](https://psipawer.vercel.app/login).
+
+Wydanie nie zmienia schematu, cen ani konfiguracji usług zewnętrznych; pozostaje
+57 migracji. Odczytowy odbiór istniejących kont przeszedł 11 kontroli tras,
+30 wariantów responsywności, trzy odmowy dostępu anonimowego i porównanie
+czterech plików marki z lokalnym wydaniem. Zero błędów skryptów/konsoli
+i zapisów biznesowych. Użyto własnych tymczasowych sesji; nie zmieniano haseł
+ani nie wysyłano wiadomości. Lokalne E2E sprawdziło rzeczywisty zapis profilu.
+[Kryteria, lokalny odbiór i granice kontroli hostingu](iterations/2026-10-14-marka-oferta-profil.md).
+
+Wycofanie interfejsu do bezpośrednio poprzedniego wydania z 13.10 jest zgodne
+z tym samym schematem bazy; nie wymaga odtwarzania danych. Bieżący identyfikator
+aliasu sprawdzaj przez `vercel inspect https://psipawer.vercel.app --json`.
+Dokumentacja może wywołać kolejny build bez zmiany kodu aplikacji.
+
 ## Rozszerzenie po feedbacku — 13.10.2026
 
 Opublikowano „Spokojny start” oraz konteksty zaleceń, kalendarz dostępnej oferty,

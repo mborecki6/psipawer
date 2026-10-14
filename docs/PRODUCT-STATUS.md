@@ -1,6 +1,23 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 13.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie online z 13.10 obejmuje „Spokojny start” i poniższe rozszerzenie funkcji; chmura i środowisko lokalne mają 57 migracji.
+Aktualizacja: 14.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie z 14.10 dodaje markę Psi Pawer, prostszy wybór oferty, własny profil i kontakt WhatsApp do funkcji opublikowanych 13.10; chmura i środowisko lokalne mają 57 migracji.
+
+## Marka, oferta i profil — online, 14.10.2026
+
+Logowanie i panel używają oryginalnego logo oraz hasła „Problemy to wyzwania,
+którym stawiaMY czoła!”, ze zdjęciami ze strony Asi. Oferta opiekuna rozpoczyna
+się wyborem Indywidualne / Grupowe; nieprzypisane usługi mają mniejszy odnośnik,
+a karty podarunkowe pozostają osobno w Więcej. Kliknięcie nazwy konta otwiera
+edycję własnego imienia i nazwiska, telefonu i okolicy. E-mail logowania jest
+tylko do odczytu. Przycisk WhatsApp prowadzi do bezpośredniego kontaktu
+podanego w VCF, zgodnie z późniejszą decyzją użytkownika.
+
+Wydanie nie wymagało migracji ani zmian cen, haseł lub konfiguracji SMTP.
+Przeszły lokalny build/lint/TypeScript, 25 ukierunkowanych testów, E2E obu ról
+i 28 scenariuszy katalogu. Odczytowy odbiór produkcji: 11 kontroli tras,
+30 wariantów responsywności, cztery pliki marki i trzy odmowy anonimowego
+dostępu; bez błędów przeglądarki i zapisów biznesowych.
+[Zakres i dowody odbioru](iterations/2026-10-14-marka-oferta-profil.md).
 
 ## Rozszerzenie funkcji po feedbacku — online, 13.10.2026
 

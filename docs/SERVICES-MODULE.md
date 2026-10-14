@@ -4,6 +4,13 @@ Moduł działa w opublikowanym pilocie od 06.10.2026; migracja `202609180003_ser
 
 ## Obsługa cen
 
+Od publikacji 14.10.2026 oferta opiekuna zaczyna się od wyboru **Indywidualne /
+Grupowe**, a dopiero potem pokazuje pasującą listę. Nieprzypisane usługi pozostają
+pod mniejszym odnośnikiem Pozostała oferta. Karty podarunkowe są osobnym produktem
+w **Więcej → Karty podarunkowe**; stary link `?category=voucher` prowadzi do ich
+modułu. Katalog prowadzącej zachowuje pełną ofertę i edytor cen.
+[Zakres i odbiór wydania](iterations/2026-10-14-marka-oferta-profil.md).
+
 Prowadząca i administrator otwierają cennik przez **Ustawienia → Usługi i ceny** (`/admin/services`). Edycja obejmuje nazwę, opis, kwotę, jednostkę ceny, czas, liczbę spotkań, widoczność i oznaczenie ceny jako roboczej lub docelowej. Opiekun ma katalog **Oferta** (`/app/services`). Edycja ceny nie wymaga programisty ani publikacji nowej wersji aplikacji: aktualizuje rekord w bazie. Kwoty przechowujemy w groszach.
 
 Opublikowana iteracja po feedbacku z 10.10.2026 dodaje w obu katalogach filtry **Indywidualne**, **Grupowe** i **Karty podarunkowe**, z liczbą pozycji i zachowaniem wyboru w adresie (`category`). Kurs korzysta z `course_format`, więc kurs indywidualny nie trafia do grupowych. Pakiet z przepływem fitness jest indywidualny; pakiet z przepływem spaceru jest grupowy. Pakiet katalogowy lub kurs bez określonej formy pozostaje w **Pozostałych** i w pełnej ofercie, bez zgadywania z nazwy lub adresu strony. Nie zmienia to cen, zapisów ani edytora; podział nie wymaga migracji bazy. Filtry obu ról przeszły odczytową kontrolę hostingu; [wyniki wydania](VERCEL-SUPABASE-PILOT.md#aktualizacja-po-feedbacku--10102026) są odrębne od lokalnych testów komponentów.
