@@ -1,4 +1,13 @@
 import { warsawLocalToISO } from "../../lib/time";
+export function calendarViewMode(
+  admin: boolean,
+  view?: string,
+  event?: string,
+): "week" | "month" {
+  if (view === "month") return "month";
+  if (view === "week" || event) return "week";
+  return admin ? "month" : "week";
+}
 export function localDate(value: string | Date) {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Warsaw",

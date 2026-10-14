@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -151,6 +152,7 @@ beforeAll(async () => {
   await db.query("update public.user_roles set role='admin' where user_id=$1", [
     admin,
   ]);
+  await configureCalendarPrimary(db, admin);
 });
 afterAll(async () => {
   await db?.close();

@@ -35,7 +35,8 @@
     "local:reminders-test": "node tests/local/reminder-lifecycle.mjs",
     "local:reminders-queue-test": "node tests/local/reminder-queue.mjs",
     "local:avatar-cleanup": "node scripts/avatar-cleanup.mjs",
-    "local:calendar-domain": "node --test tests/local/calendar-domain.mjs"
+    "local:calendar-domain": "node --test tests/local/calendar-single-domain.mjs",
+    "local:calendar-legacy": "node --test tests/local/calendar-domain.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

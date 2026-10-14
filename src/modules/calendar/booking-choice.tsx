@@ -17,19 +17,29 @@ export function BookingChoice({
   const assignment = original.assignments.find(
     (a) => a.appointment_id === appointmentId,
   );
-  const initialStaff = assignment
-    ? assignment.assigned_staff_id
-    : original.defaultStaffId;
-  const [staff, setStaff] = useState(
-    original.staff.some((member) => member.user_id === initialStaff)
-      ? initialStaff!
-      : "",
-  );
+  const freshRequest =
+    assignment?.assigned_staff_id === null &&
+    assignment.legacy_unassigned === false &&
+    assignment.version === 1 &&
+    !assignment.booked_interval;
+  const initialStaff =
+    assignment && !freshRequest
+      ? assignment.assigned_staff_id
+      : original.defaultStaffId;
+  const [staff, setStaff] = useState(initialStaff || "");
   const [resource, setResource] = useState(assignment?.resource_id || "");
   const prefix = useId();
   const resources = original.resources.filter(
     (r) => r.active || r.id === assignment?.resource_id,
   );
+  const activeStaff = original.staff.filter(
+    (member) => member.user_id === original.defaultStaffId,
+  );
+  const historicalStaff = assignment?.assigned_staff_id
+    ? original.staff.find(
+        (member) => member.user_id === assignment.assigned_staff_id,
+      )
+    : undefined;
   return (
     <fieldset
       disabled={pending || saved}
@@ -49,15 +59,34 @@ export function BookingChoice({
             name="calendar_staff_id"
             value={staff}
             onChange={(e) => setStaff(e.target.value)}
-            required
+            required={!assignment}
           >
-            <option value="">Wybierz prowadzącego</option>
-            {original.staff.map((s) => (
+            <option value="">
+              {assignment
+                ? "Do przypisania — wspólna rezerwacja"
+                : "Wybierz prowadzącego"}
+            </option>
+            {assignment?.assigned_staff_id &&
+              assignment.assigned_staff_id !== original.defaultStaffId && (
+                <option value={assignment.assigned_staff_id}>
+                  {historicalStaff?.full_name || "Dotychczasowy prowadzący"}
+                  {" · dotychczasowe przypisanie"}
+                </option>
+              )}
+            {activeStaff.map((s) => (
               <option key={s.user_id} value={s.user_id}>
-                {s.full_name || "Członek zespołu"}
+                {s.full_name || "Prowadząca"}
               </option>
             ))}
           </select>
+          {!original.defaultStaffId && (
+            <small className="field-hint" role="status">
+              Brak aktywnej prowadzącej w ustawieniach kalendarza.
+              {assignment
+                ? " Dotychczasowe przypisanie pozostaje zachowane."
+                : " Nie można jeszcze zaplanować nowego spotkania."}
+            </small>
+          )}
         </div>
         {resources.length ? (
           <div className="field">

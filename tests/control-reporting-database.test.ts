@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -173,6 +174,7 @@ beforeAll(async () => {
     ),
     await rows("select * from public.care_control_invitations"),
   ];
+  await configureCalendarPrimary(db, admin);
 });
 beforeEach(async () => {
   await db.exec(

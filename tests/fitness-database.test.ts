@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -225,6 +226,7 @@ beforeAll(async () => {
     "update public.user_roles set role='admin' where user_id in($1,$2)",
     [admin, colleague],
   );
+  await configureCalendarPrimary(db, admin);
   await db.query(
     "insert into public.dogs(id,guardian_id,name) values($1,$2,'Fikcyjny fitness'),($3,$4,'Drugi fitness')",
     [dog, owner, otherDog, other],

@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { beforeAll, afterAll, expect, it } from "vitest";
@@ -30,6 +31,7 @@ beforeAll(async () => {
   await db.query("update public.user_roles set role='admin' where user_id=$1", [
     admin,
   ]);
+  await configureCalendarPrimary(db, admin);
   await db.query(
     "insert into public.dogs(id,guardian_id,name,status) values($1,$2,'Test','approved')",
     [dog, owner],

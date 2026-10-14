@@ -58,12 +58,6 @@ export function NextAppointment({
                   <dd>{appointment.location}</dd>
                 </div>
               )}
-              {appointment.assigned_staff_name && (
-                <div>
-                  <dt>Prowadzący</dt>
-                  <dd>{appointment.assigned_staff_name}</dd>
-                </div>
-              )}
               {appointment.resource_name && (
                 <div>
                   <dt>Sala / zasób</dt>
@@ -71,6 +65,26 @@ export function NextAppointment({
                 </div>
               )}
             </dl>
+            {(appointment.assigned_staff_name ||
+              appointment.created_by_name) && (
+              <details>
+                <summary>Szczegóły wpisu</summary>
+                <dl className={styles.details}>
+                  {appointment.assigned_staff_name && (
+                    <div>
+                      <dt>Dotychczasowe przypisanie</dt>
+                      <dd>{appointment.assigned_staff_name}</dd>
+                    </div>
+                  )}
+                  {appointment.created_by_name && (
+                    <div>
+                      <dt>Wpis dodał(a)</dt>
+                      <dd>{appointment.created_by_name}</dd>
+                    </div>
+                  )}
+                </dl>
+              </details>
+            )}
           </>
         ) : (
           <p className={styles.empty}>
@@ -123,12 +137,6 @@ export function NextAppointment({
         </p>
         {appointment?.location && (
           <p style={{ overflowWrap: "anywhere" }}>{appointment.location}</p>
-        )}
-        {admin && appointment?.assigned_staff_name && (
-          <p>
-            Prowadzący: {appointment.assigned_staff_name}
-            {appointment.resource_name ? ` · ${appointment.resource_name}` : ""}
-          </p>
         )}
         <div className="hero-actions">
           {detailHref && (

@@ -26,6 +26,8 @@ const messages = [
   "Ten czas jest już zajęty przez prowadzącego lub wybrane miejsce. Sprawdź kalendarz.",
   "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
   "Wybierz aktywnego członka zespołu.",
+  "Wybierz aktywną prowadzącą.",
+  "Brak aktywnej prowadzącej w ustawieniach kalendarza.",
   "Wybierz aktywne miejsce.",
   "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",
 ];

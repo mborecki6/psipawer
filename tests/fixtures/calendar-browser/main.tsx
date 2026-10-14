@@ -2,15 +2,25 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CalendarView } from "@/modules/calendar/views";
 import { NextAppointment } from "@/modules/calendar/next-appointment";
-import { weekRange, monthRange } from "@/modules/calendar/dates";
+import {
+  weekRange,
+  monthRange,
+  calendarViewMode,
+} from "@/modules/calendar/dates";
 import { CalendarSettingsEditor } from "@/modules/calendar/settings-editor";
 import { CalendarResourcesEditor } from "@/modules/calendar/resource-editor";
 import type { Appointment } from "@/modules/calendar/types";
+import styles from "@/components/shell.module.css";
+import brandStyles from "@/components/brand.module.css";
 import "@/app/globals.css";
 const query = new URLSearchParams(location.search),
   admin =
     query.get("role") !== "client" && !location.pathname.startsWith("/app/");
-const view = query.get("view") === "month" ? "month" : "week";
+const view = calendarViewMode(
+  admin,
+  query.get("view") || undefined,
+  query.get("event") || undefined,
+);
 const range =
   view === "month"
     ? monthRange(query.get("date") || "2026-09-21")
@@ -18,13 +28,14 @@ const range =
 const members = [
   {
     user_id: "90000000-0000-4000-8000-000000000010",
-    full_name: "Prowadząca Anna",
+    full_name: "Asia · Psi Pawer",
   },
   {
     user_id: "90000000-0000-4000-8000-000000000011",
-    full_name: "Prowadzący Jan",
+    full_name: "Mateusz · administrator",
   },
 ];
+const activeMembers = query.has("no-primary") ? [] : [members[0]];
 const resources = [
   {
     id: "90000000-0000-4000-8000-000000000012",
@@ -84,8 +95,8 @@ for (const [index, item] of events.entries())
     assigned_staff_name: members[index % 2].full_name,
     resource_id: index === 0 ? resources[0].id : null,
     resource_name: index === 0 ? resources[0].name : null,
-    created_by: members[0].user_id,
-    created_by_name: members[0].full_name,
+    created_by: members[1].user_id,
+    created_by_name: members[1].full_name,
   });
 if (query.has("former-lead"))
   for (const index of [0, 2])
@@ -107,9 +118,17 @@ function Fixture() {
     ? []
     : items.filter((i) => admin || i.kind !== "block");
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${styles.shell}`}>
       <aside className="sidebar">
-        <div className="brand">
+        <div className={brandStyles.brand}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- This Vite fixture serves the original logo directly. */}
+          <img
+            className={brandStyles.logo}
+            src="/brand/psi-pawer-logo.png"
+            width={302}
+            height={212}
+            alt="Psi Pawer"
+          />
           <div className="brand-copy">
             <strong>Psi Pawer</strong>
             <span>Lokalny podgląd na danych fikcyjnych</span>
@@ -172,8 +191,9 @@ function Fixture() {
             selectedStaff={query.get("staff") || "all"}
             selectedEvent={query.get("event") || undefined}
             members={admin ? members : []}
+            activeMembers={admin ? activeMembers : []}
             resources={admin ? resources : []}
-            currentUserId={admin ? members[0].user_id : null}
+            defaultStaffId={admin ? activeMembers[0]?.user_id || null : null}
           />
         )}
         <p className="muted" style={{ marginTop: 24 }}>

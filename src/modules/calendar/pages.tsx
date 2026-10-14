@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getCalendar } from "./queries";
 import { CalendarView } from "./views";
+import { calendarViewMode, validCalendarDate } from "./dates";
 export type CalendarSearch = {
   date?: string;
   view?: string;
@@ -15,14 +16,11 @@ export async function CalendarPage({
   searchParams: Promise<CalendarSearch>;
 }) {
   const { date, view, event, staff } = await searchParams;
-  const mode = view === "month" ? "month" : "week";
-  const data = await getCalendar(admin, date, mode);
-  const selectedStaff =
-    admin &&
-    (staff === "unassigned" ||
-      data.members.some((member) => member.user_id === staff))
-      ? staff
-      : "all";
+  const now = new Date().toISOString();
+  const focusDate = validCalendarDate(
+    typeof date === "string" ? date : undefined,
+    new Date(now),
+  );
   const selectedEvent =
     typeof event === "string" &&
     /^(walk|consultation|course|fitness|block):[0-9a-f-]{36}:\d{12,13}$/i.test(
@@ -30,6 +28,14 @@ export async function CalendarPage({
     )
       ? event
       : undefined;
+  const mode = calendarViewMode(admin, view, selectedEvent);
+  const data = await getCalendar(admin, focusDate, mode);
+  const selectedStaff =
+    admin &&
+    (staff === "unassigned" ||
+      data.members.some((member) => member.user_id === staff))
+      ? staff
+      : "all";
   return (
     <CalendarView
       {...data}
@@ -37,8 +43,8 @@ export async function CalendarPage({
       view={mode}
       selectedStaff={selectedStaff}
       selectedEvent={selectedEvent}
-      focusDate={typeof date === "string" ? date : undefined}
-      now={new Date().toISOString()}
+      focusDate={focusDate}
+      now={now}
       newBlockId={randomUUID()}
     />
   );

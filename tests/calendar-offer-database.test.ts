@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -113,7 +114,7 @@ beforeAll(async () => {
       (file) =>
         file.endsWith(".sql") &&
         (file <= "202610100001_calendar_team.sql" ||
-          file === "202610130003_calendar_offer.sql"),
+          file === "202610130003_calendar_offer.sql" || file === "202610140001_single_practitioner.sql"),
     )
     .sort())
     await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
@@ -126,6 +127,7 @@ beforeAll(async () => {
   await db.query("update public.user_roles set role='admin' where user_id=$1", [
     admin,
   ]);
+  await configureCalendarPrimary(db, admin);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
     admin,
   ]);

@@ -20,6 +20,8 @@ function failure(message?: string): ActionState {
     "Sprawdź prowadzącego i miejsce zajęć.",
     "Przypisanie zmieniło się. Odśwież widok przed zapisem.",
     "Wybierz aktywnego członka zespołu.",
+    "Wybierz aktywną prowadzącą.",
+    "Brak aktywnej prowadzącej w ustawieniach kalendarza.",
     "Wybierz aktywne miejsce.",
     "Ten czas jest już zajęty dla wybranego prowadzącego lub sali. Sprawdź kalendarz.",
     "Termin wykracza poza godziny pracy prowadzącego. Sprawdź ustawienia kalendarza.",

@@ -23,14 +23,14 @@ export function BlockEditor({
   onNew,
   members = [],
   resources = [],
-  currentUserId,
+  defaultStaffId,
 }: {
   id: string;
   initial?: Appointment;
   onNew?: () => void;
   members?: CalendarTeamMember[];
   resources?: CalendarResource[];
-  currentUserId?: string | null;
+  defaultStaffId?: string | null;
 }) {
   const hydrated = useHydrated();
   const form = usePersistentForm();
@@ -39,13 +39,17 @@ export function BlockEditor({
     version: initial?.version || 0,
     assignmentVersion: initial?.assignment_version || 0,
   });
+  const defaultStaff = members.some(
+    (member) => member.user_id === defaultStaffId,
+  )
+    ? defaultStaffId || ""
+    : "";
+  const primaryMissing = !initial && !defaultStaff;
   const [values, setValues] = useState({
     title: initial?.title || "",
     starts_at: initial ? warsawDateTimeInput(initial.starts_at) : "",
     ends_at: initial ? warsawDateTimeInput(initial.ends_at) : "",
-    assigned_staff_id: initial
-      ? initial.assigned_staff_id || ""
-      : currentUserId || "",
+    assigned_staff_id: initial ? initial.assigned_staff_id || "" : defaultStaff,
     resource_id: initial?.resource_id || "",
   });
   const [allDay, setAllDay] = useState(
@@ -151,7 +155,16 @@ export function BlockEditor({
           />
         </>
       )}
-      <fieldset disabled={!hydrated || pending} className={styles.fields}>
+      {primaryMissing && (
+        <p className="alert" role="status">
+          Brak aktywnej prowadzącej w ustawieniach kalendarza. Uzupełnij
+          konfigurację przed dodaniem blokady.
+        </p>
+      )}
+      <fieldset
+        disabled={!hydrated || pending || primaryMissing}
+        className={styles.fields}
+      >
         <legend className="sr-only">Prywatna blokada kalendarza</legend>
         <div className="field">
           <label htmlFor={`${prefix}-title`}>Nazwa blokady</label>
@@ -240,15 +253,17 @@ export function BlockEditor({
         )}
         <div className="field">
           <label htmlFor={`${prefix}-assigned_staff_id`}>Prowadzący</label>
-          <select {...field("assigned_staff_id")}>
-            <option value="">Wspólna blokada zespołu</option>
+          <select {...field("assigned_staff_id")} required={!initial}>
+            <option value="">
+              {initial ? "Wspólna blokada kalendarza" : "Wybierz prowadzącą"}
+            </option>
             {values.assigned_staff_id &&
               !members.some(
                 (member) => member.user_id === values.assigned_staff_id,
               ) && (
                 <option value={values.assigned_staff_id}>
                   {initial?.assigned_staff_name || "Dotychczasowy prowadzący"}{" "}
-                  (poza zespołem)
+                  (dotychczasowe przypisanie)
                 </option>
               )}
             {members.map((member) => (
@@ -305,7 +320,10 @@ export function BlockEditor({
             Dodaj kolejną blokadę
           </button>
         ) : null}
-        <button className="primary-button" disabled={!hydrated || pending}>
+        <button
+          className="primary-button"
+          disabled={!hydrated || pending || primaryMissing}
+        >
           {!hydrated
             ? "Przygotowuję formularz…"
             : pending
@@ -344,12 +362,12 @@ export function CreateBlockEditor({
   id,
   members = [],
   resources = [],
-  currentUserId,
+  defaultStaffId,
 }: {
   id: string;
   members?: CalendarTeamMember[];
   resources?: CalendarResource[];
-  currentUserId?: string | null;
+  defaultStaffId?: string | null;
 }) {
   const [currentId, setCurrentId] = useState(id);
   return (
@@ -358,7 +376,7 @@ export function CreateBlockEditor({
       id={currentId}
       members={members}
       resources={resources}
-      currentUserId={currentUserId}
+      defaultStaffId={defaultStaffId}
       onNew={() => setCurrentId(crypto.randomUUID())}
     />
   );
@@ -428,7 +446,7 @@ export function AssignmentEditor({
               ) && (
                 <option value={values.assigned_staff_id}>
                   {original.assigned_staff_name || "Dotychczasowy prowadzący"}{" "}
-                  (poza zespołem)
+                  (dotychczasowe przypisanie)
                 </option>
               )}
             {members.map((member) => (

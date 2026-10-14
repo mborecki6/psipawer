@@ -201,7 +201,7 @@ it("opens the owner's active group on a direct visit and keeps account and prima
       /<details[^>]*open=""[^>]*>(.*?)<\/details>/,
     )?.[1];
     expect(opened).toContain(`<span>${group}</span>`);
-    expect(html).toContain('href="/complete-profile"');
+    expect(html).toContain('href="/profile"');
     expect(html).toContain('href="/account/security"');
     expect(html).toContain("Wyloguj się");
     expect(html).toContain('aria-label="Znajdź spacer"');

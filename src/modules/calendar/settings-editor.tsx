@@ -81,7 +81,7 @@ export function CalendarSettingsEditor({
                 setValues((v) => ({ ...v, use_default: event.target.checked }))
               }
             />
-            Korzystaj z domyślnego rytmu zespołu
+            Korzystaj z domyślnego rytmu pracy
           </label>
           {values.use_default && (
             <p className="muted">

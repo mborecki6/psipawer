@@ -1,3 +1,5 @@
+// Explicit historical-schema regression. Current single-practitioner rules
+// are exercised with all migrations in calendar-single-practitioner.test.ts.
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -179,7 +181,7 @@ afterAll(async () => {
 });
 
 describe.sequential(
-  "team calendar: migration, transactional scopes and private APIs",
+  "legacy team schema before the single-practitioner migration: migration, scopes and private APIs",
   () => {
     it("preserves legacy creation provenance without interpreting creator as assigned lead", async () => {
       expect(migratedLegacy).toMatchObject({

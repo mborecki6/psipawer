@@ -124,7 +124,7 @@ function Fixture() {
             booking={
               role === "admin"
                 ? {
-                    defaultStaffId: "10000000-0000-4000-8000-000000000001",
+                    defaultStaffId: "10000000-0000-4000-8000-000000000002",
                     staff: [
                       {
                         user_id: "10000000-0000-4000-8000-000000000001",

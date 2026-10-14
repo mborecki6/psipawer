@@ -10,6 +10,7 @@ import type {
   CalendarResource,
 } from "./types";
 import { reportDataReadError } from "@/lib/observability/server-errors";
+import { calendarPractitioners } from "./practitioners";
 export async function getCalendar(
   staff: boolean,
   date?: string,
@@ -32,8 +33,9 @@ export async function getCalendar(
   let settings: CalendarSettings | null = null;
   let members: CalendarTeamMember[] = [];
   let resources: CalendarResource[] = [];
+  let primaryId: string | null = null;
   if (staff) {
-    const [policy, hours, team, places] = await Promise.all([
+    const [policy, hours, team, places, primary] = await Promise.all([
       db
         .from("calendar_settings")
         .select("version,hours_enabled,before_minutes,after_minutes")
@@ -48,8 +50,9 @@ export async function getCalendar(
         .select("id,name,exclusive,active,version")
         .order("name")
         .order("id"),
+      db.rpc("calendar_primary_practitioner", {}, { get: true }),
     ]);
-    for (const result of [policy, hours, team, places])
+    for (const result of [policy, hours, team, places, primary])
       if (result.error) {
         reportDataReadError("calendar.settings", result.error, result.status);
         throw new Error("Nie udało się pobrać ustawień kalendarza.");
@@ -59,12 +62,14 @@ export async function getCalendar(
     settings = { ...policy.data, week: hours.data as WorkingDay[] };
     members = (team.data || []) as CalendarTeamMember[];
     resources = (places.data || []) as CalendarResource[];
+    primaryId = primary.data;
   }
   return {
     appointments,
     range,
     settings,
     members,
+    ...calendarPractitioners(members, primaryId),
     resources,
     currentUserId: staff ? user.id : null,
   };
@@ -72,7 +77,7 @@ export async function getCalendar(
 
 export async function getCalendarSetup(selectedStaff?: string) {
   const { db, user } = await requireSession("admin");
-  const [policy, hours, team, places] = await Promise.all([
+  const [policy, hours, team, places, primary] = await Promise.all([
     db
       .from("calendar_settings")
       .select("version,hours_enabled,before_minutes,after_minutes")
@@ -87,8 +92,9 @@ export async function getCalendarSetup(selectedStaff?: string) {
       .select("id,name,exclusive,active,version")
       .order("name")
       .order("id"),
+    db.rpc("calendar_primary_practitioner", {}, { get: true }),
   ]);
-  for (const result of [policy, hours, team, places])
+  for (const result of [policy, hours, team, places, primary])
     if (result.error) {
       reportDataReadError("calendar.setup", result.error, result.status);
       throw new Error("Nie udało się pobrać ustawień kalendarza.");
@@ -96,9 +102,12 @@ export async function getCalendarSetup(selectedStaff?: string) {
   if (!policy.data || hours.data?.length !== 7)
     throw new Error("Nie udało się pobrać ustawień kalendarza.");
   const members = (team.data || []) as CalendarTeamMember[];
+  const practitioners = calendarPractitioners(members, primary.data);
   const staffId =
     typeof selectedStaff === "string" &&
-    members.some((member) => member.user_id === selectedStaff)
+    practitioners.activeMembers.some(
+      (member) => member.user_id === selectedStaff,
+    )
       ? selectedStaff
       : null;
   let settings: CalendarSettings = {
@@ -124,6 +133,7 @@ export async function getCalendarSetup(selectedStaff?: string) {
   return {
     settings,
     members,
+    ...practitioners,
     resources: (places.data || []) as CalendarResource[],
     staffId,
     currentUserId: user.id,

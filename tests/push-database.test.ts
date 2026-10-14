@@ -181,14 +181,34 @@ describe.sequential("private push subscriptions and outbox", () => {
   });
   it("preserves opt-in time on a repeated save and forbids archive replay after re-enabling", async () => {
     const id = await subscribe();
+    // Keep a deterministic timeline around PGlite's millisecond clock:
+    // first opt-in < disabled-period notice < renewed opt-in.
+    await db.query(
+      "update public.push_subscriptions set enabled_at=clock_timestamp()-interval '2 seconds' where id=$1",
+      [id],
+    );
+    const enabledAt = async () =>
+      (
+        await db.query<{ enabled_at: string }>(
+          "select enabled_at from public.push_subscriptions where id=$1",
+          [id],
+        )
+      ).rows[0].enabled_at;
+    const firstOptIn = await enabledAt();
     const fresh = await notice();
     expect(await subscribe()).toBe(id);
+    expect(await enabledAt()).toBe(firstOptIn);
     expect((await claim()).map((j) => j.notification_id)).toEqual([fresh]);
     await asUser(owner, session, () =>
       db.query("select public.disable_push_subscription($1)", [endpoint]),
     );
-    await notice();
+    // Give the archive an explicit age: PGlite can record adjacent calls in
+    // the same millisecond, which is the valid inclusive opt-in boundary.
+    await notice(owner, "1 second");
     await subscribe();
+    expect(Date.parse(await enabledAt())).toBeGreaterThan(
+      Date.parse(firstOptIn),
+    );
     expect(await claim()).toEqual([]);
   });
   it("binds one endpoint to the new account/session and cancels the previous outbox", async () => {

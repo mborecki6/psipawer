@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -119,6 +120,7 @@ beforeAll(async () => {
   after = await snapshot();
   for (const name of names.filter((name) => name > migration))
     await db.exec(readFileSync(`supabase/migrations/${name}`, "utf8"));
+  await configureCalendarPrimary(db, admin);
 });
 beforeEach(async () => {
   await db.exec(

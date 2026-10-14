@@ -76,12 +76,17 @@
   z-index: -1;
   top: 0;
   right: 0;
-  width: min(100%, 650px);
-  height: 430px;
+  width: 100%;
+  height: 620px;
   pointer-events: none;
-  background: url("/brand/dogs-meadow.webp") center 60% / cover no-repeat;
+  background: url("/brand/dogs-meadow.webp") right 54% / cover no-repeat;
   opacity: 0.12;
-  mask-image: linear-gradient(180deg, #000, transparent);
+  mask-image: radial-gradient(
+    ellipse 100% 100% at 100% 0%,
+    #000 10%,
+    #0009 42%,
+    transparent 78%
+  );
 }
 
 .shell :global(.role-avatar) {
@@ -97,7 +102,8 @@
 
 .shell :global(.topbar) {
   margin-bottom: 8px;
-  background: #f4f0e9de;
+  background: linear-gradient(180deg, #f4f0e9ee 0%, #f4f0e9aa 60%, #f4f0e900);
+  backdrop-filter: none;
 }
 
 .shell :global(.page-heading h1) {
@@ -132,7 +138,7 @@
   }
 
   .shell :global(.main)::before {
-    height: 320px;
+    height: 440px;
     opacity: 0.09;
   }
 

@@ -1,3 +1,4 @@
+import { configureCalendarPrimary } from "./helpers/calendar-primary.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -106,6 +107,7 @@ beforeAll(async () => {
   importedHistoryCount = (
     await db.query("select * from public.care_follow_up_history")
   ).rows.length;
+  await configureCalendarPrimary(db, admin);
 });
 beforeEach(async () => {
   await db.exec(

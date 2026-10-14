@@ -15,6 +15,7 @@ import {
   validCalendarDate,
   appointmentAnchor,
   isAllDayBlock,
+  addDays,
 } from "./dates";
 import { BlockEditor, CreateBlockEditor, AssignmentEditor } from "./editor";
 import styles from "./calendar.module.css";
@@ -38,7 +39,8 @@ export function CalendarView({
   focusDate,
   members = [],
   resources = [],
-  currentUserId,
+  activeMembers = [],
+  defaultStaffId,
 }: {
   appointments: Appointment[];
   range: ReturnType<typeof weekRange>;
@@ -52,7 +54,8 @@ export function CalendarView({
   focusDate?: string;
   members?: CalendarTeamMember[];
   resources?: CalendarResource[];
-  currentUserId?: string | null;
+  activeMembers?: CalendarTeamMember[];
+  defaultStaffId?: string | null;
 }) {
   const today = localDate(now);
   const focus = validCalendarDate(focusDate, new Date(now));
@@ -72,6 +75,39 @@ export function CalendarView({
     month: "long",
     year: "numeric",
   }).format(new Date(`${focus}T12:00:00Z`));
+  const days = admin && view === "week" ? [focus] : range.days;
+  const teamFilter = admin && members.length > 0 && (
+    <form className={styles.teamFilter}>
+      <input type="hidden" name="view" value={view} />
+      <input type="hidden" name="date" value={focus} />
+      <label htmlFor="calendar-staff-filter">Filtr wpisów</label>
+      <select
+        id="calendar-staff-filter"
+        name="staff"
+        defaultValue={selectedStaff}
+      >
+        <option value="all">Wszystkie wpisy</option>
+        {members.map((member) => (
+          <option key={member.user_id} value={member.user_id}>
+            {member.full_name}
+            {activeMembers.some((active) => active.user_id === member.user_id)
+              ? ""
+              : " · dotychczasowe przypisania"}
+          </option>
+        ))}
+        <option value="unassigned">Do przypisania</option>
+      </select>
+      <button className="small-button">Filtruj</button>
+      {selectedStaff !== "all" && (
+        <Link
+          className="ghost-button"
+          href={`${base}/calendar?date=${focus}&view=${view}`}
+        >
+          Wszystkie wpisy →
+        </Link>
+      )}
+    </form>
+  );
   return (
     <div className="stack">
       <header className={styles.header}>
@@ -85,7 +121,7 @@ export function CalendarView({
         </h2>
         <p className="muted">
           {admin
-            ? "Spacery, konsultacje, kursy, fitness i dostępność zespołu. Prowadzący i sala mają osobne rezerwacje."
+            ? "Spotkania i czas dla siebie, w jednym spokojnym planie."
             : "Potwierdzone spacery, kursy i umówione spotkania Twoich psów. Zgłoszenia oczekujące znajdziesz w odpowiednich zakładkach."}
         </p>
         {!admin && (
@@ -117,13 +153,23 @@ export function CalendarView({
           }
           className={styles.controls}
         >
-          <Link className="ghost-button" href={href(range.previous)}>
+          <Link
+            className="ghost-button"
+            href={href(
+              admin && view === "week" ? addDays(focus, -7) : range.previous,
+            )}
+          >
             ← Poprzedni
           </Link>
           <Link className="ghost-button" href={href(today)}>
             {view === "month" ? "Bieżący miesiąc" : "Bieżący tydzień"}
           </Link>
-          <Link className="ghost-button" href={href(range.next)}>
+          <Link
+            className="ghost-button"
+            href={href(
+              admin && view === "week" ? addDays(focus, 7) : range.next,
+            )}
+          >
             Następny →
           </Link>
         </nav>
@@ -145,35 +191,15 @@ export function CalendarView({
           <button className="small-button">Pokaż</button>
         </form>
       </div>
-      {admin && members.length > 0 && (
-        <form className={styles.teamFilter}>
-          <input type="hidden" name="view" value={view} />
-          <input type="hidden" name="date" value={focus} />
-          <label htmlFor="calendar-staff-filter">Kalendarz prowadzącego</label>
-          <select
-            id="calendar-staff-filter"
-            name="staff"
-            defaultValue={selectedStaff}
-          >
-            <option value="all">Cały zespół</option>
-            {members.map((member) => (
-              <option key={member.user_id} value={member.user_id}>
-                {member.full_name}
-              </option>
-            ))}
-            <option value="unassigned">Do przypisania</option>
-          </select>
-          <button className="small-button">Filtruj</button>
-          {selectedStaff !== "all" && (
-            <Link
-              className="ghost-button"
-              href={`${base}/calendar?date=${focus}&view=${view}`}
-            >
-              Cały zespół →
-            </Link>
-          )}
-        </form>
-      )}
+      {teamFilter &&
+        (activeMembers.length > 1 || selectedStaff !== "all" ? (
+          teamFilter
+        ) : (
+          <details className={styles.filterDisclosure}>
+            <summary>Filtruj wpisy</summary>
+            {teamFilter}
+          </details>
+        ))}
       <div className={admin ? styles.layout : ""}>
         {view === "month" ? (
           <section
@@ -182,8 +208,7 @@ export function CalendarView({
           >
             <h3>{monthTitle}</h3>
             <p className="muted">
-              Wybierz dzień, żeby zobaczyć godziny i szczegóły w widoku
-              tygodnia.
+              Wybierz dzień, żeby zobaczyć godziny i szczegóły.
             </p>
             <div className={styles.monthGrid}>
               {["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"].map((day) => (
@@ -230,8 +255,39 @@ export function CalendarView({
           </section>
         ) : (
           <div className={styles.days}>
-            {range.days.map((day) => {
-              const items = filtered.filter((item) => onDay(item, day));
+            {admin && (
+              <nav className={styles.weekStrip} aria-label="Dni tygodnia">
+                {range.days.map((day) => {
+                  const count = filtered.filter((item) =>
+                    onDay(item, day),
+                  ).length;
+                  const weekday = new Intl.DateTimeFormat("pl-PL", {
+                    timeZone: "Europe/Warsaw",
+                    weekday: "short",
+                  }).format(new Date(`${day}T12:00:00Z`));
+                  return (
+                    <Link
+                      key={day}
+                      href={href(day)}
+                      className={`${styles.weekDay} ${day === focus ? styles.chosenDay : ""} ${day === today ? styles.currentDay : ""}`}
+                      aria-current={day === focus ? "date" : undefined}
+                      aria-label={`${dayLabel(day)}: ${count ? `${count} w planie` : "bez spotkań"}${day === today ? ", dzisiaj" : ""}`}
+                      scroll={false}
+                    >
+                      <span>{weekday}</span>
+                      <strong>{Number(day.slice(-2))}</strong>
+                      <small>{count || "—"}</small>
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+            {days.map((day) => {
+              const items = filtered
+                .filter((item) => onDay(item, day))
+                .sort(
+                  (a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at),
+                );
               return (
                 <section
                   key={day}
@@ -292,22 +348,7 @@ export function CalendarView({
                                 : ""}
                             </span>
                             <h4>{item.title}</h4>
-                            {admin && item.assignment_version !== undefined && (
-                              <p className={styles.assignmentSummary}>
-                                <strong>
-                                  {item.assigned_staff_name || "Do przypisania"}
-                                </strong>
-                                {item.resource_name
-                                  ? ` · ${item.resource_name}`
-                                  : ""}
-                              </p>
-                            )}
                             {item.location && <p>{item.location}</p>}
-                            {admin && item.created_by_name && (
-                              <p className={styles.author}>
-                                Wpis dodał(a): {item.created_by_name}
-                              </p>
-                            )}
                             {admin && Boolean(item.break_warnings?.length) && (
                               <p className={styles.breakNote}>
                                 Krótka przerwa między spotkaniami — sprawdź czas
@@ -318,10 +359,11 @@ export function CalendarView({
                               admin && (
                                 <details>
                                   <summary>Zmień lub usuń blokadę</summary>
+                                  <AssignmentSummary item={item} />
                                   <BlockEditor
                                     id={item.id}
                                     initial={item}
-                                    members={members}
+                                    members={activeMembers}
                                     resources={resources}
                                   />
                                 </details>
@@ -338,11 +380,20 @@ export function CalendarView({
                                   item.assignment_version !== undefined && (
                                     <details>
                                       <summary>Prowadzący i miejsce</summary>
+                                      <AssignmentSummary item={item} />
                                       <AssignmentEditor
                                         appointment={item}
-                                        members={members}
+                                        members={activeMembers}
                                         resources={resources}
                                       />
+                                    </details>
+                                  )}
+                                {admin &&
+                                  item.assignment_version === undefined &&
+                                  item.created_by_name && (
+                                    <details>
+                                      <summary>Szczegóły wpisu</summary>
+                                      <AssignmentSummary item={item} />
                                     </details>
                                   )}
                               </>
@@ -372,20 +423,19 @@ export function CalendarView({
               </summary>
               <div id="calendar-block-editor">
                 <p className="muted">
-                  Urlop, dojazd lub inna niedostępność wybranego prowadzącego.
-                  Możesz też zarezerwować salę. Blokada jest prywatna dla
-                  zespołu.
+                  Urlop, dojazd lub przerwa prowadzącej. Możesz też zarezerwować
+                  salę. Blokada jest prywatna.
                 </p>
                 <CreateBlockEditor
                   id={newBlockId}
-                  members={members}
+                  members={activeMembers}
                   resources={resources}
-                  currentUserId={currentUserId}
+                  defaultStaffId={defaultStaffId}
                 />
               </div>
             </details>
-            <article className={`card pad ${styles.note}`}>
-              <h3>Zaplanuj spotkanie</h3>
+            <details className={`card pad ${styles.blockDisclosure}`}>
+              <summary>Zaplanuj spotkanie</summary>
               <p>
                 Termin konsultacji ustalisz z jej zgłoszenia. Spacer dodasz
                 bezpośrednio.
@@ -401,12 +451,7 @@ export function CalendarView({
                   Dodaj spacer →
                 </Link>
               </div>
-              <p className="muted">
-                Równoległe spotkania są możliwe dla różnych prowadzących i
-                miejsc. Wpis „Do przypisania” rezerwuje czas wspólnie, dopóki
-                nie wybierzesz prowadzącego.
-              </p>
-            </article>
+            </details>
             <Link className="ghost-button" href="/admin/settings/calendar">
               Godziny, przerwy i miejsca →
             </Link>
@@ -414,5 +459,22 @@ export function CalendarView({
         )}
       </div>
     </div>
+  );
+}
+
+function AssignmentSummary({ item }: { item: Appointment }) {
+  return (
+    <>
+      {item.assignment_version !== undefined && (
+        <p className={styles.assignmentSummary}>
+          Przypisanie:{" "}
+          <strong>{item.assigned_staff_name || "Do przypisania"}</strong>
+          {item.resource_name ? ` · ${item.resource_name}` : ""}
+        </p>
+      )}
+      {item.created_by_name && (
+        <p className={styles.author}>Wpis dodał(a): {item.created_by_name}</p>
+      )}
+    </>
   );
 }

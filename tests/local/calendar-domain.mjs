@@ -1,4 +1,6 @@
-// Rehearse the pending calendar schema using independent real PostgreSQL
+// Legacy schema rehearsal before 202610140001_single_practitioner.sql.
+// Current concurrency acceptance: calendar-single-domain.mjs.
+// Rehearse the earlier team calendar schema using independent real PostgreSQL
 // sessions in a generated, labelled database on this project's local VM.
 // No Auth/API credentials, environment files or source-data mutations.
 import assert from "node:assert/strict";
@@ -50,7 +52,11 @@ before(async () => {
     create function storage.foldername(name text) returns text[] language sql as $$select string_to_array(name,'/')$$;
     grant usage on schema storage to authenticated;grant select,insert,delete on storage.objects to authenticated;`);
   for (const file of readdirSync("supabase/migrations")
-    .filter((f) => /^\d{12}_.+\.sql$/.test(f))
+    .filter(
+      (f) =>
+        /^\d{12}_.+\.sql$/.test(f) &&
+        f < "202610140001_single_practitioner.sql",
+    )
     .sort())
     await observer.query(readFileSync(`supabase/migrations/${file}`, "utf8"));
   await observer.query(`insert into auth.users(id,email) values(${literal(admin)},'gift-admin@example.test'),(${literal(owner)},'gift-owner@example.test'),(${literal(other)},'gift-other@example.test'),(${literal(admin2)},'team-admin2@example.test');

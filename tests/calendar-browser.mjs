@@ -19,6 +19,7 @@ const { createServer } = await import(
 const server = await createServer({
   configFile: false,
   root: fixture,
+  publicDir: resolve(cwd, "public"),
   logLevel: "error",
   plugins: [
     {
@@ -90,8 +91,47 @@ try {
   await mkdir(output, { recursive: true });
   await page.goto(base);
   await server.waitForRequestsIdle();
+  await expect(page.getByLabel("Kalendarz: wrzesień 2026")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Dni tygodnia" }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Tydzień", exact: true }).click();
+  const dayPicker = page.getByRole("navigation", { name: "Dni tygodnia" });
+  await expect(dayPicker.getByRole("link")).toHaveCount(7);
+  await expect(
+    page.getByRole("heading", {
+      name: "poniedziałek, 21 września",
+      exact: true,
+    }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", { name: "wtorek, 22 września", exact: true }),
+  ).toHaveCount(0);
+  await dayPicker.getByRole("link", { name: /czwartek, 24 września/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Czas na odpoczynek", exact: true }),
+  ).toHaveCount(1);
+  await dayPicker.getByRole("link", { name: /piątek, 25 września/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Czas na odpoczynek", exact: true }),
+  ).toHaveCount(1);
+  await dayPicker.getByRole("link", { name: /sobota, 26 września/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Czas na odpoczynek", exact: true }),
+  ).toHaveCount(0);
+  await dayPicker
+    .getByRole("link", { name: /poniedziałek, 21 września/ })
+    .click();
   await page.getByText("Zarezerwuj czas", { exact: true }).click();
   const create = page.locator("#calendar-block-editor");
+  await expect(create.getByLabel("Prowadzący", { exact: true })).toHaveValue(
+    "90000000-0000-4000-8000-000000000010",
+  );
+  await expect(
+    create
+      .getByLabel("Prowadzący", { exact: true })
+      .getByRole("option", { name: "Mateusz · administrator", exact: true }),
+  ).toHaveCount(0);
   await create.getByLabel("Nazwa blokady").fill("Przerwa testowa");
   await create.getByLabel("Od (czas polski)").fill("2026-09-22T12:00");
   await expect(create.getByLabel("Do (czas polski)")).toHaveValue(
@@ -145,7 +185,7 @@ try {
   );
   await create
     .getByLabel("Prowadzący", { exact: true })
-    .selectOption("90000000-0000-4000-8000-000000000011");
+    .selectOption("90000000-0000-4000-8000-000000000010");
   await create
     .getByLabel("Miejsce do rezerwacji")
     .selectOption("90000000-0000-4000-8000-000000000012");
@@ -170,14 +210,14 @@ try {
   expect(await page.evaluate(() => window.calendarCalls.at(-1))).toMatchObject({
     starts_at: "2026-10-25T00:00",
     ends_at: "2026-10-26T00:00",
-    assigned_staff_id: "90000000-0000-4000-8000-000000000011",
+    assigned_staff_id: "90000000-0000-4000-8000-000000000010",
     resource_id: "90000000-0000-4000-8000-000000000012",
     confirm_short_break: "true",
   });
   // The current lead can disappear from the active team after an event was
   // created. Reading or submitting either editor must preserve that UUID,
   // rather than silently turning a personal reservation into a shared one.
-  await page.goto(`${base}/?former-lead=1`);
+  await page.goto(`${base}/?former-lead=1&view=week`);
   const formerLead = "90000000-0000-4000-8000-000000000021";
   const formerBlock = page.locator("article").filter({
     has: page.getByRole("heading", {
@@ -202,7 +242,7 @@ try {
     await expect(selectedLead).toHaveValue(formerLead);
     await expect(
       selectedLead.getByRole("option", {
-        name: "Dawna prowadząca (poza zespołem)",
+        name: "Dawna prowadząca (dotychczasowe przypisanie)",
         exact: true,
       }),
     ).toBeEnabled();
@@ -255,8 +295,9 @@ try {
       "Wybrane spotkanie: Spacery socjalizacyjne — pojedynczy spacer",
     ),
   ).toHaveCount(1);
+  await page.getByText("Filtruj wpisy", { exact: true }).click();
   await page
-    .getByLabel("Kalendarz prowadzącego")
+    .getByLabel("Filtr wpisów", { exact: true })
     .selectOption("90000000-0000-4000-8000-000000000011");
   await page.getByRole("button", { name: "Filtruj", exact: true }).click();
   await expect(
@@ -276,7 +317,7 @@ try {
   await expect(
     page.getByRole("link", { name: /zaplanowanych|bez spotkań/ }),
   ).toHaveCount(35);
-  await expect(page.getByLabel("Kalendarz prowadzącego")).toHaveCount(0);
+  await expect(page.getByLabel("Filtr wpisów", { exact: true })).toHaveCount(0);
   await page
     .getByRole("link", {
       name: "poniedziałek, 21 września: 2 zaplanowanych",
@@ -286,11 +327,27 @@ try {
   await expect(
     page.getByRole("link", { name: "Otwórz szczegóły" }),
   ).toHaveCount(2);
+  await expect(
+    page.getByRole("navigation", { name: "Dni tygodnia" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "wtorek, 22 września", exact: true }),
+  ).toHaveCount(1);
+  await page.goto(`${base}/?no-primary=1`);
+  await page.getByText("Zarezerwuj czas", { exact: true }).click();
+  await expect(
+    page.locator("#calendar-block-editor").getByRole("status"),
+  ).toContainText("Brak aktywnej prowadzącej");
+  await expect(
+    page
+      .locator("#calendar-block-editor")
+      .getByRole("button", { name: "Zablokuj czas", exact: true }),
+  ).toBeDisabled();
   await page.goto(`${base}/?view=settings&staff-settings=1`);
   await expect(
     page.getByText("Kontrola godzin jest wyłączona.", { exact: false }),
   ).toBeVisible();
-  await page.getByLabel("Korzystaj z domyślnego rytmu zespołu").check();
+  await page.getByLabel("Korzystaj z domyślnego rytmu pracy").check();
   await expect(page.getByLabel("Pilnuj godzin pracy")).toBeHidden();
   await page.getByRole("button", { name: "Zapisz rytm pracy" }).click();
   expect(
@@ -314,6 +371,9 @@ try {
       ["home", "view=home"],
       ["home-empty", "view=home&empty=1"],
       ["month", "view=month"],
+      ["week", "view=week"],
+      ["week-selected-day", "view=week&date=2026-09-24"],
+      ["no-primary", "no-primary=1"],
       ["month-guardian", "view=month&role=client"],
       ["settings", "view=settings"],
       ["staff-settings", "view=settings&staff-settings=1"],
@@ -350,6 +410,7 @@ try {
           "guardian",
           "home",
           "month",
+          "week",
           "month-guardian",
           "settings",
           "staff-settings",
@@ -368,9 +429,17 @@ try {
       }
     }
   }
+  await page.goto(`${base}/?view=week`);
+  await expect(
+    page.getByRole("navigation", { name: "Dni tygodnia" }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: resolve(output, "week-proposal-1440.png"),
+    fullPage: false,
+  });
   expect(errors).toEqual([]);
   console.log(
-    "Calendar UI: block recovery, all-day dates, assignments, former lead UUID preservation in both editors, warning confirmation, exact-event navigation, staff filter, month/client privacy, staff settings and 40 responsive scenarios passed.",
+    "Calendar UI: month default, selected-day week agenda, multi-day blocks, primary defaults and missing configuration, block recovery, all-day dates, assignments, former lead UUID preservation, warning confirmation, exact-event navigation, history filter, client week/month privacy, staff settings and 52 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();
