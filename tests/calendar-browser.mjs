@@ -329,10 +329,32 @@ try {
   ).toHaveCount(2);
   await expect(
     page.getByRole("navigation", { name: "Dni tygodnia" }),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
   await expect(
     page.getByRole("heading", { name: "wtorek, 22 września", exact: true }),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
+  const guardianDays = page.getByRole("navigation", { name: "Dni tygodnia" });
+  await expect(guardianDays.getByRole("link")).toHaveCount(7);
+  await guardianDays
+    .getByRole("link", {
+      name: "wtorek, 22 września: bez spotkań",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "wtorek, 22 września", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nie masz tutaj potwierdzonych terminów.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Otwórz szczegóły" }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Tygodnie kalendarza" })
+      .getByRole("link", { name: "Następny →", exact: true }),
+  ).toHaveAttribute("href", /date=2026-09-29&view=week/);
   await page.goto(`${base}/?no-primary=1`);
   await page.getByText("Zarezerwuj czas", { exact: true }).click();
   await expect(
@@ -366,6 +388,8 @@ try {
     for (const [name, query] of [
       ["admin", ""],
       ["guardian", "role=client"],
+      ["guardian-selected-day", "role=client&date=2026-09-24"],
+      ["guardian-empty-day", "role=client&date=2026-09-22"],
       ["long", "long=1"],
       ["empty", "empty=1"],
       ["home", "view=home"],
@@ -439,7 +463,7 @@ try {
   });
   expect(errors).toEqual([]);
   console.log(
-    "Calendar UI: month default, selected-day week agenda, multi-day blocks, primary defaults and missing configuration, block recovery, all-day dates, assignments, former lead UUID preservation, warning confirmation, exact-event navigation, history filter, client week/month privacy, staff settings and 52 responsive scenarios passed.",
+    "Calendar UI: month default, both roles' day picker and selected-day week agenda, multi-day blocks, primary defaults and missing configuration, block recovery, all-day dates, assignments, former lead UUID preservation, warning confirmation, exact-event navigation, history filter, client week/month privacy, staff settings and 60 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

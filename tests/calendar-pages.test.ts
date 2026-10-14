@@ -25,18 +25,21 @@ it("opens the administrator's calendar in the month and keeps the client's weekl
   ).toBe("week");
 });
 
-it("opens a linked session in its selected day and preserves the event identity", async () => {
-  const result = await CalendarPage({
-    admin: true,
-    searchParams: Promise.resolve({ date: "2026-10-13", event }),
-  });
-  expect(result.props).toMatchObject({
-    view: "week",
-    focusDate: "2026-10-13",
-    selectedEvent: event,
-  });
-  expect(mocks.calendar).toHaveBeenCalledWith(true, "2026-10-13", "week");
-});
+it.each([true, false])(
+  "opens a linked session on its selected day, admin=%s",
+  async (admin) => {
+    const result = await CalendarPage({
+      admin,
+      searchParams: Promise.resolve({ date: "2026-10-13", event }),
+    });
+    expect(result.props).toMatchObject({
+      view: "week",
+      focusDate: "2026-10-13",
+      selectedEvent: event,
+    });
+    expect(mocks.calendar).toHaveBeenCalledWith(admin, "2026-10-13", "week");
+  },
+);
 
 it("respects an explicit view and normalizes invalid dates before querying", async () => {
   const result = await CalendarPage({

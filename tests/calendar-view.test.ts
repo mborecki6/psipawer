@@ -68,35 +68,70 @@ it("shows seven day choices and the selected administrator agenda without hiding
   );
 });
 
-it("shows a linked session only on its selected day and preserves its exact anchor", () => {
-  const html = renderToStaticMarkup(
-    createElement(CalendarView, {
-      ...props,
-      focusDate: "2026-10-13",
-      selectedEvent: `${tuesday.kind}:${tuesday.id}:${Date.parse(tuesday.starts_at)}`,
-    }),
-  );
-  expect(html).toContain("Wtorkowa konsultacja");
-  expect(html).not.toContain("Poniedziałkowy spacer");
-  expect(html).toContain(`id="${appointmentAnchor(tuesday)}"`);
-  expect(html).toContain(
-    'aria-label="Wybrane spotkanie: Wtorkowa konsultacja"',
-  );
-});
+it.each([true, false])(
+  "shows a linked session on its day and preserves its exact anchor, admin=%s",
+  (admin) => {
+    const html = renderToStaticMarkup(
+      createElement(CalendarView, {
+        ...props,
+        admin,
+        focusDate: "2026-10-13",
+        selectedEvent: `${tuesday.kind}:${tuesday.id}:${Date.parse(tuesday.starts_at)}`,
+      }),
+    );
+    expect(html).toContain("Wtorkowa konsultacja");
+    expect(html).not.toContain("Poniedziałkowy spacer");
+    expect(html).toContain(`id="${appointmentAnchor(tuesday)}"`);
+    expect(html).toContain(
+      'aria-label="Wybrane spotkanie: Wtorkowa konsultacja"',
+    );
+  },
+);
 
-it("retains every day in the client's weekly list", () => {
+it("shows the same day picker and a private selected-day agenda for the client", () => {
   const html = renderToStaticMarkup(
     createElement(CalendarView, {
       ...props,
       admin: false,
     }),
   );
-  expect(html).not.toContain('aria-label="Dni tygodnia"');
+  expect(html).toContain('aria-label="Dni tygodnia"');
+  const picker = html.match(/aria-label="Dni tygodnia">([\s\S]*?)<\/nav>/)?.[1];
+  expect(picker?.match(/<a /g)).toHaveLength(7);
   expect(html).toContain("Poniedziałkowy spacer");
-  expect(html).toContain("Wtorkowa konsultacja");
-  expect(html).toContain('aria-label="niedziela, 18 października"');
+  expect(html).not.toContain("Wtorkowa konsultacja");
+  expect(html).toContain('href="/app/calendar?date=2026-10-13&amp;view=week"');
+  expect(html.match(/<section\b/g)).toHaveLength(1);
   expect(html).not.toContain("Wpis dodał(a)");
+  expect(html).not.toContain("Administrator");
+  expect(html).not.toContain("Filtr wpisów");
+  expect(html).not.toContain("Zarezerwuj czas");
+  expect(html).not.toContain("Zaplanuj spotkanie");
 });
+
+it.each([
+  ["2026-10-14", "2026-10-07", "2026-10-21"],
+  ["2026-10-28", "2026-10-21", "2026-11-04"],
+])(
+  "keeps the client's weekday across week navigation from %s and shows an empty day",
+  (day, previous, next) => {
+    const html = renderToStaticMarkup(
+      createElement(CalendarView, {
+        ...props,
+        admin: false,
+        focusDate: day,
+        range: weekRange(day),
+      }),
+    );
+    expect(html).toContain(
+      `href="/app/calendar?date=${previous}&amp;view=week"`,
+    );
+    expect(html).toContain(`href="/app/calendar?date=${next}&amp;view=week"`);
+    expect(html).toContain("Nie masz tutaj potwierdzonych terminów.");
+    expect(html).not.toContain("<h4>Poniedziałkowy spacer</h4>");
+    expect(html).not.toContain("<h4>Wtorkowa konsultacja</h4>");
+  },
+);
 
 it("keeps month counts and links to the selected day without applying the primary as a filter", () => {
   const html = renderToStaticMarkup(

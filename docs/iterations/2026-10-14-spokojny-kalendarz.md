@@ -12,9 +12,10 @@ miesiącem jako widokiem początkowym i paskiem dni z agendą w tygodniu.
 - AC-01: tło rozciąga się na szerokość głównej części panelu i zanika na bokach
   oraz u dołu, bez małego prostokąta. Czytelność i brak poziomego overflow
   przy 320/390/768/1440 px.
-- AC-02: administrator domyślnie dostaje miesiąc. Tydzień pokazuje siedem dni
-  z licznikami i chronologiczną agendę wybranej daty. Klient zachowuje listę
-  całego tygodnia. Pusty dzień ma krótki komunikat.
+- AC-02: administrator domyślnie dostaje miesiąc, opiekun tydzień. Tydzień
+  obu ról pokazuje siedem dni z licznikami i chronologiczną agendę wybranej
+  daty. Pusty dzień ma krótki komunikat. Układ opiekuna dopisano po osobnej
+  prośbie i zgodzie na publikację, po pierwszym wydaniu kalendarza.
 - AC-03: link z najbliższego spotkania otwiera tydzień, właściwy dzień i
   konkretny identyfikator spotkania. Wielodniowe blokady, granice miesiąca,
   Europe/Warsaw i zmiana czasu zachowują istniejące reguły.
@@ -125,3 +126,18 @@ podpis roli administratora na „Panel zarządzania”. Końcowy build ma status
 ID `dpl_7S4dFhxgAAaZH2drVUwjSf1NFG2B` i kod aplikacji `bee1072`. Po zmianie
 podpisu odbiór 3 tras oraz 9 wariantów ekranów zaliczony; zero błędów i zapisów
 biznesowych. Publiczny alias wskazuje ten build.
+
+## Uzupełnienie: ten sam tydzień u opiekuna
+
+Użytkownik poprosił o ten sam widok tygodnia w panelu zwykłego użytkownika,
+a następnie osobno potwierdził „Tak, wdroż również tę poprawkę”. Układ jest
+wspólny: siedem dni z własnymi licznikami, plan wybranego dnia i puste stany.
+Przejście ±7 zachowuje dzień tygodnia także na granicy miesiąca i zmiany czasu.
+Odczyt klienta nadal używa własnych `calendar_appointments`; brak filtra staff,
+autorów, prywatnych blokad i administracyjnych formularzy. Kalendarz oferty
+pozostaje osobnym widokiem. Brak zmian DB, RPC, uprawnień i kont.
+
+Odbiór: koordynator 19 testów views/pages/oferty oraz 60 wariantów przeglądarki;
+recenzent własne 43 testy views/pages/actions i przegląd zrzutów opiekuna
+390/1440 px, bez uwag. TypeScript, ESLint i diff check zaliczone. Publikacja
+tej korekty zostanie potwierdzona po sprawdzeniu istniejącego konta opiekuna.

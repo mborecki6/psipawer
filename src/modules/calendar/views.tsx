@@ -75,7 +75,7 @@ export function CalendarView({
     month: "long",
     year: "numeric",
   }).format(new Date(`${focus}T12:00:00Z`));
-  const days = admin && view === "week" ? [focus] : range.days;
+  const days = view === "week" ? [focus] : range.days;
   const teamFilter = admin && members.length > 0 && (
     <form className={styles.teamFilter}>
       <input type="hidden" name="view" value={view} />
@@ -155,9 +155,7 @@ export function CalendarView({
         >
           <Link
             className="ghost-button"
-            href={href(
-              admin && view === "week" ? addDays(focus, -7) : range.previous,
-            )}
+            href={href(view === "week" ? addDays(focus, -7) : range.previous)}
           >
             ← Poprzedni
           </Link>
@@ -166,9 +164,7 @@ export function CalendarView({
           </Link>
           <Link
             className="ghost-button"
-            href={href(
-              admin && view === "week" ? addDays(focus, 7) : range.next,
-            )}
+            href={href(view === "week" ? addDays(focus, 7) : range.next)}
           >
             Następny →
           </Link>
@@ -255,33 +251,31 @@ export function CalendarView({
           </section>
         ) : (
           <div className={styles.days}>
-            {admin && (
-              <nav className={styles.weekStrip} aria-label="Dni tygodnia">
-                {range.days.map((day) => {
-                  const count = filtered.filter((item) =>
-                    onDay(item, day),
-                  ).length;
-                  const weekday = new Intl.DateTimeFormat("pl-PL", {
-                    timeZone: "Europe/Warsaw",
-                    weekday: "short",
-                  }).format(new Date(`${day}T12:00:00Z`));
-                  return (
-                    <Link
-                      key={day}
-                      href={href(day)}
-                      className={`${styles.weekDay} ${day === focus ? styles.chosenDay : ""} ${day === today ? styles.currentDay : ""}`}
-                      aria-current={day === focus ? "date" : undefined}
-                      aria-label={`${dayLabel(day)}: ${count ? `${count} w planie` : "bez spotkań"}${day === today ? ", dzisiaj" : ""}`}
-                      scroll={false}
-                    >
-                      <span>{weekday}</span>
-                      <strong>{Number(day.slice(-2))}</strong>
-                      <small>{count || "—"}</small>
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
+            <nav className={styles.weekStrip} aria-label="Dni tygodnia">
+              {range.days.map((day) => {
+                const count = filtered.filter((item) =>
+                  onDay(item, day),
+                ).length;
+                const weekday = new Intl.DateTimeFormat("pl-PL", {
+                  timeZone: "Europe/Warsaw",
+                  weekday: "short",
+                }).format(new Date(`${day}T12:00:00Z`));
+                return (
+                  <Link
+                    key={day}
+                    href={href(day)}
+                    className={`${styles.weekDay} ${day === focus ? styles.chosenDay : ""} ${day === today ? styles.currentDay : ""}`}
+                    aria-current={day === focus ? "date" : undefined}
+                    aria-label={`${dayLabel(day)}: ${count ? `${count} w planie` : "bez spotkań"}${day === today ? ", dzisiaj" : ""}`}
+                    scroll={false}
+                  >
+                    <span>{weekday}</span>
+                    <strong>{Number(day.slice(-2))}</strong>
+                    <small>{count || "—"}</small>
+                  </Link>
+                );
+              })}
+            </nav>
             {days.map((day) => {
               const items = filtered
                 .filter((item) => onDay(item, day))
