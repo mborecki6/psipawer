@@ -315,7 +315,7 @@ export function Shell({
             <div className="role-copy">
               <strong>{name}</strong>
               <span>
-                {role === "admin" ? "Panel behawiorysty" : "Panel opiekuna"}
+                {role === "admin" ? "Panel zarządzania" : "Panel opiekuna"}
               </span>
             </div>
             <Pencil

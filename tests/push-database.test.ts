@@ -189,11 +189,11 @@ describe.sequential("private push subscriptions and outbox", () => {
     );
     const enabledAt = async () =>
       (
-        await db.query<{ enabled_at: string }>(
+        await db.query<{ enabled_at: Date }>(
           "select enabled_at from public.push_subscriptions where id=$1",
           [id],
         )
-      ).rows[0].enabled_at;
+      ).rows[0].enabled_at.getTime();
     const firstOptIn = await enabledAt();
     const fresh = await notice();
     expect(await subscribe()).toBe(id);
@@ -206,9 +206,7 @@ describe.sequential("private push subscriptions and outbox", () => {
     // the same millisecond, which is the valid inclusive opt-in boundary.
     await notice(owner, "1 second");
     await subscribe();
-    expect(Date.parse(await enabledAt())).toBeGreaterThan(
-      Date.parse(firstOptIn),
-    );
+    expect(await enabledAt()).toBeGreaterThan(firstOptIn);
     expect(await claim()).toEqual([]);
   });
   it("binds one endpoint to the new account/session and cancels the previous outbox", async () => {
