@@ -139,5 +139,10 @@ pozostaje osobnym widokiem. Brak zmian DB, RPC, uprawnień i kont.
 
 Odbiór: koordynator 19 testów views/pages/oferty oraz 60 wariantów przeglądarki;
 recenzent własne 43 testy views/pages/actions i przegląd zrzutów opiekuna
-390/1440 px, bez uwag. TypeScript, ESLint i diff check zaliczone. Publikacja
-tej korekty zostanie potwierdzona po sprawdzeniu istniejącego konta opiekuna.
+390/1440 px, bez uwag. TypeScript, ESLint i diff check zaliczone.
+
+Poprawka opublikowana 14.10: build READY `dpl_EFM2cPGPTkt31nuFxcSyRR81xKm3`,
+kod aplikacji `50b8d3a`, alias `https://psipawer.vercel.app`. Odbiór istniejących
+kont administratora i testowego opiekuna: 4 trasy, 12 wariantów ekranów,
+3 blokady anonimowe, zero błędów przeglądarki i zero zapisów biznesowych.
+Zweryfikowano wybór dnia, ±7 oraz miesiąc→dzień. Brak nowej migracji.
