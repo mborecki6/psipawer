@@ -39,7 +39,7 @@ export default async function Login({
             <div className={styles.photos}>
               <div className={styles.photo}>
                 <Image
-                  src="/brand/training-play.webp"
+                  src="/brand/training-play-clean.webp"
                   alt="Asia z Psi Pawer podczas zabawy z podskakującym psem na łące"
                   fill
                   sizes="(max-width: 550px) calc((100vw - 44px) / 2), (max-width: 800px) 254px, (max-width: 1200px) 25vw, 308px"
@@ -48,7 +48,7 @@ export default async function Login({
               </div>
               <div className={styles.photo}>
                 <Image
-                  src="/brand/training-reward.webp"
+                  src="/brand/training-reward-clean.webp"
                   alt="Asia nagradza psa wspólną zabawą piłką na trawie"
                   fill
                   sizes="(max-width: 550px) calc((100vw - 44px) / 2), (max-width: 800px) 254px, (max-width: 1200px) 25vw, 308px"

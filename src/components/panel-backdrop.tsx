@@ -26,7 +26,7 @@ export function PanelBackdrop({ path }: { path: string }) {
       aria-hidden="true"
     >
       <Image
-        src={`/brand/${scene}.webp`}
+        src={`/brand/${scene}-clean.webp`}
         alt=""
         fill
         sizes={

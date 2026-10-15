@@ -97,6 +97,10 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Usunięcie dopisku fotografa](iterations/2026-10-15-watermark.md): bezpośrednia
+korekta opublikowanych zdjęć po prośbie użytkownika. Retusz ograniczony do znaku,
+reszta pikseli zachowana. Wydanie dotyczy wyłącznie czterech fotografii i ich ścieżek.
+
 [Fotografie w panelu](iterations/2026-10-15-fotografie-panelu.md): cztery
 oryginalne fotografie przekazane przez użytkownika, para przy logowaniu
 i delikatne tła przypisane do sekcji obu ról. Użytkownik 15.10 zatwierdził
