@@ -91,14 +91,26 @@
 .quote {
   display: grid;
   gap: 6px;
-  background: var(--sage-2);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
   padding: 16px;
   border-radius: 14px;
   overflow-wrap: anywhere;
 }
 .quote span {
   font-size: 13px;
-  color: var(--ink-soft);
+  color: var(--brand-ink);
+}
+.locationFields {
+  display: grid;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.locationFields h3,
+.locationFields p {
+  margin: 0;
 }
 .dateGrid {
   display: grid;
@@ -127,7 +139,8 @@
 }
 .session .location {
   padding: 14px 16px;
-  background: var(--sage-2);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
   border-radius: 12px;
   font-size: 14px;
 }
@@ -192,12 +205,14 @@
   max-width: 820px;
 }
 .note {
-  background: var(--sage-2);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
 }
 .billing {
   margin-top: 20px;
   padding: 18px;
-  background: var(--sage-2);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
   border-radius: 14px;
   scroll-margin-top: 112px;
 }
@@ -261,7 +276,7 @@
 .refund {
   padding: 12px 14px;
   margin-top: 12px;
-  border-left: 3px solid var(--sage);
+  border-left: 3px solid var(--brand-accent);
   background: var(--paper);
   border-radius: 0 10px 10px 0;
 }

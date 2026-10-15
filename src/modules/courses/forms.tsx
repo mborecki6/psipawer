@@ -141,8 +141,9 @@ export function CourseCreateForm({
       {booking && <BookingChoice data={booking} pending={busy} />}
       {booking && (
         <p className="muted">
-          Wybór prowadzącego i sali dotyczy całego cyklu. Poszczególne spotkania
-          możesz później przypisać osobno w kalendarzu.
+          {booking.resources.some((resource) => resource.active)
+            ? "Prowadząca i opcjonalna rezerwacja sali dotyczą całego cyklu. Miejsce zbiórki wpisz poniżej."
+            : "Prowadząca zostanie przypisana do całego cyklu. Miejsce zbiórki wpisz poniżej."}
         </p>
       )}
       <fieldset disabled={busy} className={styles.fields}>
@@ -213,40 +214,56 @@ export function CourseCreateForm({
               : "Domyślnie 4 pary. Zgłoszenia zatwierdzasz osobiście."}
           </small>
         </div>
-        <div className="field">
-          <label htmlFor={`${prefix}-public`}>
-            Okolica widoczna przed przyjęciem
-          </label>
-          <textarea
-            id={`${prefix}-public`}
-            name="public_location"
-            value={publicPlace}
-            onChange={(e) => setPublicPlace(e.target.value)}
-            minLength={3}
-            maxLength={300}
-            rows={2}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor={`${prefix}-private`}>
-            Dokładna zbiórka po przyjęciu
-          </label>
-          <textarea
-            id={`${prefix}-private`}
-            name="exact_location"
-            value={privatePlace}
-            onChange={(e) => setPrivatePlace(e.target.value)}
-            minLength={3}
-            maxLength={2000}
-            rows={3}
-            required
-          />
-          <small>
-            Początkowo dla wszystkich spotkań. Potem możesz zmienić miejsce
-            każdego z nich osobno.
-          </small>
-        </div>
+        <section
+          className={styles.locationFields}
+          aria-labelledby={`${prefix}-place-heading`}
+        >
+          <h3 id={`${prefix}-place-heading`}>Miejsce spotkań</h3>
+          <p className="muted">
+            Wpisz miejsce dla wszystkich spotkań. Po zapisaniu cyklu możesz
+            zmienić je przy wybranym spotkaniu.
+          </p>
+          <div className="field">
+            <label htmlFor={`${prefix}-public`}>
+              Miejsce — okolica przed przyjęciem
+            </label>
+            <textarea
+              id={`${prefix}-public`}
+              name="public_location"
+              value={publicPlace}
+              onChange={(e) => setPublicPlace(e.target.value)}
+              placeholder="Np. Park Miejski w Warszawie"
+              aria-describedby={`${prefix}-public-hint`}
+              minLength={3}
+              maxLength={300}
+              rows={2}
+              required
+            />
+            <small id={`${prefix}-public-hint`}>
+              Tę okolicę opiekun zobaczy przed przyjęciem na kurs.
+            </small>
+          </div>
+          <div className="field">
+            <label htmlFor={`${prefix}-private`}>
+              Dokładne miejsce zbiórki po przyjęciu
+            </label>
+            <textarea
+              id={`${prefix}-private`}
+              name="exact_location"
+              value={privatePlace}
+              onChange={(e) => setPrivatePlace(e.target.value)}
+              placeholder="Np. wejście od ul. Parkowej, przy tablicy z mapą"
+              aria-describedby={`${prefix}-private-hint`}
+              minLength={3}
+              maxLength={2000}
+              rows={3}
+              required
+            />
+            <small id={`${prefix}-private-hint`}>
+              Adres i wskazówki dotarcia zobaczą tylko przyjęci opiekunowie.
+            </small>
+          </div>
+        </section>
         <div className={styles.sectionHead}>
           <h3>Terminy w czasie polskim</h3>
           <button
@@ -608,36 +625,52 @@ export function SessionEditor({
             required
           />
         </div>
-        <div className="field">
-          <label htmlFor={`${prefix}-public`}>
-            Okolica widoczna przed przyjęciem
-          </label>
-          <textarea
-            id={`${prefix}-public`}
-            name="public_location"
-            value={publicPlace}
-            onChange={(e) => setPublicPlace(e.target.value)}
-            minLength={3}
-            maxLength={300}
-            rows={2}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor={`${prefix}-private`}>
-            Dokładna zbiórka po przyjęciu
-          </label>
-          <textarea
-            id={`${prefix}-private`}
-            name="exact_location"
-            value={privatePlace}
-            onChange={(e) => setPrivatePlace(e.target.value)}
-            minLength={3}
-            maxLength={2000}
-            rows={2}
-            required
-          />
-        </div>
+        <section
+          className={styles.locationFields}
+          aria-labelledby={`${prefix}-place-heading`}
+        >
+          <h3 id={`${prefix}-place-heading`}>Miejsce tego spotkania</h3>
+          <div className="field">
+            <label htmlFor={`${prefix}-public`}>
+              Miejsce — okolica przed przyjęciem
+            </label>
+            <textarea
+              id={`${prefix}-public`}
+              name="public_location"
+              value={publicPlace}
+              onChange={(e) => setPublicPlace(e.target.value)}
+              placeholder="Np. Park Miejski w Warszawie"
+              aria-describedby={`${prefix}-public-hint`}
+              minLength={3}
+              maxLength={300}
+              rows={2}
+              required
+            />
+            <small id={`${prefix}-public-hint`}>
+              Tę okolicę opiekun zobaczy przed przyjęciem na kurs.
+            </small>
+          </div>
+          <div className="field">
+            <label htmlFor={`${prefix}-private`}>
+              Dokładne miejsce zbiórki po przyjęciu
+            </label>
+            <textarea
+              id={`${prefix}-private`}
+              name="exact_location"
+              value={privatePlace}
+              onChange={(e) => setPrivatePlace(e.target.value)}
+              placeholder="Np. wejście od ul. Parkowej, przy tablicy z mapą"
+              aria-describedby={`${prefix}-private-hint`}
+              minLength={3}
+              maxLength={2000}
+              rows={2}
+              required
+            />
+            <small id={`${prefix}-private-hint`}>
+              Adres i wskazówki dotarcia zobaczą tylko przyjęci opiekunowie.
+            </small>
+          </div>
+        </section>
         <div className="field">
           <label htmlFor={`${prefix}-note`}>Powód zmiany dla opiekuna</label>
           <textarea

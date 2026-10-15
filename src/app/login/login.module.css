@@ -38,7 +38,7 @@
 }
 
 .intro :global(.eyebrow) {
-  color: #81594d;
+  color: var(--brand-ink);
   font-size: 11px;
 }
 
@@ -59,18 +59,29 @@
   line-height: 1.7;
 }
 
+.photos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
 .photo {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.5;
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 24px 24px 64px 24px;
-  background: #e5e9dd;
+  border-radius: 22px 22px 48px 22px;
+  background: var(--brand-soft);
+}
+
+.photo:nth-child(2) {
+  margin-top: 24px;
+  border-radius: 22px 22px 22px 48px;
 }
 
 .photo img {
-  object-fit: cover;
-  object-position: center top;
+  object-fit: contain;
 }
 
 .guide {
@@ -156,8 +167,12 @@
   }
 
   .photo {
-    aspect-ratio: 1.25;
-    border-radius: 20px 20px 48px 20px;
+    border-radius: 16px 16px 32px 16px;
+  }
+
+  .photo:nth-child(2) {
+    margin-top: 16px;
+    border-radius: 16px 16px 16px 32px;
   }
 
   .footer {

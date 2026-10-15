@@ -30,14 +30,18 @@
 }
 
 .shell :global(.nav-item.active) {
-  color: var(--ink);
-  background: #e7eee5;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
   box-shadow: none;
 }
 
+.shell :global(.nav-item.active svg) {
+  color: var(--brand-accent);
+}
+
 .shell :global(.nav-item:hover) {
-  color: var(--ink);
-  background: #edf2eb;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
 }
 
 .shell :global(.sidebar-footer) {
@@ -55,7 +59,8 @@
 }
 
 .shell :global(.role-pill:hover) {
-  background: #edf2eb;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
 }
 
 .profileEdit {
@@ -70,28 +75,42 @@
   padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
-.shell :global(.main)::before {
-  content: "";
+.backdrop {
   position: absolute;
   z-index: -1;
   top: 0;
   right: 0;
-  width: 100%;
-  height: 620px;
+  width: min(100%, 1100px);
+  aspect-ratio: 3 / 2;
   pointer-events: none;
-  background: url("/brand/dogs-meadow.webp") right 54% / cover no-repeat;
   opacity: 0.12;
   mask-image: radial-gradient(
-    ellipse 100% 100% at 100% 0%,
-    #000 10%,
-    #0009 42%,
-    transparent 78%
+    ellipse 72% 65% at 66% 38%,
+    #000 15%,
+    #0009 50%,
+    transparent 82%
+  );
+}
+
+.backdrop img {
+  object-fit: contain;
+}
+
+.portraitBackdrop {
+  width: min(54%, 420px);
+  aspect-ratio: 2 / 3;
+  mask-image: radial-gradient(
+    ellipse 68% 64% at 54% 46%,
+    #000 20%,
+    #0009 55%,
+    transparent 85%
   );
 }
 
 .shell :global(.role-avatar) {
   border-radius: 50%;
-  background: #e7eee5;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
 }
 
 .shell :global(.role-copy strong) {
@@ -116,7 +135,7 @@
 }
 
 .shell :global(.notification-button) {
-  color: var(--ink);
+  color: var(--brand-accent);
   border-color: var(--line);
   background: #fffdf9;
   border-radius: 10px;
@@ -124,7 +143,7 @@
 
 .shell :global(.notification-button:hover),
 .shell :global(.notification-button[aria-current="page"]) {
-  background: #e7eee5;
+  background: var(--brand-soft);
 }
 
 .shell :global(:focus-visible) {
@@ -137,8 +156,7 @@
     padding-top: 18px;
   }
 
-  .shell :global(.main)::before {
-    height: 440px;
+  .backdrop {
     opacity: 0.09;
   }
 

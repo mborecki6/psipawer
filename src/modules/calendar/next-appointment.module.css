@@ -15,8 +15,8 @@
 .appointment {
   min-width: 0;
   padding: 26px;
-  color: var(--ink);
-  background: #e7eee5;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
   border-radius: 16px;
   overflow-wrap: anywhere;
 }
@@ -26,7 +26,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 22px;
-  color: var(--ink-soft);
+  color: var(--brand-ink);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
@@ -34,6 +34,7 @@
 
 .eyebrow svg {
   flex-shrink: 0;
+  color: var(--brand-accent);
 }
 
 .time {
@@ -53,7 +54,7 @@
 
 .date {
   margin: 8px 0 24px;
-  color: var(--ink-soft);
+  color: var(--brand-ink);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -75,7 +76,7 @@
 }
 
 .details dt {
-  color: var(--ink-soft);
+  color: var(--brand-ink);
   font-size: 12px;
 }
 
@@ -97,7 +98,7 @@
   min-height: 44px;
   padding: 10px 14px;
   border-radius: 9px;
-  color: var(--ink);
+  color: var(--brand-ink);
   font-size: 14px;
   font-weight: 600;
   text-align: center;
@@ -105,17 +106,17 @@
 }
 
 .primaryLink {
-  border: 1px solid #cbd5c8;
+  border: 1px solid var(--brand-accent);
   background: #fffdf9;
 }
 
 .primaryLink:hover,
 .quietLink:hover {
-  background: #f5f8f3;
+  background: #fff3ec;
 }
 
 .quietLink {
-  color: var(--ink-soft);
+  color: var(--brand-ink);
   font-size: 13px;
   font-weight: 500;
 }

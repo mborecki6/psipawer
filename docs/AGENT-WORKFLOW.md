@@ -97,6 +97,17 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Fotografie w panelu](iterations/2026-10-15-fotografie-panelu.md): cztery
+oryginalne fotografie przekazane przez użytkownika, para przy logowaniu
+i delikatne tła przypisane do sekcji obu ról. Użytkownik 15.10 zatwierdził
+publikację razem z paletą i formularzem kursu; odbiór wydania w toku.
+
+[Brzoskwinia i miejsce kursu](iterations/2026-10-15-brzoskwinia-miejsce-kursu.md):
+lokalny kandydat po feedbacku z 15.10. Brzoskwiniowe wyróżnienia, terakotowe
+akcenty, osobna czerwień zaległości, czytelna sekcja miejsca kursu i tekst
+logowania ze wsparciem specjalisty. Publikacja zatwierdzona przez użytkownika
+15.10 razem ze zdjęciami, po lokalnym odbiorze.
+
 [Spokojny kalendarz](iterations/2026-10-14-spokojny-kalendarz.md): miesiąc jako
 widok początkowy, pasek dni z agendą tygodnia i płynne tło. Asia jest jedyną
 prowadzącą, wybraną w DB. Autor będący administratorem nie zostaje prowadzącym.

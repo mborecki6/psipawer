@@ -118,10 +118,10 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await create.getByLabel("Nazwa cyklu").fill(title);
     await create.getByLabel("Liczba psów z opiekunami").fill("1");
     await create
-      .getByLabel("Okolica widoczna przed przyjęciem")
+      .getByLabel("Miejsce — okolica przed przyjęciem")
       .fill("Park próbnego kursu");
     await create
-      .getByLabel("Dokładna zbiórka po przyjęciu")
+      .getByLabel("Dokładne miejsce zbiórki po przyjęciu")
       .fill("PRYWATNY PUNKT PANELU");
     const first = `${new Date().getUTCFullYear() + 2}-01-15T14:00`;
     await create.getByLabel("Spotkanie 1", { exact: true }).fill(first);
@@ -237,21 +237,21 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
       .selectOption(extraDog!.id);
     const staleMeeting = stale.locator("#spotkanie-1");
     await staleMeeting
-      .getByText("Zmień termin lub zbiórkę", { exact: true })
+      .getByText("Zmień termin lub miejsce", { exact: true })
       .click();
     const staleForm = stale.getByRole("form", {
       name: "Termin spotkania 1",
       exact: true,
     });
     await staleForm
-      .getByLabel("Dokładna zbiórka po przyjęciu")
+      .getByLabel("Dokładne miejsce zbiórki po przyjęciu")
       .fill("ZACHOWANY STARY WPIS");
     await staleForm
       .getByLabel("Powód zmiany dla opiekuna")
       .fill("Wpis w starej karcie");
     const meeting = staff.locator("#spotkanie-1");
     await meeting
-      .getByText("Zmień termin lub zbiórkę", { exact: true })
+      .getByText("Zmień termin lub miejsce", { exact: true })
       .click();
     const edit = staff.getByRole("form", {
       name: "Termin spotkania 1",
@@ -260,7 +260,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     const moved = first.replace("-15T", "-16T");
     await edit.getByLabel("Termin (czas polski)").fill(moved);
     await edit
-      .getByLabel("Dokładna zbiórka po przyjęciu")
+      .getByLabel("Dokładne miejsce zbiórki po przyjęciu")
       .fill("NOWA PRYWATNA ZBIÓRKA");
     await edit
       .getByLabel("Powód zmiany dla opiekuna")
@@ -293,7 +293,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
       "Spotkanie zmieniło się",
     );
     await expect(
-      staleForm.getByLabel("Dokładna zbiórka po przyjęciu"),
+      staleForm.getByLabel("Dokładne miejsce zbiórki po przyjęciu"),
     ).toHaveValue("ZACHOWANY STARY WPIS");
     await screenshot(stale, "output/courses/stale-390.png", 390);
     await stale.close();

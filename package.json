@@ -13,6 +13,7 @@
     "test:consultations-ui": "node tests/consultations-browser.mjs",
     "test:services-ui": "node tests/services-browser.mjs",
     "test:calendar-ui": "node tests/calendar-browser.mjs",
+    "test:courses-ui": "node tests/courses-browser.mjs",
     "local:env": "node scripts/local-env.mjs",
     "local:start": "node scripts/local-stack.mjs start",
     "local:stop": "node scripts/local-stack.mjs stop",

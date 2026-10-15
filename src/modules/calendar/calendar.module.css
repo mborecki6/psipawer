@@ -95,10 +95,14 @@
 .weekDay:hover,
 .chosenDay {
   background: var(--sage-2);
-  border-color: var(--sage);
+  color: var(--brand-ink);
+  border-color: var(--brand-accent);
+}
+.chosenDay strong {
+  color: var(--brand-ink);
 }
 .weekDay:focus-visible {
-  outline: 2px solid var(--sage);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .currentDay strong::after {
@@ -109,7 +113,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--sage);
+  background: var(--brand-accent);
 }
 .filterDisclosure {
   min-width: 0;
@@ -182,7 +186,7 @@
 }
 .eventMain {
   min-width: 0;
-  border-left: 3px solid var(--sage);
+  border-left: 3px solid var(--brand-accent);
   padding-left: 14px;
   overflow-wrap: anywhere;
 }
@@ -228,6 +232,7 @@
 }
 .note {
   background: var(--sage-2);
+  color: var(--brand-ink);
 }
 .quickLinks {
   display: grid;
@@ -303,7 +308,7 @@
   }
 }
 .fitness {
-  border-left-color: var(--sage);
+  border-left-color: var(--brand-accent);
   background: var(--sage-2);
 }
 .workingWeek {
@@ -406,7 +411,7 @@
   background: var(--sage-2);
   border-radius: 12px;
   padding: 16px;
-  outline: 2px solid var(--sage);
+  outline: 2px solid var(--brand-accent);
   scroll-margin-top: 110px;
 }
 .month {
@@ -444,6 +449,7 @@
 .monthDay:hover,
 .monthDay:focus-visible {
   background: var(--sage-2);
+  color: var(--brand-ink);
 }
 .monthDay strong {
   font-size: 13px;
@@ -463,7 +469,8 @@
   color: var(--ink-soft);
 }
 .today {
-  border: 2px solid var(--sage);
+  border: 2px solid var(--brand-accent);
+  color: var(--brand-ink);
   background: var(--sage-2);
 }
 .resourceSummary {

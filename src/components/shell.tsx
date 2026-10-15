@@ -23,6 +23,7 @@ import { clearBrowserPush } from "@/modules/push/browser";
 import { useHydrated } from "./use-hydrated";
 import { getShellNavigation } from "./shell-navigation";
 import { Brand } from "./brand";
+import { PanelBackdrop } from "./panel-backdrop";
 import { WhatsAppContact } from "./whatsapp-contact";
 import styles from "./shell.module.css";
 export function Shell({
@@ -346,6 +347,7 @@ export function Shell({
         />
       )}
       <main className="main" id="content" inert={open}>
+        <PanelBackdrop path={path} />
         <header className="topbar">
           <button
             ref={menuButton}

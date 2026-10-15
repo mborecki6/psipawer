@@ -225,8 +225,8 @@ export function CourseCreateView({
         </span>
         <h2>Najpierw dobry plan.</h2>
         <p className="muted">
-          Zapisz wszystkie terminy jako szkic. Sprawdzenie kalendarza i
-          rezerwacja czasu nastąpią podczas otwarcia zapisów.
+          Zapisz miejsce i wszystkie terminy jako szkic. Sprawdzenie kalendarza
+          i rezerwacja czasu nastąpią podczas otwarcia zapisów.
         </p>
       </header>
       <article className="card pad">
@@ -416,7 +416,7 @@ export function CourseDetailView({
                   {admin && (
                     <>
                       <details>
-                        <summary>Zmień termin lub zbiórkę</summary>
+                        <summary>Zmień termin lub miejsce</summary>
                         <SessionEditor
                           session={s}
                           booking={booking}

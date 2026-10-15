@@ -33,17 +33,27 @@ export default async function Login({
             <span className="eyebrow">DOBRZE CIĘ WIDZIEĆ</span>
             <h1 id="login-heading">{brandSlogan}</h1>
             <p className={styles.lead}>
-              Wspólne spotkania, wskazówki i postępy Twojego psa — blisko
-              Ciebie, ze wsparciem Asi.
+              Wspólne spotkania, wskazówki i postępy Twojego psa - blisko
+              Ciebie, ze wsparciem specjalisty.
             </p>
-            <div className={styles.photo}>
-              <Image
-                src="/brand/joanna-and-dogs.webp"
-                alt="Asia z Psi Pawer ze swoimi dwoma owczarkami na łące"
-                fill
-                sizes="(max-width: 800px) calc(100vw - 32px), (max-width: 1200px) 50vw, 560px"
-                fetchPriority="high"
-              />
+            <div className={styles.photos}>
+              <div className={styles.photo}>
+                <Image
+                  src="/brand/training-play.webp"
+                  alt="Asia z Psi Pawer podczas zabawy z podskakującym psem na łące"
+                  fill
+                  sizes="(max-width: 550px) calc((100vw - 44px) / 2), (max-width: 800px) 254px, (max-width: 1200px) 25vw, 308px"
+                  fetchPriority="high"
+                />
+              </div>
+              <div className={styles.photo}>
+                <Image
+                  src="/brand/training-reward.webp"
+                  alt="Asia nagradza psa wspólną zabawą piłką na trawie"
+                  fill
+                  sizes="(max-width: 550px) calc((100vw - 44px) / 2), (max-width: 800px) 254px, (max-width: 1200px) 25vw, 308px"
+                />
+              </div>
             </div>
             <div className={styles.guide}>
               <Image

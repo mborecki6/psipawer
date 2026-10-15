@@ -6,15 +6,20 @@
   --surface: #fffaf4;
   --forest: #211d1a;
   --forest-2: #332d29;
-  --sage: #dfe8e5;
-  --sage-2: #edf2ef;
+  --brand-soft: #f6e4db;
+  --brand-accent: #b5654a;
+  --brand-ink: #6e3a28;
+  /* Existing neutral highlights share the brand palette; success stays semantic. */
+  --sage: var(--brand-soft);
+  --sage-2: var(--brand-soft);
+  --success-soft: #edf2ef;
   --clay: #be8174;
   --clay-2: #e1d3cb;
   --sand: #ead9bf;
   --amber: #b67b37;
   --amber-soft: #f2e2c7;
-  --red: #9a5147;
-  --red-soft: #ecd5cf;
+  --red: #a32d2d;
+  --red-soft: #fae5e5;
   --blue: #55727a;
   --blue-soft: #dfe8e5;
   --line: #ded8d0;
@@ -50,7 +55,7 @@ body {
     ),
     radial-gradient(
       circle at 0 85%,
-      rgba(220, 232, 221, 0.65),
+      rgba(246, 228, 219, 0.65),
       transparent 34%
     ),
     var(--paper);
@@ -469,7 +474,7 @@ textarea:focus-visible {
   min-height: 38px;
   padding: 8px 11px;
   border: 0;
-  color: var(--forest);
+  color: var(--brand-ink);
   background: transparent;
 }
 
@@ -505,8 +510,8 @@ textarea:focus-visible {
 }
 
 .small-button.soft {
-  border-color: var(--sage);
-  color: var(--forest);
+  border-color: var(--brand-accent);
+  color: var(--brand-ink);
   background: var(--sage-2);
 }
 
@@ -673,7 +678,7 @@ textarea:focus-visible {
   display: grid;
   place-items: center;
   border-radius: 11px;
-  color: var(--forest);
+  color: var(--brand-accent);
   background: var(--kpi-accent, var(--sage));
 }
 
@@ -750,12 +755,13 @@ textarea:focus-visible {
   margin-left: auto;
   align-items: center;
   gap: 3px;
-  color: var(--ink);
+  color: var(--brand-ink);
   font-size: 12px;
   font-weight: 850;
 }
 
 .kpi-link svg {
+  color: var(--brand-accent);
   width: 13px;
   height: 13px;
   transition: transform 160ms ease;
@@ -965,7 +971,7 @@ textarea:focus-visible {
 
 .badge.green {
   color: #2d6753;
-  background: var(--sage-2);
+  background: var(--success-soft);
 }
 
 .badge.amber {
@@ -1039,13 +1045,13 @@ textarea:focus-visible {
 }
 
 .alert.red {
-  color: #7c3938;
+  color: var(--red);
   background: var(--red-soft);
 }
 
 .alert.green {
   color: #2b5d4d;
-  background: var(--sage-2);
+  background: var(--success-soft);
 }
 
 .alert.blue {
@@ -2792,7 +2798,7 @@ body {
     ),
     radial-gradient(
       circle at 0 85%,
-      rgba(147, 151, 140, 0.22),
+      rgba(246, 228, 219, 0.55),
       transparent 34%
     ),
     var(--paper);
@@ -2803,7 +2809,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline-color: rgba(190, 129, 116, 0.42);
+  outline-color: var(--focus);
 }
 
 .sidebar {
@@ -2909,11 +2915,11 @@ textarea:focus-visible {
 }
 
 .ghost-button {
-  color: var(--ink);
+  color: var(--brand-ink);
 }
 
 .ghost-button:hover {
-  background: var(--clay-2);
+  background: var(--brand-soft);
 }
 
 .hero-card {
@@ -3459,6 +3465,7 @@ a {
   margin-bottom: 25px;
   border-radius: 16px;
   background: var(--sage);
+  color: var(--brand-accent);
 }
 .login-mail-mark svg {
   width: 24px;
@@ -3672,7 +3679,7 @@ a {
   min-width: 21px;
   padding: 3px 5px;
   border-radius: 999px;
-  background: #61783f;
+  background: var(--brand-ink);
   color: #fff;
   font-size: 10px;
   line-height: 1.2;
@@ -3686,10 +3693,10 @@ a {
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
-  border: 1px solid #dbe1d2;
+  border: 1px solid var(--brand-accent);
   border-radius: 14px;
   background: #fff;
-  color: #4d6038;
+  color: var(--brand-ink);
 }
 .notification-button .notification-count {
   position: absolute;
@@ -3697,7 +3704,7 @@ a {
   right: -5px;
 }
 .notification-button:hover {
-  background: #f0f4e9;
+  background: var(--brand-soft);
 }
 
 /* Progressive disclosure keeps occasional tools out of the daily navigation. */

@@ -34,6 +34,7 @@
 }
 .filters span {
   background: var(--sage-2);
+  color: var(--brand-ink);
   padding: 2px 7px;
   border-radius: 7px;
   font-size: 12px;
@@ -67,12 +68,13 @@
   width: 40px;
   height: 40px;
   background: var(--sage-2);
+  color: var(--brand-ink);
   border-radius: 13px;
   font-weight: 700;
 }
 .overdue {
-  background: #f6e2d8;
-  color: #87442c;
+  background: var(--red-soft);
+  color: var(--red);
 }
 .body {
   min-width: 0;
@@ -98,8 +100,8 @@
   color: var(--ink-soft);
 }
 .tags > strong {
-  color: #87442c;
-  background: #f8e9e1;
+  color: var(--red);
+  background: var(--red-soft);
   border-radius: 99px;
   padding: 3px 8px;
 }
@@ -206,14 +208,14 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--ink-soft);
+  color: var(--brand-ink);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.5;
 }
 .previewLink:hover {
-  color: var(--ink);
   text-decoration: underline;
+  text-decoration-color: var(--brand-accent);
   text-underline-offset: 3px;
 }
 .previewBody {
@@ -244,7 +246,7 @@
   line-height: 1.6;
 }
 .previewRow .body .overdueText {
-  color: #87442c;
+  color: var(--red);
 }
 .previewRow:hover h3 {
   text-decoration: underline;
