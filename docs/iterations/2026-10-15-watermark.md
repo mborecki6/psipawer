@@ -1,6 +1,6 @@
 # Fotografie bez dopisku fotografa
 
-Status: korekta po prośbie użytkownika o usunięcie napisu „PSYJEMNE
+Status: opublikowano 15.10.2026. Korekta po prośbie użytkownika o usunięcie napisu „PSYJEMNE
 KADRY”. To jawnie zastępuje wcześniejsze kryterium zachowania znaku fotografa
 w aktualnie używanych czterech fotografiach. Brak zmian logiki aplikacji,
 formularzy, układu, danych i uprawnień. To bezpośrednia korekta tych samych
@@ -67,3 +67,23 @@ koordynatora. TypeScript, ESLint zmienionych TSX i diff check zaliczone.
 
 Wydanie obejmuje wyłącznie cztery nowe pliki `-clean` oraz trzy podmiany ścieżek
 obrazów w loginie i PanelBackdrop. Poprzednie fotografie zachowano jako oryginały.
+
+## Publikacja
+
+Kod: `1d6be22609ebb81d1f4968b2571ccbc05f54e4c2`.
+Gotowe wdrożenie Vercel: `dpl_EN8pgoy66PyRSQtUHaFZXcLLb52L`.
+Publiczny adres [Psi Pawer](https://psipawer.vercel.app/login) wskazuje tę wersję,
+co potwierdzono przez inspect publicznego adresu i identyfikator wdrożenia.
+Nie była potrzebna dodatkowa ręczna zmiana aliasu.
+
+Odbiór produkcji zaliczony: cztery pliki źródłowe zgodne SHA-256 z lokalnymi,
+cztery poprawne odpowiedzi optymalizatora Next.js oraz login przy szerokościach
+320 i 1440 px. Oba zdjęcia loginu wczytane, brak przewijania poziomego i błędów
+przeglądarki. Zoptymalizowane obrazy o szerokości 640 px mają odpowiednio
+39 856, 42 606, 18 712 i 32 640 B. Obejrzano zrzut loginu na produkcji.
+
+Kontrola była anonimowa i odczytowa. Nie zmieniano danych, kont, uprawnień,
+schematu ani konfiguracji Supabase. Nie powtarzano odbioru zalogowanych scenariuszy
+z poprzedniego wydania, bo logika i układ aplikacji nie zmieniły się.
+Raport i zrzuty: ignorowane `.local/watermark-20261015/hosted-smoke.json`
+oraz `production-login-{320,1440}.png` w tym samym katalogu.
