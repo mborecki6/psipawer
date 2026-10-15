@@ -1,10 +1,10 @@
 # Oryginalne fotografie Asi w panelu
 
-Status: lokalna zmiana na prośbę użytkownika z 15.10, po przekazaniu czterech
+Status: opublikowano 15.10.2026 na prośbę użytkownika, po przekazaniu czterech
 oryginałów DSC08135, DSC08137, DSC08338 i DSC08362. Zlecenie obejmuje użycie
 wszystkich w różnych częściach panelu oraz jednego lub dwóch przy logowaniu.
 Użytkownik następnie zatwierdził publikację zdjęć razem z paletą i formularzem
-kursu. Wspólny zakres przechodzi odbiór wydania; pozostałe funkcje są zachowane.
+kursu. Wspólny zakres przeszedł odbiór wydania; pozostałe funkcje są zachowane.
 
 ## Kryteria
 
@@ -64,14 +64,29 @@ rzeczywistego Shell i loginu, ale kart z fikcyjnymi danymi i zamiennika
 `next/image`; nie jest pełnym uwierzytelnionym przebiegiem aplikacji.
 Zrzuty i raport koordynatora: ignorowane `test-results/photos-ui/`.
 
-Nie uruchamiano pełnego builda/suite, rzeczywistego logowania, kontroli RLS
+W pierwszym lokalnym odbiorze nie uruchamiano pełnego builda/suite, rzeczywistego logowania, kontroli RLS
 ani operacji danych. Nie sprawdzano produkcyjnego procesu optymalizacji obrazów
 i każdego widoku biznesowego z tłem. Ta korekta nie zmienia tych mechanizmów.
-Produkcja pozostaje bez zmian.
+Na tamtym etapie produkcja pozostawała bez zmian; późniejszy odbiór wydania jest poniżej.
 
 ## Przygotowanie publikacji 15.10.2026
 
 Zgoda użytkownika obejmuje cały połączony zakres. Pełny build lokalny zaliczony;
 cztery szerokości prawdziwego loginu oraz cztery obrazy przez optymalizator
 Next.js sprawdzono bez błędów. Końcowy niezależny przegląd wspólnego diffu
-nie zgłosił P1/P2. Dane wdrożenia i odbiór produkcyjny zostaną dopisane po wydaniu.
+nie zgłosił P1/P2.
+
+## Publikacja 15.10.2026
+
+Fotografie opublikowano razem z paletą i formularzem kursu. Kod `0bbf2fb`,
+build Vercel READY `dpl_4np8vsb7D4GRA2hk4GNToKxcs1eK`, publiczny adres
+`https://psipawer.vercel.app`. Cztery pliki na produkcji mają zgodne sumy SHA-256
+z zatwierdzonymi WebP. Login używa prawdziwego optymalizatora Next.js.
+
+Odbiór produkcyjny obu ról: 13 widoków i 52 warianty ekranu, bez błędów
+przeglądarki i bez zapisów biznesowych. Potwierdzono przypisanie czterech motywów,
+menu mobile, pola lokalizacji kursu i trzy blokady dostępu anonimowego. Konta,
+hasła, konfiguracja Auth i baza pozostają zachowane; użyto istniejących kont
+testowych i zamknięto własne tymczasowe sesje. Nie było migracji ani wysyłki wiadomości.
+
+Pełny raport: ignorowane `.local/peach-release-20261015/hosted-smoke.json`.

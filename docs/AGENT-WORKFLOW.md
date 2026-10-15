@@ -100,13 +100,14 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 [Fotografie w panelu](iterations/2026-10-15-fotografie-panelu.md): cztery
 oryginalne fotografie przekazane przez użytkownika, para przy logowaniu
 i delikatne tła przypisane do sekcji obu ról. Użytkownik 15.10 zatwierdził
-publikację razem z paletą i formularzem kursu; odbiór wydania w toku.
+publikację razem z paletą i formularzem kursu. Wydanie z 15.10 jest online:
+13 widoków, 52 warianty produkcyjnego UI, bez błędów i zapisów biznesowych.
 
 [Brzoskwinia i miejsce kursu](iterations/2026-10-15-brzoskwinia-miejsce-kursu.md):
 lokalny kandydat po feedbacku z 15.10. Brzoskwiniowe wyróżnienia, terakotowe
 akcenty, osobna czerwień zaległości, czytelna sekcja miejsca kursu i tekst
 logowania ze wsparciem specjalisty. Publikacja zatwierdzona przez użytkownika
-15.10 razem ze zdjęciami, po lokalnym odbiorze.
+15.10 razem ze zdjęciami, po lokalnym odbiorze; wdrożenie zakończone, bez zmian DB.
 
 [Spokojny kalendarz](iterations/2026-10-14-spokojny-kalendarz.md): miesiąc jako
 widok początkowy, pasek dni z agendą tygodnia i płynne tło. Asia jest jedyną

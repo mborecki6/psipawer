@@ -1,7 +1,7 @@
 # Brzoskwiniowa paleta i czytelne miejsce kursu
 
-Status: kandydat sprawdzony lokalnie na podstawie feedbacku behawiorystki
-przekazanego przez użytkownika 15.10.2026. Użytkownik zatwierdził publikację:
+Status: opublikowano 15.10.2026 po lokalnym odbiorze feedbacku behawiorystki.
+Użytkownik zatwierdził publikację:
 „wdrozmy na produkcje zdjecia razem z nowa kolorystyka i poprawka formularza kursu”.
 
 ## Kryteria
@@ -40,7 +40,8 @@ dokumentację i odbiór. Niezależny recenzent dostaje wymagania i faktyczny dif
 Lokalny odbiór zakończony. Niezależny recenzent nie znalazł otwartych uwag
 P1/P2 w sprawdzonym zakresie. Podglądy korzystają z fikcyjnych danych
 i zastępczych akcji formularzy, bez tworzenia kont, zapisu do Supabase
-ani wysyłania powiadomień. Produkcja pozostaje na poprzednim wydaniu.
+ani wysyłania powiadomień. Na etapie tego lokalnego odbioru produkcja pozostawała
+na poprzednim wydaniu; późniejsze wdrożenie opisano poniżej.
 
 - Testy akcji kursów: 18/18. Niezależny przegląd uruchomił 43/43 testy
   kursów, wyboru rezerwacji, dostępu i renderowania kalendarza.
@@ -61,7 +62,7 @@ kolejka: `/?queue`. Formularz kursu: `http://127.0.0.1:4184/`, edycja:
 `/?view=detail`. Zrzuty są w ignorowanych `test-results/peach-ui/`
 i `test-results/courses-ui/`. Powtarzalny test kursów: `npm run test:courses-ui`.
 
-Ograniczenia: to odbiór realnych komponentów z zastępczymi akcjami, nie pełny
+Ograniczenia pierwszego odbioru: to realne komponenty z zastępczymi akcjami, nie pełny
 przebieg Next.js z sesjami i bazą. Nie uruchamiano pełnego builda, suite SQL
 ani rzeczywistego odczytu kilku ról. Prywatność lokalizacji sprawdzono
 w istniejących zapytaniach/RLS; ta iteracja nie zmienia backendu. Zmiana
@@ -80,3 +81,22 @@ lokalny build Next.js, 43 testy granic akcji/dostępu/kalendarza oraz końcowy
 przegląd wspólnego diffu zaliczone. Sprawdzono prawdziwy ekran loginu po buildzie
 przy czterech szerokościach i cztery zdjęcia przez optymalizator Next.js.
 Wydanie nie ma migracji ani zmian konfiguracji Supabase, danych, ról lub SMTP.
+
+## Publikacja 15.10.2026
+
+Kod aplikacji `0bbf2fb5d1dc681e065c4b053158156bc4c1aa6a` jest na GitHub main.
+Build Vercel READY: `dpl_4np8vsb7D4GRA2hk4GNToKxcs1eK`;
+publiczny alias `https://psipawer.vercel.app` wskazuje to wydanie.
+Wcześniejszy gotowy build zachowano jako punkt powrotu; nie wykonywano migracji.
+
+Odbiór produkcyjny istniejącego konta właściciela i demonstracyjnego opiekuna:
+13 widoków, 52 warianty 320/390/768/1440 px, cztery zgodne pliki fotografii,
+trzy blokady anonimowego dostępu, zero błędów przeglądarki i zero zapisów
+biznesowych. Potwierdzono także prawdziwą optymalizację fotografii i widoczną
+sekcję miejsca przed terminami kursu. Kontrole tylko odczytywały UI; nie
+tworzyły kursów ani kont. Tymczasowe własne sesje testowe zamknięto.
+
+Dowody: ignorowane `.local/peach-release-20261015/` (build, przegląd wdrożenia,
+raport i zrzuty). Pierwszy przebieg odbioru czekał za krótko na optymalizację
+zdjęcia; po poprawieniu oczekiwania w skrypcie cały odbiór został zaliczony.
+Nie zmieniano z tego powodu kodu aplikacji.
