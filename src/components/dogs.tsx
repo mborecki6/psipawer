@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PawPrint } from "lucide-react";
@@ -8,18 +9,23 @@ import { dogStatuses, uuid } from "@/lib/validation/schemas";
 import { labels, dateLabel } from "@/lib/domain";
 import { ActionForm, Field } from "./action-form";
 import { AvatarEditor } from "./avatar-editor";
+import { DogQualificationForm } from "./dog-qualification-form";
+import { DogCreationRequest } from "./dog-creation-request";
 import { Badge, Empty } from "./ui";
-import {
-  saveDog,
-  saveBehavior,
-  setDogStatus,
-  addNote,
-} from "@/lib/data/actions";
+import { saveDog, saveBehavior, addNote } from "@/lib/data/actions";
 import type { Dog } from "@/lib/data/types";
 export function DogForm({ dog }: { dog?: Dog }) {
   return (
-    <ActionForm action={saveDog} label={dog ? "Zapisz profil" : "Dodaj psa"}>
-      {dog && <input type="hidden" name="id" value={dog.id} />}
+    <ActionForm
+      action={saveDog}
+      label={dog ? "Zapisz profil" : "Dodaj psa"}
+      failureMessage="Nie udało się potwierdzić zapisu. Twoje dane pozostały w formularzu. Sprawdź połączenie i spróbuj ponownie."
+    >
+      {dog ? (
+        <input type="hidden" name="id" value={dog.id} />
+      ) : (
+        <DogCreationRequest requestId={randomUUID()} />
+      )}
       <div className="form-grid">
         <Field
           label="Imię psa"
@@ -286,28 +292,13 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
           {role === "admin" && (
             <article className="card pad">
               <h2>Kwalifikacja do spacerów</h2>
-              <ActionForm action={setDogStatus} label="Zapisz kwalifikację">
-                <input type="hidden" name="dog_id" value={id} />
-                <label className="field">
-                  <span>Status</span>
-                  <select name="status" defaultValue={dog.status}>
-                    {dogStatuses.map((s) => (
-                      <option key={s} value={s}>
-                        {labels[s]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>Powód / zalecenia (notatka prywatna)</span>
-                  <textarea
-                    name="note"
-                    required
-                    minLength={3}
-                    maxLength={8000}
-                  />
-                </label>
-              </ActionForm>
+              <DogQualificationForm
+                key={id}
+                dogId={id}
+                requestId={randomUUID()}
+                status={dog.status}
+                version={dog.qualification_version}
+              />
             </article>
           )}
           <article className="card pad">

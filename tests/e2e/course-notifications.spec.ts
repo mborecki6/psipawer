@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import {
   LocalPostgres,
@@ -6,9 +6,11 @@ import {
   waitForLock,
 } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
   login,
 } from "./local-fixtures";
@@ -43,6 +45,7 @@ test("course messages: real delivery locks, fresh meeting links, cancellation an
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staffApi, admin],
       [ownerApi, owner],

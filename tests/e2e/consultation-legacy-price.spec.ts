@@ -1,8 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
   login,
 } from "./local-fixtures";
@@ -36,6 +38,7 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     const leader = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, leader.id);
     for (const [api, user] of [
       [ownDb, owner],
       [otherDb, other],

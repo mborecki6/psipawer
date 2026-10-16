@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
-import { checked, login } from "./local-fixtures";
+import { test, checked, login } from "./local-fixtures";
 import { dateInput, mobileEvidence, walkJourney } from "./walk-journey";
 
 type Journey = Awaited<ReturnType<typeof walkJourney>>;

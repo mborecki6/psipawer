@@ -15,7 +15,8 @@ export function reportDataReadError(
     | "notifications.count"
     | "care.contexts"
     | "care.invitation"
-    | "care.reporting",
+    | "care.reporting"
+    | "care.summaries",
   error: unknown,
   status?: number,
   retrying = false,

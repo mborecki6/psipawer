@@ -1,11 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   careDay,
   careEditor,
   careFixture,
   careScreenshot,
 } from "./care-journey";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
 
 async function ownService(f: Awaited<ReturnType<typeof careFixture>>) {
   const id = crypto.randomUUID();

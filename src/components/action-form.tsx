@@ -9,6 +9,7 @@ import {
   type InputHTMLAttributes,
 } from "react";
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { withFormActionRecovery } from "./form-action-recovery";
 import { CalendarWarning } from "@/modules/calendar/warning";
 const FieldErrors = createContext<Record<string, string[]>>({});
 export type ActionState = {
@@ -33,6 +34,7 @@ export function ActionForm({
   className = "",
   confirm,
   disabled = false,
+  failureMessage,
 }: {
   action: FormAction;
   children: React.ReactNode;
@@ -41,13 +43,17 @@ export function ActionForm({
   className?: string;
   confirm?: string;
   disabled?: boolean;
+  failureMessage?: string;
 }) {
   const keepValuesOnReset = useRef(false);
   const formElement = useRef<HTMLFormElement>(null);
   const errorSummary = useRef<HTMLDivElement>(null);
   const [state, formAction, pending] = useActionState(
     async (previous: ActionState, data: FormData) => {
-      const result = await action(previous, data);
+      const result = await withFormActionRecovery(action, failureMessage)(
+        previous,
+        data,
+      );
       // React resets uncontrolled fields even when a resolved action returns an
       // application error. Cancel that reset so corrections don't erase edits.
       keepValuesOnReset.current = Boolean(

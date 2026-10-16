@@ -335,6 +335,13 @@ export async function disposeBackupGifts(db, gifts) {
   if (gifts.packages.length)
     checked(
       await db
+        .from("care_reporting_entitlements")
+        .delete()
+        .in("fitness_package_id", gifts.packages),
+    );
+  if (gifts.packages.length)
+    checked(
+      await db
         .from("payments")
         .delete()
         .in("fitness_package_id", gifts.packages),

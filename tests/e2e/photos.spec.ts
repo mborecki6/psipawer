@@ -1,8 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import sharp from "sharp";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,

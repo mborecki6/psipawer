@@ -1,11 +1,14 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
+import { completeServerAction } from "./action-completion";
 import {
+  test,
   localClients,
   checked,
   account,
   login,
   disposeCareFixtures,
+  setupLocalPractitioner,
 } from "./local-fixtures";
 
 test("consultation price → partial payments → reschedule/conflict → guardian cancellation → refunds", async ({
@@ -41,6 +44,7 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     const leader = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, leader.id);
     for (const [api, user] of [
       [ownDb, owner],
       [otherDb, other],
@@ -271,7 +275,29 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     await staff
       .getByLabel("Powód zmiany dla opiekuna")
       .fill(`Fikcyjna zmiana ${suffix}`);
-    await staff.getByRole("button", { name: "Zapisz zmianę terminu" }).click();
+    const scheduleForm = staff.locator("form").filter({
+      has: staff.getByLabel("Termin (czas polski)"),
+    });
+    const scheduleVersion = scheduleForm.locator('[name="expected_version"]');
+    const beforeReschedule = Number(await scheduleVersion.inputValue());
+    expect(Number.isSafeInteger(beforeReschedule)).toBe(true);
+    await expect(scheduleForm.getByRole("status")).toHaveCount(0);
+    await completeServerAction(
+      staff,
+      scheduleForm.getByRole("button", { name: "Zapisz zmianę terminu" }),
+      async (remaining) => {
+        await expect(scheduleForm).toHaveAttribute("aria-busy", "false", {
+          timeout: remaining(),
+        });
+        await expect(scheduleVersion).toHaveValue(String(beforeReschedule + 1), {
+          timeout: remaining(),
+        });
+        await expect(scheduleForm.getByRole("status")).toContainText(
+          "Termin zapisany",
+          { timeout: remaining() },
+        );
+      },
+    );
     await expect(staff.getByRole("status")).toContainText("Termin zapisany");
     await stale.getByRole("button", { name: "Zapisz zmianę terminu" }).click();
     await expect(

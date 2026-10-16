@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { promisify } from "node:util";
@@ -8,9 +8,11 @@ import {
   waitForLock,
 } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
   login,
 } from "./local-fixtures";
@@ -157,6 +159,7 @@ test("reminders → local worker → concurrent delivery → failure and phone r
   try {
     await observer.ready();
     const leader = await account(db, users, "admin");
+    await setupLocalPractitioner(db, users, leader.id);
     staffId = leader.id;
     const owner = await account(db, users, "client");
     const other = await account(db, users, "client");
@@ -182,9 +185,20 @@ test("reminders → local worker → concurrent delivery → failure and phone r
         .single(),
     );
     dogs.push(dog!.id);
+    const qualification = await checked(
+      staffDb
+        .from("dogs")
+        .select("status,qualification_version")
+        .eq("id", dogs[0])
+        .single(),
+    );
+    if (!qualification) throw new Error("Missing local qualification fixture");
     await checked(
-      staffDb.rpc("set_dog_status", {
+      staffDb.rpc("qualify_dog", {
+        p_request_id: crypto.randomUUID(),
         p_dog: dogs[0],
+        p_expected_status: qualification.status,
+        p_expected_version: qualification.qualification_version,
         p_status: "approved",
         p_note: "Lokalna próba",
       }),

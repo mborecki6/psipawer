@@ -191,7 +191,7 @@ export async function prepareBackupCourses({
     assert.equal(await rpc("correct_course_attendance", correction), 2);
     const meeting = await rpc("save_care_plan", {
       p_dog: dog,
-      p_expected_version: 1,
+      p_expected_version: 0,
       p_title: "Zalecenia po zachowanym spotkaniu",
       p_body: "Druga publikacja nie zastępuje pierwszej.",
       p_follow_up_on: null,
@@ -202,7 +202,7 @@ export async function prepareBackupCourses({
     });
     await rpc("save_care_plan", {
       p_dog: dog,
-      p_expected_version: 2,
+      p_expected_version: 0,
       p_title: "Prywatny szkic do kopii",
       p_body: "SZKIC WYŁĄCZNIE DLA PROWADZĄCEJ",
       p_follow_up_on: null,
@@ -441,9 +441,34 @@ export async function verifyBackupCourses({
     get(`/care_plan_versions?select=id&dog_id=eq.${dog}`, stranger),
     [],
   );
+  const drafts = get(
+    `/care_drafts?select=course_enrollment_id,course_session_id,body,version&dog_id=eq.${dog}`,
+    staff,
+  );
+  assert.equal(drafts.length, 3);
   assert.deepEqual(
-    get(`/care_drafts?select=body,version&dog_id=eq.${dog}`, staff),
-    [{ body: "SZKIC WYŁĄCZNIE DLA PROWADZĄCEJ", version: 3 }],
+    Object.fromEntries(
+      drafts.map(
+        ({ course_enrollment_id, course_session_id, body, version }) => [
+          `${course_enrollment_id}:${course_session_id ?? "all"}`,
+          { body, version },
+        ],
+      ),
+    ),
+    {
+      [`${future.enrollment}:all`]: {
+        body: "Pierwsze zalecenia do próby odtworzenia.",
+        version: 1,
+      },
+      [`${history.enrollment}:${history.sessions[0].id}`]: {
+        body: "Druga publikacja nie zastępuje pierwszej.",
+        version: 1,
+      },
+      [`${history.enrollment}:${history.sessions[1].id}`]: {
+        body: "SZKIC WYŁĄCZNIE DLA PROWADZĄCEJ",
+        version: 1,
+      },
+    },
   );
   assert.deepEqual(get(`/care_drafts?select=body&dog_id=eq.${dog}`, owner), []);
   assert.deepEqual(
@@ -582,6 +607,9 @@ export async function verifyBackupCourses({
 
 export async function disposeBackupCourses(db, dog, courses) {
   if (!dog) return;
+  checked(
+    await db.from("care_reporting_entitlements").delete().eq("dog_id", dog),
+  );
   const followups = checked(
     await db.from("care_follow_ups").select("id").eq("dog_id", dog),
   );

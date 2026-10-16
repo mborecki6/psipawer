@@ -1,8 +1,11 @@
 import { expect, type Browser, type Page } from "@playwright/test";
+import { completeServerAction } from "./action-completion";
 import {
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  cleanupSteps,
   localClients,
   login,
 } from "./local-fixtures";
@@ -57,19 +60,22 @@ export async function careFixture(
   async function dispose() {
     disposing = true;
     browser.off("disconnected", disconnected);
-    await staffContext.close();
-    await guardianContext.close();
-    await Promise.all([
-      staffDb.auth.signOut(),
-      ownerDb.auth.signOut(),
-      outsiderDb.auth.signOut(),
-    ]);
-    if (templates.length)
-      await checked(db.from("care_templates").delete().in("id", templates));
-    await disposeCareFixtures(db, users, dogs);
+    await cleanupSteps(
+      () => staffContext.close(),
+      () => guardianContext.close(),
+      () => staffDb.auth.signOut(),
+      () => ownerDb.auth.signOut(),
+      () => outsiderDb.auth.signOut(),
+      async () => {
+        if (templates.length)
+          await checked(db.from("care_templates").delete().in("id", templates));
+      },
+      () => disposeCareFixtures(db, users, dogs),
+    );
   }
   try {
     const admin = await account(db, users, "admin");
+    await setupLocalPractitioner(db, users, admin.id);
     const owner = await account(db, users, "client");
     const outsider = await account(db, users, "client");
     for (const [api, user] of [
@@ -96,7 +102,19 @@ export async function careFixture(
     await expect(guardian).toHaveURL(/\/app\/dogs\/[a-f0-9-]+(?:\?saved=1)?$/);
     const dog = new URL(guardian.url()).pathname.split("/").at(-1)!;
     dogs.push(dog);
-    await staff.goto(`/admin/dogs/${dog}/care`);
+    const carePath = `/admin/dogs/${dog}/care?context=general`;
+    await staff.goto(carePath);
+    await expect(staff).toHaveURL(carePath);
+    await expect(
+      staff.getByRole("heading", {
+        name: `${dogName} · małe kroki, wspólny plan`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(staff.locator("#szkic form")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
     return {
       db,
       staffDb,
@@ -142,7 +160,21 @@ export async function publishCarePlan(
   await form.getByLabel("Tytuł planu", { exact: true }).fill(title);
   await form.getByLabel("Zalecenia dla opiekuna", { exact: true }).fill(body);
   await form.getByLabel("Termin kontaktu kontrolnego (opcjonalnie)").fill(due);
-  await form.getByRole("button", { name: "Opublikuj dla opiekuna" }).click();
+  const version = form.locator('[name="expected_version"]');
+  const before = Number(await version.inputValue());
+  expect(Number.isSafeInteger(before)).toBe(true);
+  await completeServerAction(
+    page,
+    form.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+    async (remaining) => {
+      await expect(form).toHaveAttribute("aria-busy", "false", {
+        timeout: remaining(),
+      });
+      await expect(version).toHaveValue(String(before + 1), {
+        timeout: remaining(),
+      });
+    },
+  );
   await expect(form.getByRole("status")).toContainText("Plan opublikowany");
 }
 

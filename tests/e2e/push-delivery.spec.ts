@@ -1,9 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { randomBytes, randomUUID } from "node:crypto";
 import webpush from "web-push";
 import { processPushDeliveries } from "../../src/lib/push-worker.mjs";
 import { localServiceConfig } from "../../scripts/lib/local-service-config.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,

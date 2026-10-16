@@ -49,6 +49,7 @@ beforeEach(() => {
     db: { from: mocks.from },
     role: "client",
     user: { id: "owner" },
+    profile: { id: "owner", full_name: "Opiekun" },
   });
 });
 it("does not fetch private gift-card sales for the client finance view", async () => {

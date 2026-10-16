@@ -1,9 +1,13 @@
 import { expect, type Browser, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
+import { completeServerAction } from "./action-completion";
 import {
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  cleanupSteps,
+  freeCalendarStart,
   localClients,
   login,
 } from "./local-fixtures";
@@ -45,43 +49,48 @@ export async function walkJourney(
     staffDb = client(),
     anonymous = client();
   async function dispose() {
-    await staffContext.close();
-    await ownerContext.close();
-    for (const api of [ownerDb, otherDb, staffDb]) await api.auth.signOut();
-    // The create action may commit before a failed navigation assertion. Find
-    // this run's walks by its newly created users as well as captured URLs.
-    if (users.length) {
-      const created = await checked(
-        db.from("walks").select("id").in("leader_id", users),
-      );
-      for (const row of created || [])
-        if (!walks.includes(row.id)) walks.push(row.id);
-    }
-    if (dogs.length) {
-      const packages = await checked(
-        db.from("packages").select("id").in("dog_id", dogs),
-      );
-      await checked(db.from("payments").delete().in("dog_id", dogs));
-      if (packages?.length)
-        await checked(
-          db
-            .from("package_transactions")
-            .delete()
-            .in(
-              "package_id",
-              packages.map((p) => p.id),
-            ),
-        );
-      if (walks.length)
-        await checked(db.from("walks").delete().in("id", walks));
-      await checked(db.from("packages").delete().in("dog_id", dogs));
-    }
-    await disposeCareFixtures(db, users, dogs);
+    await cleanupSteps(
+      () => staffContext.close(),
+      () => ownerContext.close(),
+      ...[ownerDb, otherDb, staffDb].map((api) => () => api.auth.signOut()),
+      async () => {
+        // The create action may commit before a failed navigation assertion. Find
+        // this run's walks by its newly created users as well as captured URLs.
+        if (users.length) {
+          const created = await checked(
+            db.from("walks").select("id").in("leader_id", users),
+          );
+          for (const row of created || [])
+            if (!walks.includes(row.id)) walks.push(row.id);
+        }
+        if (dogs.length) {
+          const packages = await checked(
+            db.from("packages").select("id").in("dog_id", dogs),
+          );
+          await checked(db.from("payments").delete().in("dog_id", dogs));
+          if (packages?.length)
+            await checked(
+              db
+                .from("package_transactions")
+                .delete()
+                .in(
+                  "package_id",
+                  packages.map((p) => p.id),
+                ),
+            );
+          if (walks.length)
+            await checked(db.from("walks").delete().in("id", walks));
+          await checked(db.from("packages").delete().in("dog_id", dogs));
+        }
+      },
+      () => disposeCareFixtures(db, users, dogs),
+    );
   }
   try {
     const leader = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, leader.id);
     for (const [api, user] of [
       [ownerDb, owner],
       [otherDb, other],
@@ -114,38 +123,19 @@ export async function walkJourney(
     await expect(staff.getByRole("status")).toContainText("Status psa");
 
     async function freeStart(phase: "future" | "late" | "past") {
-      const slots = await checked(db.from("calendar_slots").select("occupied"));
-      const intervals = (slots || []).map((slot) => {
-        const parts = String(slot.occupied).slice(1, -1).split(",");
-        const interval = parts.map((part) =>
-          Date.parse(part.replaceAll('"', "")),
-        );
-        assert(
-          interval.every(Number.isFinite),
-          "Fixture needs finite calendar slots",
-        );
-        return interval;
+      const after =
+        Date.now() +
+        (phase === "future"
+          ? 30 * 86400000
+          : phase === "late"
+            ? 6 * 3600000
+            : -2 * 86400000);
+      return freeCalendarStart(db, {
+        after,
+        before: after + 12 * 3600000,
+        durationMinutes: 60,
+        afterLast: phase === "future",
       });
-      const start =
-        phase === "future"
-          ? Math.max(
-              Date.now() + 30 * 86400000,
-              ...intervals.map((s) => s[1]),
-            ) + 86400000
-          : Date.now() + (phase === "late" ? 6 * 3600000 : -2 * 86400000);
-      const rounded = Math.ceil(start / 3600000) * 3600000;
-      for (let i = 0; i < 12; i++) {
-        const candidate = rounded + i * 3600000;
-        if (
-          intervals.every(
-            ([a, b]) => candidate >= b || candidate + 3600000 <= a,
-          )
-        )
-          return new Date(candidate).toISOString();
-      }
-      throw new Error(
-        "No unoccupied fixture time; preserve existing appointments",
-      );
     }
     async function createWalk(
       label: string,
@@ -183,9 +173,22 @@ export async function walkJourney(
     ) {
       await page.goto(`/app/walks/${id}`);
       await page.getByLabel("Wybierz swojego psa").selectOption(dog);
-      await page
-        .getByRole("button", { name: "Zgłoś psa", exact: true })
-        .click();
+      const cards = page.locator(".registration-card");
+      await expect(cards).toHaveCount(0);
+      await completeServerAction(
+        page,
+        page.getByRole("button", { name: "Zgłoś psa", exact: true }),
+        async (remaining) => {
+          await expect(page).toHaveURL(`/app/walks/${id}`, {
+            timeout: remaining(),
+          });
+          await expect(cards).toHaveCount(1, { timeout: remaining() });
+          await expect(cards.locator(`a[href="/app/dogs/${dog}"]`)).toHaveCount(
+            1,
+            { timeout: remaining() },
+          );
+        },
+      );
       await expect(page.locator(".registration-card")).toHaveCount(1);
       const registration = await checked(
         api

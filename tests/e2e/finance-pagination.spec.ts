@@ -1,8 +1,11 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  freeCalendarStart,
   localClients,
   login,
 } from "./local-fixtures";
@@ -24,6 +27,7 @@ test("finance pages preserve complete balances, direct package links and guardia
     const staff = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, staff.id);
     dogs.push(crypto.randomUUID(), crypto.randomUUID());
     await checked(
       db.from("dogs").insert([
@@ -41,7 +45,14 @@ test("finance pages preserve complete balances, direct package links and guardia
         },
       ]),
     );
-    const past = Date.now() - 700 * 86400000;
+    const past = Date.parse(
+      await freeCalendarStart(db, {
+        after: Date.now() - 700 * 86400000,
+        before: Date.now() - 660 * 86400000,
+        durationMinutes: 60,
+        offsetsMinutes: Array.from({ length: 31 }, (_, n) => n * 1440),
+      }),
+    );
     const packageRows = Array.from({ length: 31 }, (_, i) => ({
       id: crypto.randomUUID(),
       dog_id: dogs[0],

@@ -7,6 +7,7 @@ import type { ActionState } from "@/components/action-form";
 import styles from "./consultations.module.css";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { CalendarWarning } from "@/modules/calendar/warning";
 import { BookingChoice } from "@/modules/calendar/booking-choice";
 import type { BookingChoices } from "@/modules/calendar/booking-queries";
@@ -43,7 +44,10 @@ export function ScheduleEditor({
   });
   const [state, action, pending] = useActionState(
     async (previous: ActionState & { version: number }, form: FormData) => {
-      const result = await scheduleConsultation(previous, form);
+      const result = await withFormActionRecovery(scheduleConsultation)(
+        previous,
+        form,
+      );
       return { ...result, version: result.version ?? previous.version };
     },
     { version: original.version },

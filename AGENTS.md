@@ -26,7 +26,13 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
-- Bieżące wydanie opisują `docs/iterations/2026-10-15-brzoskwinia-miejsce-kursu.md`
+- Bieżące wydanie opisuje `docs/iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md`.
+  Poprawki odporności formularzy, zapisu psa i kwalifikacji, rozliczeń, odczytów
+  i liczników oraz ręczne linki dostępu opublikowano 16.10 po zgodzie użytkownika;
+  produkcja ma 60 migracji. Nie tworzono prawdziwych kont ani nie włączano SMTP.
+  Przed zapraszaniem prawdziwych opiekunów pozostają kopie produkcji i zdjęć;
+  użytkownik wybrał Pro, ale odłożył logowanie i płatną zmianę planu.
+  Wydanie wizualne opisują `docs/iterations/2026-10-15-brzoskwinia-miejsce-kursu.md`
   i `docs/iterations/2026-10-15-fotografie-panelu.md`. Zdjęcia, paleta i formularz
   kursu opublikowano 15.10 po zgodzie użytkownika, bez zmian DB.
   Reguły kalendarza pozostają w `docs/iterations/2026-10-14-spokojny-kalendarz.md`.

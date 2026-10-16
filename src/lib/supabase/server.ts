@@ -2,10 +2,12 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { config } from "./config";
+import { serverFetch } from "./server-fetch";
 export async function createClient() {
   const jar = await cookies();
   const { url, key } = config();
   return createServerClient(url, key, {
+    global: { fetch: serverFetch },
     cookies: {
       getAll() {
         return jar.getAll();

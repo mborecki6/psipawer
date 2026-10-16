@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import {
   LocalPostgres,
@@ -6,27 +6,31 @@ import {
   waitForLock,
 } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  freeCalendarStart,
   localClients,
   login,
 } from "./local-fixtures";
 test.use({ trace: "off" });
 const service = "60000000-0000-4000-8000-000000000001";
-function dates(index: number) {
-  return Array.from({ length: 5 }, (_, n) =>
-    new Date(
-      Date.UTC(new Date().getUTCFullYear() + 3, index * 2, 15 + n * 7, 12),
-    ).toISOString(),
-  );
-}
 async function makeCourse(
   api: ReturnType<typeof localClients>["db"],
   id: string,
   version: number,
   index: number,
+  fixtureDb: ReturnType<typeof localClients>["db"],
 ) {
+  const first = await freeCalendarStart(fixtureDb, {
+    after: Date.UTC(new Date().getUTCFullYear() + 3, index * 2, 15, 12),
+    offsetsMinutes: Array.from({ length: 5 }, (_, n) => n * 7 * 1440),
+  });
+  const starts = Array.from({ length: 5 }, (_, n) =>
+    new Date(Date.parse(first) + n * 7 * 86400000).toISOString(),
+  );
   await checked(
     api.rpc("create_course", {
       p_id: id,
@@ -36,7 +40,7 @@ async function makeCourse(
       p_capacity: 1,
       p_public_location: "Próbny park",
       p_exact_location: "PRYWATNE MIEJSCE FINANSÓW",
-      p_starts: dates(index),
+      p_starts: starts,
     }),
   );
   await checked(
@@ -65,6 +69,7 @@ test("course finance API: actual parent/key locks prevent overpayment, double re
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staff, admin],
       [own, owner],
@@ -92,7 +97,7 @@ test("course finance API: actual parent/key locks prevent overpayment, double re
         enrollment = crypto.randomUUID();
       courses.push(cycle);
       enrollments.push(enrollment);
-      await makeCourse(staff, cycle, catalog!.version, i);
+      await makeCourse(staff, cycle, catalog!.version, i, db);
       await checked(
         own.rpc("request_course_enrollment", {
           p_id: enrollment,
@@ -423,6 +428,7 @@ test("course finance browser: partial receipts → cancellation → stale settle
   try {
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staffApi, admin],
       [ownerApi, owner],
@@ -444,7 +450,7 @@ test("course finance browser: partial receipts → cancellation → stale settle
     const catalog = await checked(
       staffApi.from("services").select("version").eq("id", service).single(),
     );
-    await makeCourse(staffApi, cycle, catalog!.version, 3);
+    await makeCourse(staffApi, cycle, catalog!.version, 3, db);
     await checked(
       ownerApi.rpc("request_course_enrollment", {
         p_id: enrollment,

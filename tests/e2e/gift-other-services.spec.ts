@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { courseFixture } from "./course-fixtures";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
 import { walkJourney } from "./walk-journey";
 import { LocalPostgres } from "../helpers/local-postgres.mjs";
 test.use({ trace: "off" });

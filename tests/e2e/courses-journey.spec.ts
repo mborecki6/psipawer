@@ -1,12 +1,16 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import {
+  test,
   localClients,
   checked,
   account,
   login,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  freeCalendarStart,
 } from "./local-fixtures";
+import { dateInput } from "./walk-journey";
 test.use({ trace: "off" });
 const serviceId = "60000000-0000-4000-8000-000000000001";
 const courseForm = (page: Page) =>
@@ -63,6 +67,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     const leader = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, leader.id);
     const names = [
       `Kurs pierwszy ${crypto.randomUUID().slice(0, 6)}`,
       `Kurs rezerwa ${crypto.randomUUID().slice(0, 6)}`,
@@ -123,13 +128,21 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await create
       .getByLabel("Dokładne miejsce zbiórki po przyjęciu")
       .fill("PRYWATNY PUNKT PANELU");
-    const first = `${new Date().getUTCFullYear() + 2}-01-15T14:00`;
+    const firstIso = await freeCalendarStart(db, {
+      after: Date.UTC(new Date().getUTCFullYear() + 2, 0, 15, 12),
+      offsetsMinutes: [
+        0,
+        1440,
+        ...Array.from({ length: 4 }, (_, n) => (n + 1) * 7 * 1440),
+      ],
+    });
+    const first = dateInput(firstIso);
     await create.getByLabel("Spotkanie 1", { exact: true }).fill(first);
     await create
       .getByRole("button", { name: "Uzupełnij co tydzień", exact: true })
       .click();
     await expect(create.getByLabel("Spotkanie 2", { exact: true })).toHaveValue(
-      `${new Date().getUTCFullYear() + 2}-01-22T14:00`,
+      dateInput(new Date(Date.parse(firstIso) + 7 * 86400000).toISOString()),
     );
     await screenshot(staff, "output/courses/create-320.png", 320);
     const id = await create.locator('input[name="id"]').inputValue();
@@ -257,7 +270,9 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
       name: "Termin spotkania 1",
       exact: true,
     });
-    const moved = first.replace("-15T", "-16T");
+    const moved = dateInput(
+      new Date(Date.parse(firstIso) + 86400000).toISOString(),
+    );
     await edit.getByLabel("Termin (czas polski)").fill(moved);
     await edit
       .getByLabel("Dokładne miejsce zbiórki po przyjęciu")
@@ -398,6 +413,7 @@ test("course attendance panels: started meeting → recorded attendance → comp
   try {
     const leader = await account(db, users, "admin"),
       owner = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, leader.id);
     await checked(
       api.auth.signInWithPassword({
         email: leader.email,
@@ -419,35 +435,12 @@ test("course attendance panels: started meeting → recorded attendance → comp
     const id = crypto.randomUUID(),
       enrollment = crypto.randomUUID();
     courses.push(id);
-    const now = Date.now();
-    const first = new Date(now + 2 * 86400000);
-    first.setUTCHours(9, 30, 0, 0);
-    const occupied = await checked(
-      api.rpc(
-        "calendar_appointments",
-        {
-          p_from: new Date(now).toISOString(),
-          p_to: new Date(now + 31 * 86400000).toISOString(),
-        },
-        { get: true },
-      ),
+    const first = new Date(
+      await freeCalendarStart(db, {
+        after: Date.now() + 2 * 86400000,
+        offsetsMinutes: Array.from({ length: 5 }, (_, n) => n * 7 * 1440),
+      }),
     );
-    const available = () =>
-      !occupied!.some(
-        (event: { status: string; starts_at: string; ends_at: string }) =>
-          event.status !== "completed" &&
-          Array.from(
-            { length: 5 },
-            (_, i) => first.getTime() + i * 7 * 86400000,
-          ).some(
-            (at) =>
-              at < Date.parse(event.ends_at) &&
-              at + 60 * 60000 > Date.parse(event.starts_at),
-          ),
-      );
-    while (!available() && first.getTime() < now + 3 * 86400000)
-      first.setTime(first.getTime() + 15 * 60000);
-    expect(available()).toBe(true);
     await checked(
       api.rpc("create_course", {
         p_id: id,

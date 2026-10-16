@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import {
   LocalPostgres,
@@ -7,9 +7,11 @@ import {
 } from "../helpers/local-postgres.mjs";
 import { careEditor, careFixture, careScreenshot } from "./care-journey";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
   login,
 } from "./local-fixtures";
@@ -365,6 +367,7 @@ test("course care: observed PostgreSQL locks serialize publication, cancellation
   try {
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staff, admin],
       [ownerApi, owner],

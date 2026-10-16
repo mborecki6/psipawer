@@ -20,6 +20,8 @@ import {
   disposeBackupCourses,
 } from "../helpers/backup-course-fixtures.mjs";
 import { LocalPostgres } from "../helpers/local-postgres.mjs";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import { cleanupOwnedFixture } from "../helpers/owned-fixture-cleanup.mjs";
 import {
   prepareBackupFitness,
   verifyBackupFitness,
@@ -57,10 +59,20 @@ const run = randomUUID(),
   clients = [];
 let failed = false,
   phase = "source-baseline",
-  sourceBefore;
+  sourceBefore,
+  practiceFixture;
 const onStage = (value) => {
   phase = value;
 };
+// Each operation releases its connection before the physical backup stops DB.
+async function practiceQuery(statement, json = false) {
+  const sql = await new LocalPostgres().ready();
+  try {
+    return await (json ? sql.json(statement) : sql.query(statement));
+  } finally {
+    await sql.close();
+  }
+}
 async function publicSnapshot() {
   const sql = await new LocalPostgres().ready();
   try {
@@ -131,6 +143,13 @@ try {
   const owner = users[0],
     stranger = users[1],
     staff = users[2];
+  practiceFixture = await selectLocalPractitioner(
+    {
+      query: (statement) => practiceQuery(statement),
+      json: (statement) => practiceQuery(statement, true),
+    },
+    staff.id,
+  );
   const dog = { id: randomUUID() };
   dogs.push(dog.id);
   onStage("source-dog");
@@ -529,56 +548,67 @@ try {
 } finally {
   try {
     onStage("source-cleanup");
-    for (const file of files)
-      checked(await db.storage.from(file.bucket).remove([file.path]));
-    await disposeBackupGifts(db, gifts);
-    await disposeBackupFitness(db, fitness);
-    await disposeBackupCourses(db, dogs[0], courses);
-    if (dogs.length) {
-      checked(await db.from("dog_notes").delete().in("dog_id", dogs));
-      checked(await db.from("dogs").delete().in("id", dogs));
-    }
-    for (const file of [...files, ...leases]) {
-      checked(
-        await db
-          .from("avatar_uploads")
-          .delete()
-          .eq("bucket_id", file.bucket)
-          .eq("object_path", file.path),
-      );
-      // Bytes were removed through Storage and the own dog is gone. Finish
-      // only this run's exact keys; never claim another user's queued jobs.
-      checked(
-        await db.rpc("worker_finish_avatar_cleanup", {
-          p_bucket: file.bucket,
-          p_path: file.path,
-          p_failed: false,
-        }),
-      );
-      checked(
-        await db
-          .from("avatar_cleanup")
-          .delete()
-          .eq("bucket_id", file.bucket)
-          .eq("object_path", file.path)
-          .not("completed_at", "is", null),
-      );
-    }
-    for (const client of clients) checked(await client.auth.signOut());
-    for (const user of users) {
-      if (!user.id) {
-        // An accepted creation with a lost response is found only by the exact
-        // unique address, never by a shared prefix or a real user's email.
-        const listed = checked(
-          await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-        );
-        user.id = listed.users.find((u) => u.email === user.email)?.id;
-      }
-      if (user.id) {
-        checked(await db.from("audit_events").delete().eq("actor_id", user.id));
-        checked(await db.auth.admin.deleteUser(user.id));
-      }
-    }
+    await cleanupOwnedFixture({
+      data: async () => {
+        for (const file of files)
+          checked(await db.storage.from(file.bucket).remove([file.path]));
+        await disposeBackupGifts(db, gifts);
+        await disposeBackupFitness(db, fitness);
+        await disposeBackupCourses(db, dogs[0], courses);
+        if (dogs.length) {
+          checked(await db.from("dog_notes").delete().in("dog_id", dogs));
+          checked(await db.from("dogs").delete().in("id", dogs));
+        }
+        for (const file of [...files, ...leases]) {
+          checked(
+            await db
+              .from("avatar_uploads")
+              .delete()
+              .eq("bucket_id", file.bucket)
+              .eq("object_path", file.path),
+          );
+          // Bytes were removed through Storage and the own dog is gone. Finish
+          // only this run's exact keys; never claim another user's queued jobs.
+          checked(
+            await db.rpc("worker_finish_avatar_cleanup", {
+              p_bucket: file.bucket,
+              p_path: file.path,
+              p_failed: false,
+            }),
+          );
+          checked(
+            await db
+              .from("avatar_cleanup")
+              .delete()
+              .eq("bucket_id", file.bucket)
+              .eq("object_path", file.path)
+              .not("completed_at", "is", null),
+          );
+        }
+      },
+      restore: async () => {
+        await practiceFixture?.restore();
+      },
+      accounts: async () => {
+        for (const client of clients) checked(await client.auth.signOut());
+        for (const user of users) {
+          if (!user.id) {
+            // An accepted creation with a lost response is found only by the exact
+            // unique address, never by a shared prefix or a real user's email.
+            const listed = checked(
+              await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+            );
+            user.id = listed.users.find((u) => u.email === user.email)?.id;
+          }
+          if (user.id) {
+            checked(
+              await db.from("audit_events").delete().eq("actor_id", user.id),
+            );
+            checked(await db.auth.admin.deleteUser(user.id));
+          }
+        }
+      },
+    });
     onStage("source-baseline-compare");
     if (sourceBefore)
       assert.deepEqual(
@@ -589,10 +619,10 @@ try {
     console.log(
       "Próba kopii: własne dane i pliki usunięte; skróty wszystkich wcześniejszych tabel publicznych zgodne.",
     );
-  } catch {
+  } catch (error) {
     failed = true;
     console.error(
-      "Sprzątanie próby niepotwierdzone; nie resetuj lokalnej bazy.",
+      `Sprzątanie próby niepotwierdzone (etapy: ${(error.cleanupStages ?? ["verification"]).join(", ")}); nie resetuj lokalnej bazy.`,
     );
   }
 }

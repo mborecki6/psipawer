@@ -1,6 +1,7 @@
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { LocalPostgres, literal } from "../helpers/local-postgres.mjs";
 import {
+  test,
   localClients,
   checked,
   account,

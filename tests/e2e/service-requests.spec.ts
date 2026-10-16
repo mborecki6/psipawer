@@ -1,6 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { careScreenshot } from "./care-journey";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,

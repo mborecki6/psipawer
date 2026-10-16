@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import assert from "node:assert/strict";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
 import { walkJourney, mobileEvidence } from "./walk-journey";
 
 test("walk cash: partial receipts → guardian cancellation → refunds, attendance corrections preserve the ledger", async ({

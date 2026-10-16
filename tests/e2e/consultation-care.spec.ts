@@ -1,11 +1,13 @@
 import { consultationJourney } from "./consultation-journey";
-import { test } from "@playwright/test";
+
 import {
+  test,
   localClients,
   checked,
   account,
   login,
   disposeCareFixtures,
+  setupLocalPractitioner,
 } from "./local-fixtures";
 
 test("consultation → private draft → completed meeting → publication → guardian response", async ({
@@ -28,6 +30,7 @@ test("consultation → private draft → completed meeting → publication → g
   const outsiderDb = client();
   try {
     const staffAccount = await account(db, users, "admin");
+    await setupLocalPractitioner(db, users, staffAccount.id);
     const owner = await account(db, users, "client");
     const outsider = await account(db, users, "client");
     await checked(

@@ -45,8 +45,9 @@ export default async function Page({
       .maybeSingle(),
     db
       .from("walk_registrations")
-      .select("id", { count: "exact", head: true })
-      .eq("walk_id", id),
+      .select("id", { count: "exact" })
+      .eq("walk_id", id)
+      .limit(0),
     getBookingChoices(db, user.id, { kind: "walk", ids: [id] }),
   ]);
   if (locationError || countError)

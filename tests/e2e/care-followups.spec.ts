@@ -1,6 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { careDate } from "../../src/modules/care/types";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
+import { completeServerAction } from "./action-completion";
 import {
   careFixture as fixture,
   careEditor as editor,
@@ -429,9 +430,22 @@ test("an older guardian response keeps its plan and explicit review clears only 
       "Druga fikcyjna treść, zachowująca pierwszą publikację.",
     );
     await expect(responseForm.locator('[name="plan_id"]')).toHaveValue(planId);
-    await responseForm
-      .getByRole("button", { name: "Przekaż odpowiedź prowadzącej" })
-      .click();
+    await expect(responseForm.getByRole("status")).toHaveCount(0);
+    await completeServerAction(
+      guardian,
+      responseForm.getByRole("button", {
+        name: "Przekaż odpowiedź prowadzącej",
+      }),
+      async (remaining) => {
+        await expect(responseForm).toHaveAttribute("aria-busy", "false", {
+          timeout: remaining(),
+        });
+        await expect(responseForm.getByRole("status")).toContainText(
+          "Odpowiedź zapisana",
+          { timeout: remaining() },
+        );
+      },
+    );
     await expect(responseForm.getByRole("status")).toContainText(
       "Odpowiedź zapisana",
     );

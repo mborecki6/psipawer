@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import {
   LocalPostgres,
@@ -8,9 +8,11 @@ import {
 import { careFixture, careScreenshot } from "./care-journey";
 import { courseFixture, removeCourseCare } from "./course-fixtures";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
 } from "./local-fixtures";
 
@@ -395,6 +397,7 @@ test("course edits: real capacity/acceptance and competing attendance correction
   try {
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staff, admin],
       [ownerApi, owner],

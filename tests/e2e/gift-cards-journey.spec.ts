@@ -1,9 +1,12 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { completeServerAction } from "./action-completion";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
   localClients,
   login,
 } from "./local-fixtures";
@@ -63,6 +66,7 @@ test("issues, claims, spends and returns a gift card through both real local pan
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staff, admin],
       [own, owner],
@@ -308,9 +312,20 @@ test("issues, claims, spends and returns a gift card through both real local pan
     await decision
       .getByLabel("Powód operacji", { exact: true })
       .fill("Uzgodnione wycofanie karty");
-    await decision
-      .getByRole("button", { name: "Zapisz decyzję", exact: true })
-      .click();
+    await expect(decision.getByRole("status")).toHaveCount(0);
+    await completeServerAction(
+      page,
+      decision.getByRole("button", { name: "Zapisz decyzję", exact: true }),
+      async (remaining) => {
+        await expect(decision.getByRole("status")).toContainText(
+          "Zmiana karty zapisana",
+          { timeout: remaining() },
+        );
+        await expect(
+          decision.getByRole("button", { name: "Zapisuję…", exact: true }),
+        ).toHaveCount(0, { timeout: remaining() });
+      },
+    );
     await expect(decision.getByRole("status")).toContainText(
       "Zmiana karty zapisana",
     );

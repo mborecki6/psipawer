@@ -10,6 +10,7 @@ export type Dog = {
   weight_kg: number | null;
   color: string | null;
   status: string;
+  qualification_version?: number;
   avatar_path: string | null;
   created_at: string;
 };

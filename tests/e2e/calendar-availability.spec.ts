@@ -1,9 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import assert from "node:assert/strict";
 import { LocalPostgres } from "../helpers/local-postgres.mjs";
-import { configureCalendarPrimary } from "../helpers/calendar-primary.mjs";
-import { account, checked, localClients, login } from "./local-fixtures";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import {
+  test,
+  account,
+  checked,
+  cleanupSteps,
+  localClients,
+  login,
+  restoreLocalPractitioner,
+  setupLocalPractitioner,
+} from "./local-fixtures";
 import { dateInput, mobileEvidence } from "./walk-journey";
 
 // Real Auth/API/UI, isolated fixture users and events. Preferred breaks may be
@@ -62,9 +71,37 @@ test("single practitioner: organising administrator, global collisions, confirme
         .update({ full_name: `Jan ${suffix}` })
         .eq("id", jan.id),
     );
-    await configureCalendarPrimary(sql, anna.id);
     await checked(ownerDb.auth.signInWithPassword(guardian));
     await checked(staffDb.auth.signInWithPassword(jan));
+    phase = "missing-primary-fails-closed";
+    const missing = await selectLocalPractitioner(sql, null);
+    try {
+      const refused = await staffDb.rpc("create_walk", {
+        payload: {
+          starts_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+          duration_minutes: 60,
+          type: "Próba braku konfiguracji",
+          public_location: `Bez prowadzącej ${suffix}`,
+          exact_location: "FIKCYJNA ZBIÓRKA",
+          price_cents: 10000,
+          capacity: 2,
+          booking_mode: "approval",
+          cancellation_deadline_hours: 24,
+        },
+      });
+      expect(refused.error?.message).toContain("Brak aktywnej prowadzącej");
+      expect(
+        await checked(
+          db
+            .from("walks")
+            .select("id")
+            .eq("public_location", `Bez prowadzącej ${suffix}`),
+        ),
+      ).toEqual([]);
+    } finally {
+      await missing.restore();
+    }
+    await setupLocalPractitioner(db, users, anna.id);
     await login(staff, jan, "admin");
     await login(owner, guardian, "client");
 
@@ -123,7 +160,7 @@ test("single practitioner: organising administrator, global collisions, confirme
     const start = await sql.json(`select to_json(min(t)) from (
       select ((now() at time zone 'Europe/Warsaw')::date+interval '3 years'+make_interval(days=>n)+interval '10 hours') at time zone 'Europe/Warsaw' t from generate_series(1,90) n
       ) candidates where extract(isodow from t at time zone 'Europe/Warsaw')=1
-      and not exists(select 1 from public.calendar_slots s where s.base_occupied && tstzrange(t,t+interval '2 days','[)'));`);
+      and not exists(select 1 from public.calendar_slots s where s.base_occupied && tstzrange(t-interval '10 hours',t+interval '2 days','[)'));`);
     expect(typeof start).toBe("string");
     const day = dateInput(start).slice(0, 10);
     const later = (minutes: number) =>
@@ -191,17 +228,36 @@ test("single practitioner: organising administrator, global collisions, confirme
     phase = "one-practitioner-collision-with-or-without-room";
     await prepareWalk(start, `Równoległy ${suffix}`, anna.id, room.id);
     await expect(
-      staff.getByLabel("Prowadzący", { exact: true }).locator("option"),
-    ).not.toContainText(`Jan ${suffix}`);
-    await submitWalk();
-    await expect(staff.locator("form").getByRole("alert")).toContainText(
-      "już zajęty",
-    );
+      staff
+        .getByLabel("Prowadzący", { exact: true })
+        .locator(`option[value="${jan.id}"]`),
+    ).toHaveCount(0);
+    async function rejectConfirmedCollision() {
+      await submitWalk();
+      // The adjacent second appointment also needs a short-break decision.
+      // Confirming that warning must never bypass the actual overlap.
+      await expect(staff.locator("form").getByRole("alert")).toContainText(
+        "krótszą przerwę",
+      );
+      await staff
+        .getByLabel("Sprawdziłem przerwę i chcę zapisać ten termin.")
+        .check();
+      await submitWalk();
+      await expect(staff.locator("form").getByRole("alert")).toContainText(
+        "już zajęty",
+      );
+      expect(
+        await checked(
+          db
+            .from("walks")
+            .select("id")
+            .eq("public_location", `Równoległy ${suffix}`),
+        ),
+      ).toEqual([]);
+    }
+    await rejectConfirmedCollision();
     await staff.getByLabel("Sala do rezerwacji (opcjonalnie)").selectOption("");
-    await submitWalk();
-    await expect(staff.locator("form").getByRole("alert")).toContainText(
-      "już zajęty",
-    );
+    await rejectConfirmedCollision();
     const assignments = await checked(
       db
         .from("calendar_assignments")
@@ -229,17 +285,74 @@ test("single practitioner: organising administrator, global collisions, confirme
     await rhythm().getByLabel("Pilnuj godzin pracy").check();
     await rhythm().getByLabel("Przerwa przed spotkaniem (min)").fill("0");
     await rhythm().getByLabel("Przerwa po spotkaniu (min)").fill("0");
+    // The one practice revalidates ALL appointments. Expand only this fixture's
+    // weekly policy to retain existing local appointments, never move them.
+    const week = original.week.map(
+      (h: {
+        weekday: number;
+        enabled: boolean;
+        start_minute: number;
+        end_minute: number;
+      }) => ({ ...h }),
+    );
+    const existing = await sql.json(`select coalesce(json_agg(json_build_object(
+      'weekday',extract(isodow from lower(base_occupied) at time zone 'Europe/Warsaw'),
+      'first',floor(extract(epoch from (lower(base_occupied) at time zone 'Europe/Warsaw')::time)/900)*15,
+      'last',case when (upper(base_occupied) at time zone 'Europe/Warsaw')::time=time '00:00' then 1440 else ceil(extract(epoch from (upper(base_occupied) at time zone 'Europe/Warsaw')::time)/900)*15 end,
+      'same_day',(lower(base_occupied) at time zone 'Europe/Warsaw')::date=((upper(base_occupied)-interval '1 microsecond') at time zone 'Europe/Warsaw')::date
+    )),'[]') from public.calendar_slots where block_id is null and upper(base_occupied)>now();`);
+    for (const row of existing) {
+      if (!row.same_day)
+        throw new Error(
+          "Existing multi-day appointment prevents an isolated hours UI test; preserve it.",
+        );
+      const dayPolicy = week.find(
+        (h: { weekday: number }) => h.weekday === row.weekday,
+      )!;
+      dayPolicy.enabled = true;
+      dayPolicy.start_minute = Math.min(dayPolicy.start_minute, row.first);
+      dayPolicy.end_minute = Math.max(dayPolicy.end_minute, row.last);
+    }
+    const names = [
+      "Poniedziałek",
+      "Wtorek",
+      "Środa",
+      "Czwartek",
+      "Piątek",
+      "Sobota",
+      "Niedziela",
+    ];
+    for (const policy of week) {
+      const label = names[policy.weekday - 1];
+      await rhythm()
+        .getByLabel(label, { exact: true })
+        .setChecked(policy.enabled);
+      if (policy.enabled) {
+        await rhythm()
+          .getByLabel(`Od · ${label}`, { exact: true })
+          .selectOption(String(policy.start_minute));
+        await rhythm()
+          .getByLabel(`Do · ${label}`, { exact: true })
+          .selectOption(String(policy.end_minute));
+      }
+    }
     await rhythm().getByRole("button", { name: "Zapisz rytm pracy" }).click();
     await expect(rhythm().getByRole("status")).toContainText(
       "Rytm pracy prowadzącego zapisany",
     );
-    await prepareWalk(later(-120), `Poza godzinami ${suffix}`, anna.id);
+    const monday = week.find((h: { weekday: number }) => h.weekday === 1)!;
+    const outside = later(
+      (monday.start_minute > 0
+        ? Math.max(0, monday.start_minute - 60)
+        : Math.min(monday.end_minute, 1410)) - 600,
+    );
+    await prepareWalk(outside, `Poza godzinami ${suffix}`, anna.id);
     await submitWalk();
     await expect(staff.locator("form").getByRole("alert")).toContainText(
       "wykracza poza godziny pracy",
     );
     await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(
-      dateInput(later(-120)),
+      dateInput(outside),
     );
     const tuesday = dateInput(later(24 * 60)).slice(0, 10);
     await staff.goto(`/admin/calendar?date=${tuesday}`);
@@ -275,9 +388,7 @@ test("single practitioner: organising administrator, global collisions, confirme
     phase = "month-privacy-and-mobile";
     await staff.goto(`/admin/calendar?date=${day}&view=month`);
     await expect(
-      staff.getByText(
-        "Wybierz dzień, żeby zobaczyć godziny i szczegóły.",
-      ),
+      staff.getByText("Wybierz dzień, żeby zobaczyć godziny i szczegóły."),
     ).toBeVisible();
     mkdirSync("output/calendar", { recursive: true });
     await mobileEvidence(staff, "output/calendar/team-month-390.png");
@@ -336,35 +447,36 @@ test("single practitioner: organising administrator, global collisions, confirme
       `Lokalny kalendarz nie przeszedł etapu ${phase}; treści i poświadczenia pominięto.`,
     );
   } finally {
-    await staffContext.close();
-    await ownerContext.close();
-    // Restore the environment's configuration before deleting fixture users.
-    if (original.settings.primary_practitioner_id)
-      await configureCalendarPrimary(
-        sql,
-        original.settings.primary_practitioner_id,
-      );
-    else
-      await sql.query(
-        "update public.calendar_settings set primary_practitioner_id=null;",
-      );
-    if (users.length) {
-      await checked(db.from("walks").delete().in("leader_id", users));
-      await checked(
-        db.from("calendar_blocks").delete().in("updated_by", users),
-      );
-      await checked(
-        db.from("calendar_resources").delete().in("created_by", users),
-      );
-      await checked(db.from("audit_events").delete().in("actor_id", users));
-      await checked(
-        db.from("calendar_staff_settings").delete().in("staff_id", users),
-      );
-      for (const id of users) await checked(db.auth.admin.deleteUser(id));
-    }
-    expect(await sql.json(snapshot)).toEqual(original);
-    await ownerDb.auth.signOut();
-    await staffDb.auth.signOut();
-    await sql.close();
+    await cleanupSteps(
+      () => staffContext.close(),
+      () => ownerContext.close(),
+      async () => {
+        if (users.length) {
+          await checked(db.from("walks").delete().in("leader_id", users));
+          await checked(
+            db.from("calendar_blocks").delete().in("updated_by", users),
+          );
+          await checked(
+            db.from("calendar_resources").delete().in("created_by", users),
+          );
+        }
+      },
+      () => restoreLocalPractitioner(db),
+      async () => {
+        if (users.length) {
+          await checked(db.from("audit_events").delete().in("actor_id", users));
+          await checked(
+            db.from("calendar_staff_settings").delete().in("staff_id", users),
+          );
+          await cleanupSteps(
+            ...users.map((id) => () => checked(db.auth.admin.deleteUser(id))),
+          );
+        }
+      },
+      async () => expect(await sql.json(snapshot)).toEqual(original),
+      () => ownerDb.auth.signOut(),
+      () => staffDb.auth.signOut(),
+      () => sql.close(),
+    );
   }
 });

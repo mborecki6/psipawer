@@ -4,7 +4,8 @@ import type { ControlInvitation, ReportingAccess } from "./types";
 import { BookOpen, ClipboardList, MessageCircle } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import type { Role } from "@/lib/auth/session";
-import { reviewProgress, submitProgress } from "./actions";
+import { reviewProgress } from "./actions";
+import { ProgressForm } from "./progress-form";
 import { CareEditorDisclosure, CareEditor, TemplateEditor } from "./editor";
 import {
   careDate,
@@ -532,32 +533,11 @@ export function DogCareView({
             Kilka zdań wystarczy. Opisz także trudności — to pomoże zaplanować
             dalszą pracę.
           </p>
-          <ActionForm
+          <ProgressForm
             key={`${dog.id}:${selectedKey}`}
-            action={submitProgress}
-            label="Przekaż odpowiedź prowadzącej"
-          >
-            <input type="hidden" name="id" value={responseId} />
-            <input type="hidden" name="plan_id" value={latest.id} />
-            <label className="field">
-              <span>Co udało się zrobić?</span>
-              <textarea
-                name="attempted"
-                required
-                minLength={3}
-                maxLength={3000}
-                rows={4}
-              />
-            </label>
-            <label className="field">
-              <span>Co poszło dobrze? (opcjonalnie)</span>
-              <textarea name="went_well" maxLength={3000} rows={3} />
-            </label>
-            <label className="field">
-              <span>Co było trudne lub wymaga wyjaśnienia? (opcjonalnie)</span>
-              <textarea name="difficult" maxLength={3000} rows={3} />
-            </label>
-          </ActionForm>
+            plan={latest}
+            responseId={responseId}
+          />
         </article>
       )}
       <section className="card pad" id="postepy">

@@ -5,12 +5,16 @@ import { getSnapshot } from "@/lib/data/queries";
 import { Badge } from "@/components/ui";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "@/components/qualification-alert";
-import { getFinanceData } from "@/lib/data/finance-queries";
+import { getDashboardFinanceSummary } from "@/lib/data/finance-queries";
 import { money } from "@/lib/domain";
 import { financePackageHref } from "@/lib/finance-pagination";
 export default async function Page() {
   const [{ walks, dogs, registrations }, finance, nextAppointment] =
-    await Promise.all([getSnapshot(), getFinanceData(), getNextAppointment()]);
+    await Promise.all([
+      getSnapshot(),
+      getDashboardFinanceSummary(),
+      getNextAppointment(),
+    ]);
   const cancelled = walks.filter(
     (w) =>
       w.status === "cancelled" &&

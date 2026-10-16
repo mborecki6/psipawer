@@ -6,7 +6,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { Hourglass, CalendarDays, Wallet, Activity } from "lucide-react";
 import { getSnapshot } from "@/lib/data/queries";
-import { getFinanceData } from "@/lib/data/finance-queries";
+import { getDashboardFinanceSummary } from "@/lib/data/finance-queries";
 import { Kpi, WalkRow, Empty } from "@/components/ui";
 import { kpiUrl, warsawDate } from "@/lib/domain";
 import { getQualificationWarnings } from "@/lib/qualification";
@@ -16,7 +16,7 @@ export default async function Page() {
   const [{ walks, registrations, dogs }, finance, nextAppointment, workQueue] =
     await Promise.all([
       getSnapshot(),
-      getFinanceData(),
+      getDashboardFinanceSummary(),
       getNextAppointment(),
       getWorkQueue("all", 1),
     ]);
@@ -81,7 +81,7 @@ export default async function Page() {
           />
           <Kpi
             label="Do rozliczenia"
-            value={finance.charges.length}
+            value={finance.chargeCount}
             copy="Konsultacje, spacery i pakiety"
             href={kpiUrl("due-payments")}
             icon={<Wallet />}

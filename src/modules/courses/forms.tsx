@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { money } from "@/lib/domain";
 import { warsawDateTimeInput } from "@/lib/time";
 import type { Service } from "@/modules/services/types";
@@ -39,7 +40,7 @@ function useCourseForm(action: Action, version: number) {
       previous: CourseActionState & { version: number },
       form: FormData,
     ) => {
-      const result = await action(previous, form);
+      const result = await withFormActionRecovery(action)(previous, form);
       return { ...result, version: result.version ?? previous.version };
     },
     { version },

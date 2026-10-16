@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, Package, Wallet } from "lucide-react";
-import { ActionForm, Field } from "@/components/action-form";
+import { ActionForm } from "@/components/action-form";
 import { dateLabel, money } from "@/lib/domain";
 import type { FinanceCharge } from "@/lib/finance";
-import { recordPayment, usePackage } from "@/lib/data/finance-actions";
+import { usePackage } from "@/lib/data/finance-actions";
+import { PaymentEntryForm } from "./payment-entry-form";
 import { Details, NoteField } from "./ui";
 import { shortDate } from "./format";
 import styles from "../finance.module.css";
@@ -21,37 +22,7 @@ function PaymentForm({ charge }: { charge: FinanceCharge }) {
         Odnotuj wpłatę w kursie →
       </Link>
     );
-  return (
-    <ActionForm
-      action={recordPayment}
-      label="Zapisz wpłatę"
-      pendingLabel="Zapisuję wpłatę…"
-    >
-      <input type="hidden" name="target_kind" value={charge.kind} />
-      <input type="hidden" name="target_id" value={charge.id} />
-      <input type="hidden" name="request_id" value={crypto.randomUUID()} />
-      <div className="form-grid">
-        <Field
-          name="amount"
-          label="Otrzymana kwota (zł)"
-          value={(charge.dueCents / 100).toFixed(2).replace(".", ",")}
-          inputMode="decimal"
-          maxLength={9}
-          required
-        />
-        <label className="field">
-          <span>Metoda płatności</span>
-          <select name="method" defaultValue="transfer" required>
-            <option value="transfer">Przelew</option>
-            <option value="cash">Gotówka</option>
-            <option value="card">Karta</option>
-            <option value="other">Inna (np. BLIK)</option>
-          </select>
-        </label>
-      </div>
-      <NoteField />
-    </ActionForm>
-  );
+  return <PaymentEntryForm charge={charge} requestId={crypto.randomUUID()} />;
 }
 
 export function ChargeRow({

@@ -7,6 +7,10 @@ vi.mock(
   async () => import("../src/lib/finance-pagination"),
 );
 vi.mock("@/modules/courses/money-form", () => ({}));
+vi.mock("@/components/use-hydrated", () => ({ useHydrated: () => true }));
+vi.mock("@/components/use-persistent-form", () => ({
+  usePersistentForm: () => ({ current: null }),
+}));
 vi.mock("../src/modules/courses/money-form", () => ({
   CourseMoneyForm: ({ kind }: { kind: string }) =>
     createElement("form", { "data-money-kind": kind }),

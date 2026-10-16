@@ -1,10 +1,13 @@
-import { test, expect, type Page, type Locator } from "@playwright/test";
+import { expect, type Page, type Locator } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  cleanupSteps,
   localClients,
   login,
 } from "./local-fixtures";
@@ -19,21 +22,27 @@ async function fixtures(baseURL: string | undefined) {
     packages: string[] = [];
   const sql = new LocalPostgres();
   const dispose = async () => {
-    await sql.close();
-    await disposeCareFixtures(db, users, dogs, async () => {
-      if (packages.length) {
-        await checked(
-          db.from("payments").delete().in("fitness_package_id", packages),
-        );
-        await checked(db.from("fitness_packages").delete().in("id", packages));
-      }
-    });
+    await cleanupSteps(
+      () => sql.close(),
+      () =>
+        disposeCareFixtures(db, users, dogs, async () => {
+          if (packages.length) {
+            await checked(
+              db.from("payments").delete().in("fitness_package_id", packages),
+            );
+            await checked(
+              db.from("fitness_packages").delete().in("id", packages),
+            );
+          }
+        }),
+    );
   };
   try {
     await sql.ready();
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     const staff = client(),
       own = client(),
       stranger = client();
@@ -70,7 +79,7 @@ async function fixtures(baseURL: string | undefined) {
     });
     const free = async (past = false) => {
       const value = await sql.json(
-        `select to_json(min(t)) from (select now()${past ? "-" : "+"}interval '3 years'+make_interval(days=>n) t from generate_series(1,100) n) dates where not exists(select 1 from public.calendar_slots where occupied && tstzrange(t,t+interval '45 minutes','[)'));`,
+        `select to_json(min(t)) from (select date_trunc('hour',now())${past ? "-" : "+"}interval '3 years'+make_interval(days=>n) t from generate_series(1,100) n) dates where not exists(select 1 from public.calendar_slots where occupied && tstzrange(t,t+interval '45 minutes','[)'));`,
       );
       if (typeof value !== "string")
         throw new Error("No isolated fitness fixture slot");
@@ -360,6 +369,12 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
   try {
     await login(page, f.owner, "client");
     await page.goto("/app/services");
+    const individual = page
+      .getByRole("navigation", { name: "Forma usług", exact: true })
+      .locator('a[href="/app/services?category=individual"]');
+    await expect(individual).toContainText("Indywidualne");
+    await individual.click();
+    await expect(page).toHaveURL(/\/app\/services\?category=individual$/);
     await page
       .getByRole("link", { name: "Zgłoś psa na fitness →", exact: true })
       .click();
@@ -475,12 +490,23 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
         }),
       ]),
     );
-    await staffPage.goto(
-      `/admin/calendar?date=${warsawDateTimeInput(starts).slice(0, 10)}`,
+    const calendarDay = warsawDateTimeInput(starts).slice(0, 10);
+    await staffPage.goto(`/admin/calendar?date=${calendarDay}`);
+    const month = staffPage.getByRole("region", { name: /^Kalendarz:/ });
+    await expect(month).toContainText(/spotkanie 1\/4/);
+    await screen(staffPage, "calendar-month", 390, "Kalendarz");
+    await month
+      .locator(`a[href^="/admin/calendar?date=${calendarDay}&view=week"]`)
+      .click();
+    await expect(staffPage).toHaveURL(
+      new RegExp(`/admin/calendar\\?date=${calendarDay}&view=week`),
     );
     const appointment = staffPage.locator("article").filter({
       has: staffPage.getByRole("heading", { name: /spotkanie 1\/4/ }),
     });
+    await expect(appointment).toContainText(
+      "FIKCYJNA PRYWATNA ZBIÓRKA FITNESS",
+    );
     await appointment.getByRole("link", { name: "Otwórz szczegóły" }).click();
     await expect(staffPage).toHaveURL(new RegExp(`/admin/fitness/${id}$`));
     await staffPage

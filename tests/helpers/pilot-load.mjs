@@ -24,7 +24,14 @@ export function pilotConfiguration(values, manifest, buildId) {
   const secret = values.SUPABASE_SECRET_KEY;
   assert(key && secret, "Local credentials are required");
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify([api.origin, app.origin, key]))
+    .update(
+      JSON.stringify([
+        api.origin,
+        app.origin,
+        key,
+        values.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+      ]),
+    )
     .digest("hex");
   assert(
     manifest.version === 1 &&

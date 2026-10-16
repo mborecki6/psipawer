@@ -6,6 +6,10 @@ vi.mock(
   async () => import("../src/lib/finance-pagination"),
 );
 vi.mock("@/lib/domain", async () => import("../src/lib/domain"));
+vi.mock("@/components/use-hydrated", () => ({ useHydrated: () => true }));
+vi.mock("@/components/use-persistent-form", () => ({
+  usePersistentForm: () => ({ current: null }),
+}));
 vi.mock("@/components/ui", async () => import("../src/components/ui"));
 vi.mock("@/lib/data/finance-actions", () => ({
   recordPayment: vi.fn(),

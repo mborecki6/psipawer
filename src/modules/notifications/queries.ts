@@ -14,8 +14,9 @@ export async function getUnreadCount(
       () =>
         db
           .from("notifications")
-          .select("id", { count: "exact", head: true })
-          .is("read_at", null),
+          .select("id", { count: "exact" })
+          .is("read_at", null)
+          .limit(0),
     );
     if (
       !error &&

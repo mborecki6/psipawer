@@ -89,13 +89,29 @@ export async function saveDog(
     if (error) return dbError(error.message);
     dogId = String(id);
   } else {
-    const { data, error } = await db
-      .from("dogs")
-      .insert({ ...result.data, guardian_id: user.id })
-      .select("id")
-      .single();
-    if (error) return dbError(error.message);
-    dogId = data.id;
+    const requestId = uuid.safeParse(form.get("creation_request_id"));
+    if (!requestId.success)
+      return issue(
+        "Nieprawidłowy formularz. Odśwież stronę przed dodaniem psa.",
+      );
+    const { data, error } = await db.rpc("create_dog_profile", {
+      p_request_id: requestId.data,
+      p_payload: result.data,
+    });
+    if (error) {
+      const conflicts = [
+        "Ten formularz został już zapisany z innymi danymi. Sprawdź profil psa na liście przed dodaniem nowego.",
+        "Nie można ponowić zapisu tego formularza. Sprawdź listę psów i swój dostęp.",
+      ];
+      return conflicts.includes(error.message)
+        ? issue(error.message)
+        : dbError(error.message);
+    }
+    if (!uuid.safeParse(data).success)
+      return issue(
+        "Nie udało się potwierdzić zapisu. Spróbuj ponownie w tym formularzu.",
+      );
+    dogId = data;
   }
   refresh();
   redirect(`${role === "admin" ? "/admin" : "/app"}/dogs/${dogId}?saved=1`);
@@ -231,27 +247,64 @@ export async function cancelRegistration(
     success: "Zgłoszenie odwołane. Termin odwołania został uwzględniony.",
   };
 }
+export type DogQualificationState = ActionState & {
+  qualificationStatus?: (typeof dogStatuses)[number];
+  qualificationVersion?: number;
+};
 export async function setDogStatus(
   _: ActionState,
   form: FormData,
-): Promise<ActionState> {
+): Promise<DogQualificationState> {
   const { db } = await requireSession("admin");
   const result = z
     .object({
       dog_id: uuid,
+      request_id: uuid,
+      expected_status: z.enum(dogStatuses),
+      expected_qualification_version: z
+        .string()
+        .regex(/^(0|[1-9][0-9]*)$/)
+        .transform(Number)
+        .pipe(z.number().int().min(0).max(2147483646)),
       status: z.enum(dogStatuses),
       note: z.string().trim().min(3).max(8000),
     })
     .safeParse(Object.fromEntries(form));
-  if (!result.success) return issue("Wybierz status i podaj powód zmiany.");
-  const { error } = await db.rpc("set_dog_status", {
+  if (!result.success)
+    return issue(
+      form.has("request_id") && form.has("expected_qualification_version")
+        ? "Wybierz status i podaj powód zmiany. Jeśli formularz jest nieaktualny, odśwież stronę."
+        : "Formularz kwalifikacji jest nieaktualny. Odśwież stronę przed zapisem.",
+    );
+  const { data, error } = await db.rpc("qualify_dog", {
+    p_request_id: result.data.request_id,
     p_dog: result.data.dog_id,
+    p_expected_status: result.data.expected_status,
+    p_expected_version: result.data.expected_qualification_version,
     p_status: result.data.status,
     p_note: result.data.note,
   });
-  if (error) return dbError(error.message);
+  if (error) {
+    const conflicts = [
+      "Ten formularz kwalifikacji został już użyty do innej decyzji. Sprawdź profil psa i odśwież formularz.",
+      "Kwalifikacja psa zmieniła się w międzyczasie. Sprawdź aktualny status i odśwież formularz.",
+      "Nie znaleziono psa. Odśwież listę psów.",
+      "Brak uprawnień do zmiany kwalifikacji psa.",
+    ];
+    return conflicts.includes(error.message)
+      ? issue(error.message)
+      : dbError(error.message);
+  }
+  if (!Number.isInteger(data) || data < 1)
+    return issue(
+      "Nie udało się potwierdzić kwalifikacji. Spróbuj ponownie w tym formularzu.",
+    );
   refresh();
-  return { success: "Status psa został zmieniony." };
+  return {
+    success: "Status psa został zmieniony.",
+    qualificationStatus: result.data.status,
+    qualificationVersion: data,
+  };
 }
 export async function addNote(
   _: ActionState,

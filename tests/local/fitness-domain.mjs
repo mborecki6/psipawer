@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { after, before, beforeEach, test } from "node:test";
+import { configureCalendarPrimary } from "../helpers/calendar-primary.mjs";
 import {
   LocalPostgres,
   literal,
@@ -55,6 +56,7 @@ before(async () => {
   await observer.query(`insert into auth.users(id,email) values(${literal(admin)},'fitness-admin@example.test'),(${literal(owner)},'fitness-owner@example.test'),(${literal(other)},'fitness-other@example.test');
     update public.user_roles set role='admin' where user_id=${literal(admin)};
     insert into public.dogs(id,guardian_id,name) values(${literal(dog)},${literal(owner)},'Fikcyjny fitness PostgreSQL');`);
+  await configureCalendarPrimary(observer, admin);
 });
 beforeEach(async () => {
   await observer.query(`truncate public.fitness_packages cascade;truncate public.calendar_blocks cascade;delete from public.audit_events;
@@ -472,7 +474,12 @@ test("a failed fitness inbox insert rolls back delivery and a fresh worker recov
   await observer.query(`create function public.fixture_fitness_reminder_failure() returns trigger language plpgsql as $$begin if new.kind='fitness_reminder' then raise exception 'PRIVATE FIXTURE FAILURE';end if;return new;end$$;
     create trigger fixture_fitness_reminder_failure before insert on public.notifications for each row execute function public.fixture_fitness_reminder_failure();`);
   try {
-    assert.equal((await processWorker()).failed, 1);
+    assert.deepEqual(await processWorker(), {
+      sent: 0,
+      failed: 1,
+      cancelled: 0,
+      skipped: 0,
+    });
     assert.deepEqual(await reminderEvidence(), {
       jobs: [{ status: "retry", generation: 1, attempts: 1 }],
       notices: 0,

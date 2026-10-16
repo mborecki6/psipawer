@@ -1,10 +1,12 @@
 import { beforeEach, it, expect, vi } from "vitest";
+import { createClient } from "@supabase/supabase-js";
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   rpc: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
   is: vi.fn(),
+  limit: vi.fn(),
   report: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
@@ -29,7 +31,8 @@ beforeEach(() => {
   mocks.session.mockResolvedValue({ db, role: "client" });
   mocks.from.mockReturnValue({ select: mocks.select });
   mocks.select.mockReturnValue({ is: mocks.is });
-  mocks.is.mockResolvedValue({ count: 1005, error: null });
+  mocks.is.mockReturnValue({ limit: mocks.limit });
+  mocks.limit.mockResolvedValue({ count: 1005, error: null });
   mocks.rpc.mockResolvedValue({ data: [], error: null });
 });
 it("recovers a gateway feed error with the original cursor and a single unread count", async () => {
@@ -58,13 +61,14 @@ it("recovers a gateway feed error with the original cursor and a single unread c
   );
 });
 it("recreates the read-only count after a gateway response without reporting an unavailable counter", async () => {
-  mocks.is.mockResolvedValueOnce({
+  mocks.limit.mockResolvedValueOnce({
     count: null,
     error: { message: "Bad Gateway" },
     status: 502,
   });
   expect(await getUnreadCount(db)).toBe(1005);
   expect(mocks.is).toHaveBeenCalledTimes(2);
+  expect(mocks.limit.mock.calls).toEqual([[0], [0]]);
   expect(mocks.report).toHaveBeenCalledWith(
     "notifications.count",
     expect.any(Object),
@@ -91,9 +95,9 @@ it("loads 20 visible rows plus a continuation flag and the full unread count", a
   });
   expect(mocks.select).toHaveBeenCalledWith("id", {
     count: "exact",
-    head: true,
   });
   expect(mocks.is).toHaveBeenCalledWith("read_at", null);
+  expect(mocks.limit).toHaveBeenCalledWith(0);
 });
 it("resets malformed cursors and makes inaccessible cursor errors recoverable", async () => {
   await getNotificationInbox("unread", "invalid");
@@ -113,10 +117,10 @@ it("resets malformed cursors and makes inaccessible cursor errors recoverable", 
 });
 it("keeps an unavailable counter distinct from zero and fails the inbox visibly", async () => {
   for (const count of [null, -1, NaN]) {
-    mocks.is.mockResolvedValueOnce({ count, error: null });
+    mocks.limit.mockResolvedValueOnce({ count, error: null });
     expect(await getUnreadCount(db)).toBeNull();
   }
-  mocks.is.mockResolvedValue({
+  mocks.limit.mockResolvedValue({
     count: null,
     error: { message: "private detail" },
   });
@@ -124,9 +128,44 @@ it("keeps an unavailable counter distinct from zero and fails the inbox visibly"
   await expect(getNotificationInbox("unread")).rejects.toThrow(
     "Nie udało się pobrać powiadomień",
   );
-  mocks.is.mockRejectedValueOnce(new Error("network"));
+  mocks.limit.mockRejectedValueOnce(new Error("network"));
   expect(await getUnreadCount(db)).toBeNull();
 });
+it.each([0, 7, 1005, 50000])(
+  "uses an HTTP GET without row payload and reads the full exact count %i",
+  async (count) => {
+    const transport = vi.fn(async () =>
+      new Response("[]", {
+        status: count === 0 ? 200 : 206,
+        headers: {
+          "content-type": "application/json",
+          "content-range": `*/${count}`,
+        },
+      }),
+    );
+    const client = createClient("http://127.0.0.1:54321", "test-key", {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: transport },
+    });
+    expect(
+      await getUnreadCount(client as unknown as Parameters<typeof getUnreadCount>[0]),
+    ).toBe(count);
+    expect(transport).toHaveBeenCalledTimes(1);
+    const [input, init] = transport.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const url = new URL(input);
+    expect(url.pathname).toBe("/rest/v1/notifications");
+    expect(url.searchParams.get("select")).toBe("id");
+    expect(url.searchParams.get("read_at")).toBe("is.null");
+    expect(url.searchParams.get("limit")).toBe("0");
+    expect(init.method).toBe("GET");
+    expect(init.body).toBeUndefined();
+    expect(new Headers(init.headers).get("prefer")).toBe("count=exact");
+    expect(mocks.report).not.toHaveBeenCalled();
+  },
+);
 it("does not turn a feed failure into an empty inbox", async () => {
   mocks.rpc.mockResolvedValueOnce({
     data: null,

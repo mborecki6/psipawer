@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { checked } from "./local-fixtures";
+import { checked, freeCalendarStart } from "./local-fixtures";
+import { dateInput } from "./walk-journey";
 import { careEditor } from "./care-journey";
 
 // The same journey runs for a provisioned fixture and a newly invited guardian.
@@ -99,12 +100,9 @@ export async function consultationJourney({
     releaseScripts();
     await staff.unrouteAll({ behavior: "wait" });
   }
-  const day = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(Date.now() + 8 * 86400000));
+  const start = dateInput(
+    await freeCalendarStart(db, { after: Date.now() + 8 * 86400000 }),
+  );
   // A guardian's request does not choose the lead. Assign this disposable
   // appointment explicitly after hydration; the required picker must never
   // cause the test to mistake browser validation for a scheduling failure.
@@ -112,13 +110,11 @@ export async function consultationJourney({
   await expect(staff.getByLabel("Prowadzący", { exact: true })).toHaveValue(
     staffId,
   );
-  await staff.getByLabel("Termin (czas polski)").fill(`${day}T11:00`);
+  await staff.getByLabel("Termin (czas polski)").fill(start);
   await staff
     .getByLabel("Miejsce lub instrukcja połączenia")
     .fill("Testowa wideorozmowa — instrukcja dla opiekuna.");
-  await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(
-    `${day}T11:00`,
-  );
+  await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(start);
   await staff
     .getByRole("button", { name: "Potwierdź uzgodniony termin" })
     .click();

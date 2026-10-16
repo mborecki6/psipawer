@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { test } from "./local-fixtures";
+import { expect } from "@playwright/test";
 import { careFixture, publishCarePlan } from "./care-journey";
 
 test.use({ trace: "off" });

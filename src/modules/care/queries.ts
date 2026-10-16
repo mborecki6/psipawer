@@ -30,7 +30,8 @@ const progressColumns =
 type DB = Awaited<ReturnType<typeof requireSession>>["db"];
 
 async function careRead<T extends { error?: unknown; status?: number }>(
-  operation: "care.contexts" | "care.invitation" | "care.reporting",
+  operation:
+    "care.contexts" | "care.invitation" | "care.reporting" | "care.summaries",
   read: () => PromiseLike<T>,
   message: string,
 ): Promise<T> {
@@ -128,8 +129,49 @@ export async function getDogCare(
     .maybeSingle();
   if (dog.error) throw new Error("Nie udało się pobrać profilu psa.");
   if (!dog.data) notFound();
-  const [contexts, library, consultations, courses, fitness] =
-    await Promise.all([
+  const readPlans = (contextKey: string) =>
+    Promise.all([
+      db
+        .from("care_plan_versions")
+        .select(planColumns)
+        .eq("dog_id", id)
+        .eq("context_key", contextKey)
+        .order("revision", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      db
+        .from("care_plan_versions")
+        .select(planColumns)
+        .eq("dog_id", id)
+        .eq("context_key", contextKey)
+        .order("revision", { ascending: false })
+        .range(1 + (historyPage - 1) * 5, 6 + (historyPage - 1) * 5),
+      db
+        .from("care_progress")
+        .select(
+          progressColumns.replace(
+            "care_plan_versions(",
+            "care_plan_versions!inner(",
+          ),
+        )
+        .eq("dog_id", id)
+        .eq("care_plan_versions.context_key", contextKey)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range((progressPage - 1) * 10, progressPage * 10),
+      role === "admin"
+        ? db
+            .from("care_drafts")
+            .select(
+              "id,context_key,dog_id,consultation_id,course_id,course_enrollment_id,course_session_id,fitness_package_id,fitness_session_id,title,body,follow_up_on,control_invite_on,version,updated_at",
+            )
+            .eq("dog_id", id)
+            .eq("context_key", contextKey)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+  const [metadata, generalPlans] = await Promise.all([
+    Promise.all([
       dogContexts(db, id),
       role === "admin" ? templates(db) : Promise.resolve([]),
       role === "admin" ? dogConsultations(db, id) : Promise.resolve([]),
@@ -139,7 +181,12 @@ export async function getDogCare(
       role === "admin"
         ? dogFitness(db, id, dog.data.guardian_id)
         : Promise.resolve([]),
-    ]);
+    ]),
+    requestedGeneral === "general"
+      ? readPlans("general")
+      : Promise.resolve(null),
+  ]);
+  const [contexts, library, consultations, courses, fitness] = metadata;
   const requested: CareContext = {
     consultation_id: requestedId?.toLowerCase() || null,
     course_enrollment_id: requestedEnrollment?.toLowerCase() || null,
@@ -195,61 +242,21 @@ export async function getDogCare(
     contexts.some((item) => item.context_key === contextKey) ||
     (role === "admin" &&
       (canChooseConsultation || canChooseCourse || canChooseFitness));
-  const [latest, history, progress, draft] = await Promise.all([
-    db
-      .from("care_plan_versions")
-      .select(planColumns)
-      .eq("dog_id", id)
-      .eq("context_key", contextKey)
-      .order("revision", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    db
-      .from("care_plan_versions")
-      .select(planColumns)
-      .eq("dog_id", id)
-      .eq("context_key", contextKey)
-      .order("revision", { ascending: false })
-      .range(1 + (historyPage - 1) * 5, 6 + (historyPage - 1) * 5),
-    db
-      .from("care_progress")
-      .select(
-        progressColumns.replace(
-          "care_plan_versions(",
-          "care_plan_versions!inner(",
-        ),
-      )
-      .eq("dog_id", id)
-      .eq("care_plan_versions.context_key", contextKey)
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range((progressPage - 1) * 10, progressPage * 10),
-    role === "admin"
-      ? db
-          .from("care_drafts")
-          .select(
-            "id,context_key,dog_id,consultation_id,course_id,course_enrollment_id,course_session_id,fitness_package_id,fitness_session_id,title,body,follow_up_on,control_invite_on,version,updated_at",
-          )
-          .eq("dog_id", id)
-          .eq("context_key", contextKey)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
+  const [latest, history, progress, draft] =
+    generalPlans || (await readPlans(contextKey));
   if (latest.error || history.error || progress.error || draft.error)
     throw new Error("Nie udało się pobrać planu i postępów. Spróbuj ponownie.");
   // A direct historical link stays valid even beyond the context-list API page.
   if (!available && !latest.data && !draft.data) notFound();
-  const followUp = latest.data
-    ? await db
-        .from("care_follow_ups")
-        .select("id,plan_id,dog_id,due_on,status,version,created_at,closed_at")
-        .eq("plan_id", latest.data.id)
-        .maybeSingle()
-    : { data: null, error: null };
-  if (followUp.error)
-    throw new Error("Nie udało się pobrać kontaktu kontrolnego.");
-  const [invitation, reporting] = latest.data
+  const [followUp, invitation, reporting] = latest.data
     ? await Promise.all([
+        db
+          .from("care_follow_ups")
+          .select(
+            "id,plan_id,dog_id,due_on,status,version,created_at,closed_at",
+          )
+          .eq("plan_id", latest.data.id)
+          .maybeSingle(),
         careRead(
           "care.invitation",
           () =>
@@ -271,7 +278,10 @@ export async function getDogCare(
     : [
         { data: null, error: null },
         { data: null, error: null },
+        { data: null, error: null },
       ];
+  if (followUp.error)
+    throw new Error("Nie udało się pobrać kontaktu kontrolnego.");
   if (
     invitation.error ||
     reporting.error ||
@@ -587,7 +597,11 @@ export async function getCarePublication(id: string) {
 export async function getCareOverview(page: number, inboxPage: number) {
   const { db, role } = await requireSession();
   const [plans, inbox] = await Promise.all([
-    db.rpc("care_plan_summaries", { p_offset: (page - 1) * 20 }),
+    careRead(
+      "care.summaries",
+      () => db.rpc("care_plan_summaries", { p_offset: (page - 1) * 20 }),
+      "Nie udało się pobrać planów pracy.",
+    ),
     role === "admin"
       ? db
           .from("care_progress")
@@ -600,10 +614,14 @@ export async function getCareOverview(page: number, inboxPage: number) {
   ]);
   if (plans.error || inbox.error)
     throw new Error("Nie udało się pobrać planów pracy.");
+  if (!Array.isArray(plans.data)) {
+    reportDataReadError("care.summaries", plans.error, plans.status);
+    throw new Error("Nie udało się pobrać planów pracy.");
+  }
   return {
     role,
-    plans: (plans.data || []).slice(0, 20) as CareSummary[],
-    morePlans: (plans.data?.length || 0) > 20,
+    plans: plans.data.slice(0, 20) as CareSummary[],
+    morePlans: plans.data.length > 20,
     inbox: (inbox.data || []).slice(0, 10) as unknown as CareProgress[],
     moreInbox: (inbox.data?.length || 0) > 10,
     inboxCount: inbox.count || 0,

@@ -1,27 +1,14 @@
-import { test, expect, type Page } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const secret = process.env.SUPABASE_SECRET_KEY || "";
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-function isLocalUrl(value: string | undefined) {
-  if (!value) return false;
-  try {
-    const parsed = new URL(value);
-    return (
-      ["http:", "https:"].includes(parsed.protocol) &&
-      ["localhost", "127.0.0.1"].includes(parsed.hostname) &&
-      !parsed.username &&
-      !parsed.password
-    );
-  } catch {
-    return false;
-  }
-}
-const enabled = Boolean(secret && isLocalUrl(url) && isLocalUrl(appUrl));
-test.skip(
-  !enabled,
-  "Requires disposable local Supabase with migrations, an admin key, and a local app using the same environment.",
-);
+import { expect, type Page } from "@playwright/test";
+import {
+  test,
+  checked,
+  cleanupSteps,
+  freeCalendarStart,
+  localClients,
+  restoreLocalPractitioner,
+  setupLocalPractitioner,
+} from "./local-fixtures";
+import { dateInput } from "./walk-journey";
 async function passwordLogin(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.getByLabel("Twój e-mail").fill(email);
@@ -33,11 +20,7 @@ test("password → dog → registration → admin approval → private location"
   browser,
   baseURL,
 }) => {
-  // Check the effective Playwright URL as well, before creating any fixtures.
-  test.skip(!isLocalUrl(baseURL), "The app under test must also be local.");
-  const db = createClient(url, secret, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const { db, client } = localClients(baseURL);
   const ids: string[] = [];
   const suffix = crypto.randomUUID().slice(0, 8);
   let walkId = "";
@@ -46,13 +29,7 @@ test("password → dog → registration → admin approval → private location"
   const guardian = await guardianContext.newPage();
   const admin = await adminContext.newPage();
   try {
-    const publicDb = createClient(
-      url,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        auth: { persistSession: false, autoRefreshToken: false },
-      },
-    );
+    const publicDb = client();
     const signup = await publicDb.auth.signUp({
       email: `psi-e2e-blocked-${suffix}@example.test`,
       password: `Psi-E2E!${crypto.randomUUID()}`,
@@ -83,6 +60,7 @@ test("password → dog → registration → admin approval → private location"
         .update({ role })
         .eq("user_id", data.user.id);
       if (roles.error) throw roles.error;
+      if (role === "admin") await setupLocalPractitioner(db, ids, data.user.id);
       await passwordLogin(i === 0 ? admin : guardian, email, password);
     }
     await guardian.goto("/admin");
@@ -102,14 +80,8 @@ test("password → dog → registration → admin approval → private location"
     await admin.getByRole("button", { name: "Zapisz kwalifikację" }).click();
     await expect(admin.getByRole("status")).toContainText("Status psa");
     await admin.goto("/admin/walks/new");
-    const future = new Date(Date.now() + 7 * 86400000);
-    const parts = new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Europe/Warsaw",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(future);
-    await admin.getByLabel("Termin (czas polski)").fill(`${parts}T10:00`);
+    const future = await freeCalendarStart(db);
+    await admin.getByLabel("Termin (czas polski)").fill(dateInput(future));
     await admin.getByLabel("Ogólna lokalizacja").fill(`Park testowy ${suffix}`);
     await admin
       .getByLabel("Dokładne miejsce zbiórki")
@@ -163,15 +135,32 @@ test("password → dog → registration → admin approval → private location"
       guardian.getByText("Zaakceptowany", { exact: true }),
     ).toBeVisible();
   } finally {
-    await guardianContext.close();
-    await adminContext.close();
-    if (walkId) await db.from("walks").delete().eq("id", walkId);
-    if (ids.length) {
-      await db.from("audit_events").delete().in("actor_id", ids);
-      await db.from("dog_notes").delete().in("author_id", ids);
-      await db.from("walks").delete().in("leader_id", ids);
-      await db.from("dogs").delete().in("guardian_id", ids);
-      for (const id of ids) await db.auth.admin.deleteUser(id);
-    }
+    await cleanupSteps(
+      () => guardianContext.close(),
+      () => adminContext.close(),
+      async () => {
+        if (walkId) await checked(db.from("walks").delete().eq("id", walkId));
+        if (ids.length) {
+          await checked(db.from("walks").delete().in("leader_id", ids));
+          await checked(db.from("audit_events").delete().in("actor_id", ids));
+          await checked(db.from("dog_notes").delete().in("author_id", ids));
+          await checked(db.from("dogs").delete().in("guardian_id", ids));
+        }
+      },
+      () => restoreLocalPractitioner(db),
+      async () => {
+        await cleanupSteps(
+          ...ids.map((id) => () => checked(db.auth.admin.deleteUser(id))),
+        );
+        if (ids.length) {
+          expect(
+            await checked(db.from("profiles").select("id").in("id", ids)),
+          ).toEqual([]);
+          expect(
+            await checked(db.from("walks").select("id").in("leader_id", ids)),
+          ).toEqual([]);
+        }
+      },
+    );
   }
 });

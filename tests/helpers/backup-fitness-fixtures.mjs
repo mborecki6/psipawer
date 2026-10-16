@@ -202,7 +202,7 @@ export async function prepareBackupFitness({
     });
     active.meetingPlan = await rpc("save_care_plan", {
       ...wholePlan,
-      p_expected_version: 1,
+      p_expected_version: 0,
       p_title: "Zachowane zalecenia po spotkaniu fitness",
       p_body: "Druga publikacja zachowuje własne spotkanie.",
       p_fitness_session: active.meetings[0].id,
@@ -216,7 +216,7 @@ export async function prepareBackupFitness({
       "save_care_plan",
       {
         ...wholePlan,
-        p_expected_version: 2,
+        p_expected_version: 0,
         p_publish: false,
         p_title: "Prywatny szkic fitness do kopii",
         p_body: "SZKIC FITNESS WYŁĄCZNIE DLA PROWADZĄCEJ",
@@ -276,7 +276,7 @@ export async function prepareBackupFitness({
         "session_id",
       ),
       spec("care_plan_versions", "dog_id", fitness.dogs),
-      spec("care_drafts", "dog_id", fitness.dogs, "staff", "dog_id"),
+      spec("care_drafts", "dog_id", fitness.dogs, "staff"),
       spec("care_progress", "dog_id", fitness.dogs),
       spec("reminder_jobs", "dog_id", fitness.dogs, "staff"),
       spec("notifications", "dog_id", fitness.dogs),
@@ -457,6 +457,30 @@ export async function verifyBackupFitness({
     rpc("fitness_care_feed", { p_package: active.id, p_offset: 0 }, stranger),
     [],
   );
+  const drafts = get("care_drafts", "dog_id", [active.dog], staff);
+  assert.equal(drafts.length, 3);
+  assert.deepEqual(
+    Object.fromEntries(
+      drafts.map(({ fitness_session_id, body, version }) => [
+        fitness_session_id ?? "all",
+        { body, version },
+      ]),
+    ),
+    {
+      all: {
+        body: "Pierwsza własna publikacja prowadzącej do próby kopii.",
+        version: 1,
+      },
+      [active.meetings[0].id]: {
+        body: "Druga publikacja zachowuje własne spotkanie.",
+        version: 1,
+      },
+      [active.meetings[1].id]: {
+        body: "SZKIC FITNESS WYŁĄCZNIE DLA PROWADZĄCEJ",
+        version: 1,
+      },
+    },
+  );
   const progress = get("care_progress", "id", [active.progress], staff)[0];
   assert.equal(progress.plan_id, active.whole.published_id);
   assert.equal(progress.reviewed_at, null);
@@ -475,7 +499,7 @@ export async function verifyBackupFitness({
     "save_care_plan",
     {
       p_dog: active.dog,
-      p_expected_version: 3,
+      p_expected_version: active.whole.version,
       p_title: "Obcy plan",
       p_body: "Obcy zapis próby.",
       p_follow_up_on: null,
@@ -549,7 +573,7 @@ export async function verifyBackupFitness({
   });
   const nextPlan = rpc("save_care_plan", {
     p_dog: active.dog,
-    p_expected_version: 3,
+    p_expected_version: active.whole.version,
     p_title: "Nowy plan wyłącznie w odtworzeniu fitness",
     p_body: "Nowa własna publikacja próby.",
     p_follow_up_on: null,
@@ -626,6 +650,12 @@ export async function verifyBackupFitness({
 
 export async function disposeBackupFitness(db, fitness) {
   if (!fitness.dogs.length) return;
+  checked(
+    await db
+      .from("care_reporting_entitlements")
+      .delete()
+      .in("dog_id", fitness.dogs),
+  );
   const followups = checked(
     await db.from("care_follow_ups").select("id").in("dog_id", fitness.dogs),
   );

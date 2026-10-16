@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { careFixture, careDay } from "./care-journey";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
 
 test("another service publication preserves the first follow-up and its real API links", async ({
   browser,

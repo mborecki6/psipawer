@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { after, before, beforeEach, test } from "node:test";
+import { configureCalendarPrimary } from "../helpers/calendar-primary.mjs";
 import {
   LocalPostgres,
   literal,
@@ -57,6 +58,7 @@ before(async () => {
     update public.user_roles set role='admin' where user_id=${literal(admin)};
     insert into public.dogs(id,guardian_id,name) values(${literal(dog)},${literal(owner)},'Fikcyjny pies karty'),(${literal(dog2)},${literal(owner)},'Drugi fikcyjny pies karty');
     update public.dogs set status='approved';`);
+  await configureCalendarPrimary(observer, admin);
 });
 beforeEach(async () => {
   await observer.query(`truncate public.payments cascade;truncate public.gift_cards cascade;truncate public.fitness_packages cascade;truncate public.walks cascade;

@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { useHydrated } from "@/components/use-hydrated";
 import { recordPayment } from "@/lib/data/finance-actions";
 import { settleEnrollment, refundCoursePayment } from "./finance-actions";
@@ -41,7 +42,7 @@ export function CourseMoneyForm({
         ? refundCoursePayment
         : settleEnrollment;
   const [state, submit, pending] = useActionState<CourseActionState, FormData>(
-    action,
+    withFormActionRecovery(action),
     {},
   );
   const ref = usePersistentForm(),

@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { checked } from "./local-fixtures";
+import { expect, type Page } from "@playwright/test";
+import { test, checked } from "./local-fixtures";
 import {
   careFixture,
   careEditor,
@@ -27,6 +27,13 @@ test("library material → personal plan → later material edits and stale card
   const f = await careFixture(browser, baseURL);
   const { db, staff, guardian, dog, staffDb, ownerDb, outsiderDb } = f;
   const suffix = dog.slice(0, 8);
+  const currentDocument = (planTitle: string) =>
+    guardian
+      .locator("section")
+      .filter({
+        has: guardian.getByRole("heading", { name: planTitle, exact: true }),
+      })
+      .filter({ has: guardian.getByText("Aktualny plan", { exact: true }) });
   const title = `Materiał E2E ${suffix}`;
   const initialBody =
     "Fikcyjny materiał do sprawdzenia biblioteki.\nNie stanowi zaleceń specjalistycznych.";
@@ -171,7 +178,7 @@ test("library material → personal plan → later material edits and stale card
       .fill(abandonedBody);
     await guardian.reload();
     await expect(
-      guardian.getByText(personalBody, { exact: true }),
+      currentDocument(personalTitle).getByText(personalBody, { exact: true }),
     ).toBeVisible();
     await staff
       .getByRole("link", { name: "Biblioteka materiałów", exact: true })
@@ -249,7 +256,7 @@ test("library material → personal plan → later material edits and stale card
     ).toEqual(first);
     await guardian.reload();
     await expect(
-      guardian.getByText(personalBody, { exact: true }),
+      currentDocument(personalTitle).getByText(personalBody, { exact: true }),
     ).toBeVisible();
     await expect(guardian.getByText(finalBody, { exact: true })).toHaveCount(0);
     for (const api of [ownerDb, outsiderDb]) {
@@ -363,12 +370,14 @@ test("library material → personal plan → later material edits and stale card
       ))!.body,
     ).toBe(finalBody);
     await guardian.reload();
-    await expect(guardian.getByText(secondBody, { exact: true })).toBeVisible();
+    await expect(
+      currentDocument(changedTitle).getByText(secondBody, { exact: true }),
+    ).toBeVisible();
     await guardian
       .getByText("Wcześniejsze wersje planu", { exact: true })
       .click();
     await expect(
-      guardian.getByText(personalBody, { exact: true }),
+      guardian.locator("#historia").getByText(personalBody, { exact: true }),
     ).toBeVisible();
     await careScreenshot(
       guardian,

@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import { dateLabel } from "@/lib/domain";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { useHydrated } from "@/components/use-hydrated";
 import styles from "./care.module.css";
 
@@ -150,7 +151,7 @@ export function CareEditor({
   const errorRef = useRef<HTMLDivElement>(null);
   const [state, action, pending] = useActionState(
     async (previous: CareEditorState, data: FormData) => {
-      const result = await savePlan(previous, data);
+      const result = await withFormActionRecovery(savePlan)(previous, data);
       if (result.success) setDirty(false);
       return result;
     },
@@ -417,7 +418,7 @@ export function TemplateEditor({
   const errorRef = useRef<HTMLDivElement>(null);
   const [state, action, pending] = useActionState(
     async (previous: CareEditorState, data: FormData) => {
-      const result = await saveTemplate(previous, data);
+      const result = await withFormActionRecovery(saveTemplate)(previous, data);
       if (result.success) {
         if (template) setVersion(result.version!);
         else {

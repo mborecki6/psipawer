@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { money } from "@/lib/domain";
 import { warsawDateTimeInput } from "@/lib/time";
 import type { Service } from "@/modules/services/types";
@@ -94,7 +95,10 @@ export function FitnessRequestForm({
   const [dog, setDog] = useState(dogs.find((d) => !d.unavailable)?.id || "");
   const [topic, setTopic] = useState(""),
     [availability, setAvailability] = useState("");
-  const [state, submit, pending] = useActionState(requestFitness, {});
+  const [state, submit, pending] = useActionState(
+    withFormActionRecovery(requestFitness),
+    {},
+  );
   const ref = usePersistentForm(),
     hydrated = useHydrated();
   const selected = original.services.find((s) => s.id === service);
@@ -277,7 +281,9 @@ export function FitnessCommandForm({
     session?.attendance || "present",
   );
   const [state, submit, pending] = useActionState(
-    session ? changeFitnessSession : changeFitnessPackage,
+    withFormActionRecovery(
+      session ? changeFitnessSession : changeFitnessPackage,
+    ),
     {},
   );
   const ref = usePersistentForm(),
@@ -434,7 +440,10 @@ export function FitnessScheduleForm({
       session.fitness_session_private_details?.exact_location || "",
     ),
     [note, setNote] = useState("");
-  const [state, submit, pending] = useActionState(saveFitnessSession, {});
+  const [state, submit, pending] = useActionState(
+    withFormActionRecovery(saveFitnessSession),
+    {},
+  );
   const ref = usePersistentForm(),
     hydrated = useHydrated();
   return (

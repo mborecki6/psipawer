@@ -2,7 +2,10 @@
 // Fixtures use non-login @example.test users and are removed in the after hook.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readdirSync } from "node:fs";
 import { before, after, test } from "node:test";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import { cleanupOwnedFixture } from "../helpers/owned-fixture-cleanup.mjs";
 import {
   LocalPostgres,
   literal as q,
@@ -16,6 +19,11 @@ const users = [admin, ...owners];
 const templates = [];
 let observer;
 let nextSlot;
+let practiceFixture, originalCalendar;
+const calendarState = () =>
+  observer.json(`select json_build_object(
+  'settings',(select to_jsonb(s) from public.calendar_settings s),
+  'week',(select jsonb_agg(to_jsonb(h) order by weekday) from public.calendar_weekly_hours h));`);
 
 before(async () => {
   observer = await new LocalPostgres().ready();
@@ -25,6 +33,17 @@ before(async () => {
     'calendar',to_regclass('public.calendar_slots') is not null);`);
   assert.equal(state.database, "postgres");
   assert(state.version >= 170000 && state.catalogue && state.calendar);
+  assert.deepEqual(
+    await observer.json(
+      "select json_agg(version order by version) from supabase_migrations.schema_migrations;",
+    ),
+    readdirSync("supabase/migrations")
+      .filter((name) => /^\d{12}_.+\.sql$/.test(name))
+      .map((name) => name.slice(0, 12))
+      .sort(),
+    "Concurrency rehearsal requires the current local schema",
+  );
+  originalCalendar = await calendarState();
   // Pick empty future time without moving/deleting any existing appointment.
   const start =
     await observer.json(`select to_json(greatest(now()+interval '30 days',
@@ -38,14 +57,24 @@ before(async () => {
       (${q(dogs[0])},${q(owners[0])},'Test współbieżności A','approved'),
       (${q(dogs[1])},${q(owners[1])},'Test współbieżności B','approved');
     commit;`);
+  practiceFixture = await selectLocalPractitioner(
+    {
+      query: (statement) => observer.query(statement),
+      json: (statement) => observer.json(statement),
+    },
+    admin,
+  );
 });
 
 after(async () => {
   if (!observer) return;
   // An SQL syntax/connection failure must not leave this run's fixtures behind.
-  if (observer.ended) observer = await new LocalPostgres().ready();
   try {
-    await observer.query(`begin;
+    await cleanupOwnedFixture({
+      data: async () => {
+        if (observer.ended) observer = await new LocalPostgres().ready();
+        await observer.query("rollback;");
+        await observer.query(`begin;
       delete from public.invitation_attempts where invitation_id in
         (select id from public.client_invitations where created_by=${q(admin)});
       delete from public.client_invitations where created_by=${q(admin)};
@@ -62,6 +91,7 @@ after(async () => {
       delete from public.care_events where dog_id in (${dogs.map(q)});
       delete from public.care_drafts where dog_id in (${dogs.map(q)});
       delete from public.care_plan_versions where dog_id in (${dogs.map(q)});
+      delete from public.care_reporting_entitlements where dog_id in (${dogs.map(q)});
       ${templates.length ? `delete from public.care_templates where id in (${templates.map(q)});` : ""}
       delete from public.consultation_events where history_id in
         (select h.id from public.consultation_history h join public.consultations c on c.id=h.consultation_id where c.dog_id in (${dogs.map(q)}));
@@ -70,8 +100,21 @@ after(async () => {
       delete from public.consultations where dog_id in (${dogs.map(q)});
       delete from public.dogs where id in (${dogs.map(q)});
       delete from public.audit_events where actor_id in (${users.map(q)});
-      delete from auth.users where id in (${users.map(q)});
       commit;`);
+      },
+      restore: async () => {
+        if (observer.ended) observer = await new LocalPostgres().ready();
+        await observer.query("rollback;");
+        await practiceFixture?.restore();
+      },
+      accounts: async () => {
+        await observer.query(
+          `delete from auth.users where id in (${users.map(q)});`,
+        );
+      },
+    });
+    if (originalCalendar)
+      assert.deepEqual(await calendarState(), originalCalendar);
     assert.equal(
       await observer.json(
         `select to_json(count(*)) from auth.users where id in (${users.map(q)});`,
@@ -1029,7 +1072,7 @@ test("two consultation reschedules cannot reserve the same practice slot", async
     t,
     schedule(a.id, 2, start),
     schedule(b.id, 2, start),
-    /koliduje z inną konsultacją/,
+    /Ten czas jest już zajęty przez spacer, konsultację lub blokadę/,
   );
   const first = await consultationCalendar(a.id),
     second = await consultationCalendar(b.id);

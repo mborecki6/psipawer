@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
   readFileSync,
+  readdirSync,
   mkdirSync,
   writeFileSync,
   chmodSync,
@@ -15,8 +16,10 @@ import { parseEnv } from "node:util";
 import { performance } from "node:perf_hooks";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import { cleanupOwnedFixture } from "../helpers/owned-fixture-cleanup.mjs";
 import {
   pilotConfiguration,
   pooled,
@@ -41,6 +44,7 @@ let db;
 let phase = "preflight";
 let failed = false;
 let originalTables, originalAccounts, originalMigrations;
+let practiceFixture;
 const practice = "00000000-0000-4000-8000-000000000001";
 const service = "60000000-0000-4000-8000-000000000010";
 
@@ -150,6 +154,13 @@ async function createAccounts() {
     update public.profiles set full_name='Prowadząca — próba 50' where id=${q(entries[50].id)};
     update public.user_roles set role='admin' where user_id=${q(entries[50].id)};
     commit;`);
+  practiceFixture = await selectLocalPractitioner(
+    {
+      query: (statement) => sql.query(statement),
+      json: (statement) => sql.json(statement),
+    },
+    entries[50].id,
+  );
   await pooled(entries, 2, authenticate);
   assert.equal(new Set(entries.map((e) => e.id)).size, 51);
   assert.equal(new Set(entries.map((e) => e.cookie)).size, 51);
@@ -163,7 +174,12 @@ async function seedHistory() {
       coalesce(max(upper(occupied)),now()))+interval '1 day') from public.calendar_slots;`),
   ).getTime();
   const seedTime = Date.now();
-  const past = seedTime - 270 * 86400000;
+  // Keep the whole generated history before existing calendar entries. The
+  // current single-practitioner constraint also covers historical UUIDs.
+  const past = Date.parse(
+    await sql.json(`select to_json(least(now(),
+    coalesce(min(lower(occupied)),now()))-interval '270 days') from public.calendar_slots;`),
+  );
   const walks = Array.from({ length: 260 }, (_, i) => ({
     id: randomUUID(),
     start: i < 250 ? past + i * 86400000 : future + (i - 250) * 3 * 3600000,
@@ -320,7 +336,9 @@ const routes = [
   { label: "dashboard", path: () => "/app", expected: "Twoje zgłoszenia" },
   {
     label: "dog-care",
-    path: (e) => `/app/dogs/${e.dog}/care`,
+    // The UI links select a service context explicitly. A bare /care first
+    // streams a canonical redirect, which is not a rendered care response.
+    path: (e) => `/app/dogs/${e.dog}/care?context=general`,
     expected: "Plan testowy 4",
   },
   { label: "finance", path: () => "/app/finance", expected: "Pakiety" },
@@ -338,6 +356,10 @@ async function readPage(entry, route, foreignMarker) {
     });
     const body = await response.text();
     bytes = Buffer.byteLength(body);
+    const redirected =
+      Boolean(response.headers.get("location")) ||
+      body.includes("NEXT_REDIRECT") ||
+      body.includes('http-equiv="refresh"');
     const headingPresent = body.includes(route.expected);
     const ownerPresent =
       route.requireMarker === false ||
@@ -347,6 +369,7 @@ async function readPage(entry, route, foreignMarker) {
     );
     ok =
       response.status === 200 &&
+      !redirected &&
       headingPresent &&
       ownerPresent &&
       !foreignPresent;
@@ -354,11 +377,13 @@ async function readPage(entry, route, foreignMarker) {
       failure =
         response.status !== 200
           ? `http_${response.status}`
-          : foreignPresent
-            ? "foreign_fixture_visible"
-            : !headingPresent
-              ? "page_content_missing"
-              : "owner_fixture_missing";
+          : redirected
+            ? "navigation_redirect"
+            : foreignPresent
+              ? "foreign_fixture_visible"
+              : !headingPresent
+                ? "page_content_missing"
+                : "owner_fixture_missing";
   } catch {
     // The result reports counts only, never cookie headers or response bodies.
     failure = "request_failed";
@@ -384,7 +409,7 @@ async function measureReads(guardians, staff) {
     const cold = await readPage(guardians[0], route, guardians[1].marker);
     assert(
       cold.ok,
-      `Compiled ${route.label} must show the authenticated fixture`,
+      `Compiled ${route.label} must show the authenticated fixture (${cold.failure ?? "verified"})`,
     );
     report.samples.push({
       phase: "cold",
@@ -524,17 +549,35 @@ async function measureBrowser(guardians, staff) {
           path,
           "Real browser must remain in its authorized panel",
         );
-        await page.locator("main").waitFor({ state: "visible" });
+        // Streaming navigation may briefly retain the previous hidden tree.
+        // Check the active accessible document, including the canonical care
+        // destination, rather than matching both hidden and visible <main>s.
+        if (path.includes("/care"))
+          await page.waitForURL(
+            (url) =>
+              url.pathname === path &&
+              url.searchParams.get("context") === "general",
+          );
+        const main = page.getByRole("main");
+        await main.waitFor({ state: "visible" });
         if (path.includes("/care")) {
-          const reply = page.getByLabel("Co udało się zrobić?", {
+          assert.equal(
+            new URL(page.url()).searchParams.get("context"),
+            "general",
+            "Real care navigation must select the fixture's general context",
+          );
+          const reply = main.getByLabel("Co udało się zrobić?", {
             exact: true,
           });
           await reply.waitFor({ state: "visible" });
-          await page.waitForFunction(
-            () => !document.querySelector("#odpowiedz textarea")?.disabled,
-          );
+          await expect(reply).toBeEnabled();
         }
-        const text = await page.locator("main").innerText();
+        const text = await main.innerText();
+        if (path.includes("/care"))
+          assert(
+            text.includes("Plan testowy 4"),
+            "Rendered care page must show the latest fixture publication",
+          );
         if (!isStaff) {
           assert(
             text.includes(entry.marker),
@@ -670,14 +713,17 @@ async function measureWrites({ guardians, staff, future }) {
 
 async function cleanup() {
   if (!sql || !entries.length) return;
-  if (sql.ended) sql = await new LocalPostgres().ready();
-  await sql.query("rollback;");
-  const ids =
-    await sql.json(`select coalesce(json_agg(id),'[]'::json) from auth.users
+  let ids = [];
+  await cleanupOwnedFixture({
+    data: async () => {
+      if (sql.ended) sql = await new LocalPostgres().ready();
+      await sql.query("rollback;");
+      ids =
+        await sql.json(`select coalesce(json_agg(id),'[]'::json) from auth.users
     where email in (${uuids(entries.map((e) => e.email))});`);
-  if (ids.length) {
-    const users = uuids(ids);
-    await sql.query(`begin;
+      if (ids.length) {
+        const users = uuids(ids);
+        await sql.query(`begin;
       delete from public.payments where guardian_id in (${users}) or author_id in (${users});
       delete from public.package_transactions where author_id in (${users});
       delete from public.packages where dog_id in (select id from public.dogs where guardian_id in (${users}));
@@ -688,15 +734,25 @@ async function cleanup() {
       delete from public.care_events where dog_id in (select id from public.dogs where guardian_id in (${users}));
       delete from public.care_drafts where updated_by in (${users});
       delete from public.care_plan_versions where published_by in (${users});
+      delete from public.care_reporting_entitlements where dog_id in (select id from public.dogs where guardian_id in (${users}));
       delete from public.consultation_events where history_id in (select id from public.consultation_history where author_id in (${users}));
       delete from public.consultation_history where author_id in (${users});
       delete from public.consultations where requested_by in (${users});
       delete from public.audit_events where actor_id in (${users});
       delete from public.dogs where guardian_id in (${users});
       commit;`);
-    for (const id of ids)
-      unwrap(await db.auth.admin.deleteUser(id), "Fixture cleanup");
-  }
+      }
+    },
+    restore: async () => {
+      if (sql.ended) sql = await new LocalPostgres().ready();
+      await sql.query("rollback;");
+      await practiceFixture?.restore();
+    },
+    accounts: async () => {
+      for (const id of ids)
+        unwrap(await db.auth.admin.deleteUser(id), "Fixture cleanup");
+    },
+  });
   const remaining = await sql.json(`select json_build_object(
     'users',(select count(*) from auth.users where email in (${uuids(entries.map((e) => e.email))})),
     'dogs',(select count(*) from public.dogs where id in (${uuids(entries.filter((e) => e.dog).map((e) => e.dog))}))
@@ -765,6 +821,14 @@ try {
   );
   originalMigrations = await sql.json(
     "select json_agg(version order by version) from supabase_migrations.schema_migrations;",
+  );
+  assert.deepEqual(
+    originalMigrations,
+    readdirSync("supabase/migrations")
+      .filter((name) => /^\d{12}_.+\.sql$/.test(name))
+      .map((name) => name.slice(0, 12))
+      .sort(),
+    "Pilot measurement requires the current local schema",
   );
   report.environment.migrations = originalMigrations.length;
   phase = "accounts";
@@ -841,10 +905,13 @@ try {
         originalMigrations,
       );
     report.source_preserved = true;
-  } catch {
+  } catch (error) {
     failed = true;
     report.cleanup = false;
-    log("cleanup failed; the report identifies this run for local repair");
+    report.cleanup_failures = error.cleanupStages ?? ["verification"];
+    log(
+      `cleanup failed during ${report.cleanup_failures.join(", ")}; the report identifies this run for local repair`,
+    );
   }
   await sql?.close();
   report.finished_at = new Date().toISOString();

@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { checked } from "./local-fixtures";
+import { test, checked } from "./local-fixtures";
 import { walkJourney } from "./walk-journey";
 import {
   workHref,

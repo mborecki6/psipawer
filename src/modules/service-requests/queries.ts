@@ -112,8 +112,9 @@ export async function getOpenServiceRequestCount() {
   const { db } = await requireSession("admin");
   const { count, error } = await db
     .from("service_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "open");
+    .select("id", { count: "exact" })
+    .eq("status", "open")
+    .limit(0);
   if (error) throw new Error("Nie udało się pobrać liczby zgłoszeń terminu.");
   return count || 0;
 }

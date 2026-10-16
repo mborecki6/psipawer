@@ -22,6 +22,7 @@ const manifest = {
         values.NEXT_PUBLIC_SUPABASE_URL,
         values.NEXT_PUBLIC_APP_URL,
         values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        "",
       ]),
     )
     .digest("hex"),
@@ -53,6 +54,13 @@ it("requires the matching compiled local environment, rather than accepting a st
     { ...manifest, fingerprint: "other-key" },
   ])
     expect(() => pilotConfiguration(values, changed, "local-build")).toThrow();
+  expect(() =>
+    pilotConfiguration(
+      { ...values, NEXT_PUBLIC_VAPID_PUBLIC_KEY: "other-public-push-key" },
+      manifest,
+      "local-build",
+    ),
+  ).toThrow();
   expect(() =>
     pilotConfiguration(
       { ...values, NEXT_PUBLIC_APP_URL: "https://psipawer.vercel.app" },

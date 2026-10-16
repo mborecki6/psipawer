@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { chmodSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { parseEnv } from "node:util";
@@ -11,6 +11,8 @@ import { createClient } from "@supabase/supabase-js";
 import { localBackupConfiguration } from "../../scripts/lib/backup-guards.mjs";
 import { disposeBackupFitness } from "../helpers/backup-fitness-fixtures.mjs";
 import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import { cleanupOwnedFixture } from "../helpers/owned-fixture-cleanup.mjs";
 
 const config = localBackupConfiguration(
   parseEnv(readFileSync(".env.test.local", "utf8")),
@@ -34,10 +36,16 @@ const users = [],
   courses = [],
   children = [];
 const fixture = { dogs: [], packages: [] };
-const observer = new LocalPostgres();
+let observer = new LocalPostgres();
 const faultName = `psi_queue_fault_${run.replaceAll("-", "")}`;
 const lockKey = Number.parseInt(run.slice(0, 7), 16);
-let guard, holder, before, migrations, originalAccounts, unrelatedBefore;
+let guard,
+  holder,
+  before,
+  migrations,
+  originalAccounts,
+  unrelatedBefore,
+  practiceFixture;
 let installedFault = false,
   phase = "baseline",
   failed = false;
@@ -175,7 +183,14 @@ try {
   migrations = await observer.json(
     "select json_agg(version order by version) from supabase_migrations.schema_migrations;",
   );
-  assert.equal(migrations.at(-1), "202610030012");
+  assert.deepEqual(
+    migrations,
+    readdirSync("supabase/migrations")
+      .filter((name) => /^\d{12}_.+\.sql$/.test(name))
+      .map((name) => name.slice(0, 12))
+      .sort(),
+    "Próba kolejki wymaga aktualnego lokalnego schematu.",
+  );
   originalAccounts = await observer.json(
     "select json_agg(id order by id) from auth.users;",
   );
@@ -235,6 +250,13 @@ try {
       owners.push({ client, id: user.id, dog });
     }
   }
+  practiceFixture = await selectLocalPractitioner(
+    {
+      query: (statement) => observer.query(statement),
+      json: (statement) => observer.json(statement),
+    },
+    users[0].id,
+  );
   stage("course-and-250-due-jobs");
   const service = "60000000-0000-4000-8000-000000000001";
   const catalog = checked(
@@ -545,29 +567,49 @@ try {
 } finally {
   try {
     stage("cleanup");
-    for (const task of children)
-      if (!task.terminal) {
-        task.child.kill("SIGKILL");
-        await terminal(task, 5000);
-      }
-    await holder?.close();
-    await guard?.close();
-    await removeFault();
-    if (courses.length)
-      checked(await db.from("courses").delete().in("id", courses));
-    await disposeBackupFitness(db, fixture);
-    for (const client of [staff, ...owners.map((o) => o.client)])
-      checked(await client.auth.signOut());
-    for (const user of users) {
-      if (!user.id)
-        user.id = checked(
-          await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-        ).users.find((u) => u.email === user.email)?.id;
-      if (user.id) {
-        checked(await db.from("audit_events").delete().eq("actor_id", user.id));
-        checked(await db.auth.admin.deleteUser(user.id));
-      }
-    }
+    await cleanupOwnedFixture({
+      data: async () => {
+        for (const task of children)
+          if (!task.terminal) {
+            task.child.kill("SIGKILL");
+            await terminal(task, 5000);
+          }
+        await holder?.close();
+        await guard?.close();
+        await removeFault();
+        if (fixture.dogs.length)
+          checked(
+            await db
+              .from("care_reporting_entitlements")
+              .delete()
+              .in("dog_id", fixture.dogs),
+          );
+        if (courses.length)
+          checked(await db.from("courses").delete().in("id", courses));
+        await disposeBackupFitness(db, fixture);
+      },
+      restore: async () => {
+        if (observer.ended) observer = await new LocalPostgres().ready();
+        await observer.query("rollback;");
+        await practiceFixture?.restore();
+      },
+      accounts: async () => {
+        for (const client of [staff, ...owners.map((o) => o.client)])
+          checked(await client.auth.signOut());
+        for (const user of users) {
+          if (!user.id)
+            user.id = checked(
+              await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+            ).users.find((u) => u.email === user.email)?.id;
+          if (user.id) {
+            checked(
+              await db.from("audit_events").delete().eq("actor_id", user.id),
+            );
+            checked(await db.auth.admin.deleteUser(user.id));
+          }
+        }
+      },
+    });
     if (before) assert.deepEqual(await snapshot(), before);
     if (originalAccounts)
       assert.deepEqual(
@@ -591,12 +633,13 @@ try {
     console.log(
       "Próba kolejki: własne dane usunięte; wcześniejsze konta i publiczne tabele zachowane poza rzeczywistym znacznikiem procesu.",
     );
-  } catch {
+  } catch (error) {
     failed = true;
     report.status = "failed";
     report.cleanup = false;
+    report.cleanup_failures = error.cleanupStages ?? ["verification"];
     console.error(
-      "Sprzątanie kolejki niepotwierdzone; nie resetuj lokalnej bazy.",
+      `Sprzątanie kolejki niepotwierdzone (etapy: ${report.cleanup_failures.join(", ")}); nie resetuj lokalnej bazy.`,
     );
   } finally {
     await observer.close();

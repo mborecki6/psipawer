@@ -2,6 +2,10 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 vi.mock("@/lib/domain", async () => import("../src/lib/domain"));
+vi.mock("@/components/use-hydrated", () => ({ useHydrated: () => true }));
+vi.mock("@/components/use-persistent-form", () => ({
+  usePersistentForm: () => ({ current: null }),
+}));
 vi.mock(
   "@/lib/finance-pagination",
   async () => import("../src/lib/finance-pagination"),

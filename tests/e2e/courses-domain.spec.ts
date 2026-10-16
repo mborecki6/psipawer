@@ -1,13 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   LocalPostgres,
   literal as q,
   waitForLock,
 } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,
+  setupLocalPractitioner,
+  freeCalendarStart,
   localClients,
 } from "./local-fixtures";
 
@@ -28,6 +31,7 @@ test("course API: frozen cycle price and privacy → concurrent last seat, closu
     const admin = await account(db, users, "admin"),
       owner = await account(db, users, "client"),
       other = await account(db, users, "client");
+    await setupLocalPractitioner(db, users, admin.id);
     for (const [api, user] of [
       [staff, admin],
       [own, owner],
@@ -60,15 +64,21 @@ test("course API: frozen cycle price and privacy → concurrent last seat, closu
         .single(),
     );
     expect(service!.price_cents).toBe(10000);
-    const dates = (index: number) =>
-      Array.from({ length: 5 }, (_, n) =>
-        new Date(
-          Date.UTC(new Date().getUTCFullYear() + 2, index * 2, 15 + n * 7, 12),
-        ).toISOString(),
-      );
+    const startsByIndex = new Map<number, string[]>();
+    const dates = (index: number) => startsByIndex.get(index)!;
     const create = async (index: number) => {
       const id = crypto.randomUUID();
       courses.push(id);
+      const first = await freeCalendarStart(db, {
+        after: Date.UTC(new Date().getUTCFullYear() + 2, index * 2, 15, 12),
+        offsetsMinutes: Array.from({ length: 5 }, (_, n) => n * 7 * 1440),
+      });
+      startsByIndex.set(
+        index,
+        Array.from({ length: 5 }, (_, n) =>
+          new Date(Date.parse(first) + n * 7 * 86400000).toISOString(),
+        ),
+      );
       await checked(
         staff.rpc("create_course", {
           p_id: id,

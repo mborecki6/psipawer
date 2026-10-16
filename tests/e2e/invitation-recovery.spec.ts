@@ -1,11 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { consultationJourney } from "./consultation-journey";
 import {
+  test,
   localClients,
   checked,
   account,
   login,
   disposeCareFixtures,
+  setupLocalPractitioner,
 } from "./local-fixtures";
 
 import {
@@ -49,6 +51,7 @@ test("invitation → phone onboarding → consultation → care → recovery →
   try {
     stage("fixture-accounts");
     const staffAccount = await account(db, users, "admin");
+    await setupLocalPractitioner(db, users, staffAccount.id);
     const outsider = await account(db, users, "client");
     await checked(
       outsiderDb.auth.signInWithPassword({

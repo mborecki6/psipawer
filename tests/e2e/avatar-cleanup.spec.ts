@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import sharp from "sharp";
 import { processLocalAvatarCleanup } from "../../scripts/lib/avatar-cleanup.mjs";
 import {
@@ -7,6 +7,7 @@ import {
   waitForLock,
 } from "../helpers/local-postgres.mjs";
 import {
+  test,
   account,
   checked,
   disposeCareFixtures,

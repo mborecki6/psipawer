@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { useHydrated } from "@/components/use-hydrated";
 import { agreeConsultationPrice } from "./actions";
 import styles from "./consultations.module.css";
@@ -21,7 +22,10 @@ export function ConsultationPriceEditor({
   // Retain the version and idempotency key of this draft after a background
   // refresh or failed save, so another tab cannot silently replace its terms.
   const [original] = useState({ id, version, requestId });
-  const [state, action, pending] = useActionState(agreeConsultationPrice, {});
+  const [state, action, pending] = useActionState(
+    withFormActionRecovery(agreeConsultationPrice),
+    {},
+  );
   const [priceKind, setPriceKind] = useState("false");
   useEffect(() => {
     if (state.error) error.current?.focus();

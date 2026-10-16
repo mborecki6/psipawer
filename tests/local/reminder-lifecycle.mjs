@@ -11,6 +11,8 @@ import { createClient } from "@supabase/supabase-js";
 import { localBackupConfiguration } from "../../scripts/lib/backup-guards.mjs";
 import { disposeBackupFitness } from "../helpers/backup-fitness-fixtures.mjs";
 import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
+import { selectLocalPractitioner } from "../helpers/local-practice.mjs";
+import { cleanupOwnedFixture } from "../helpers/owned-fixture-cleanup.mjs";
 
 const config = localBackupConfiguration(
   parseEnv(readFileSync(".env.test.local", "utf8")),
@@ -33,9 +35,10 @@ const run = randomUUID(),
   users = [],
   fitness = { dogs: [], packages: [] },
   children = [];
-const observer = new LocalPostgres();
+let observer = new LocalPostgres();
 let guard,
   holder,
+  practiceFixture,
   before,
   unrelatedBefore,
   phase = "baseline",
@@ -215,6 +218,13 @@ try {
       }),
     );
   }
+  practiceFixture = await selectLocalPractitioner(
+    {
+      query: (statement) => observer.query(statement),
+      json: (statement) => observer.json(statement),
+    },
+    users[1].id,
+  );
   stage("fitness-package");
   const dog = randomUUID(),
     pack = randomUUID(),
@@ -426,26 +436,39 @@ try {
 } finally {
   try {
     stage("cleanup");
-    for (const task of children)
-      if (!task.terminal) {
-        task.child.kill("SIGKILL");
-        await terminal(task, 5000);
-      }
-    await holder?.close();
-    await guard?.close();
-    await disposeBackupFitness(db, fitness);
-    for (const client of [owner, staff])
-      if (users.length) checked(await client.auth.signOut());
-    for (const user of users) {
-      if (!user.id)
-        user.id = checked(
-          await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-        ).users.find((u) => u.email === user.email)?.id;
-      if (user.id) {
-        checked(await db.from("audit_events").delete().eq("actor_id", user.id));
-        checked(await db.auth.admin.deleteUser(user.id));
-      }
-    }
+    await cleanupOwnedFixture({
+      data: async () => {
+        for (const task of children)
+          if (!task.terminal) {
+            task.child.kill("SIGKILL");
+            await terminal(task, 5000);
+          }
+        await holder?.close();
+        await guard?.close();
+        await disposeBackupFitness(db, fitness);
+      },
+      restore: async () => {
+        if (observer.ended) observer = await new LocalPostgres().ready();
+        await observer.query("rollback;");
+        await practiceFixture?.restore();
+      },
+      accounts: async () => {
+        for (const client of [owner, staff])
+          if (users.length) checked(await client.auth.signOut());
+        for (const user of users) {
+          if (!user.id)
+            user.id = checked(
+              await db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+            ).users.find((u) => u.email === user.email)?.id;
+          if (user.id) {
+            checked(
+              await db.from("audit_events").delete().eq("actor_id", user.id),
+            );
+            checked(await db.auth.admin.deleteUser(user.id));
+          }
+        }
+      },
+    });
     if (before) assert.deepEqual(await snapshot(), before);
     if (report.originalAccounts)
       assert.deepEqual(
@@ -457,13 +480,14 @@ try {
     console.log(
       "Próba procesu przypomnień: własne dane usunięte; wcześniejsze konta i wszystkie tabele publiczne poza rzeczywistym znacznikiem uruchomienia zachowane.",
     );
-  } catch {
+  } catch (error) {
     failed = true;
     report.status = "failed";
     report.cleanup = false;
+    report.cleanup_failures = error.cleanupStages ?? ["verification"];
     delete report.originalAccounts;
     console.error(
-      "Sprzątanie procesu niepotwierdzone; nie resetuj lokalnej bazy.",
+      `Sprzątanie procesu niepotwierdzone (etapy: ${report.cleanup_failures.join(", ")}); nie resetuj lokalnej bazy.`,
     );
   } finally {
     await observer.close();

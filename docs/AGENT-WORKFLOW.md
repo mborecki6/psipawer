@@ -97,6 +97,18 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Odbiór przed pierwszymi użytkownikami](iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md):
+16.10 użytkownik zlecił szczegółowe testy, naprawy i publikację przed pilotażem
+do 50 prawdziwych opiekunów. Wybrał ręczne prywatne linki bez SMTP.
+Weryfikujemy logowanie, role, usługi, zalecenia, pieniądze, przerwania połączenia,
+kolejki, odtworzenie danych i obciążenie. Poprawki oraz narzędzie dostępu
+przeszły niezależne przeglądy. Poprawki i dwie migracje opublikowano 16.10;
+1477 testów jednostkowych i końcowy lokalny pilot 50+1 zaliczone. Główna domena
+wskazuje gotowy build; 28 odczytowych kontroli hostingu zaliczone. Wynik lokalny nie jest
+dowodem pojemności zarządzanej produkcji. Nie tworzymy prawdziwych kont bez
+listy odbiorców. Przed zaproszeniami pozostają kopie produkcji i Storage;
+użytkownik odłożył zmianę płatnego planu Supabase.
+
 [Belka podczas przewijania](iterations/2026-10-16-belka-przewijanie.md):
 korekta po feedbacku z 16.10. Górny nagłówek przewija się z dokumentem w obu
 panelach i nie zasłania treści. Pełny lokalny odbiór objął 95 wariantów stron;
