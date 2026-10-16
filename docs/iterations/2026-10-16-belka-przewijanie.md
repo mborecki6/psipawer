@@ -1,6 +1,6 @@
 # Belka panelu podczas przewijania
 
-Status: sprawdzona lokalnie; publikacja zatwierdzona przez użytkownika 16.10. Źródło: dwa zrzuty feedbacku behawiorystki i nagranie
+Status: opublikowano 16.10 po zgodzie użytkownika. Źródło: dwa zrzuty feedbacku behawiorystki i nagranie
 WhatsApp z 16.10, przekazane przez użytkownika. W nagraniu tytuł panelu,
 menu i przyciski belki pozostają nad przewijaną treścią, która przebija przez
 gradient. Nagranie obejmuje pulpit opiekuna, kalendarz i plany pracy;
@@ -114,3 +114,37 @@ odbioru. Publikacja obejmuje tę samą zmianę trzech deklaracji wspólnego CSS,
 sprawdzoną w pełnej lokalnej aplikacji. Nie obejmuje nowych migracji, konfiguracji
 Supabase, kont, danych ani funkcji. Odbiór produkcyjny ma sprawdzić zachowanie
 belki w rzeczywistych widokach obu ról, bez zapisów biznesowych.
+
+Kod aplikacji: `4420b8089aeb59166f513239ea0c129806a9795b`.
+Wdrożenie Vercel: `dpl_AsmXcDx1kqNxPhkN6PgNxS24Fuga`, stan READY.
+Publiczny adres [Psi Pawer](https://psipawer.vercel.app) wskazuje to wdrożenie,
+co potwierdzono odczytem obu identyfikatorów; ręczna zmiana aliasu nie była potrzebna.
+Anonimowy odczyt publicznego loginu i jego dwóch arkuszy CSS potwierdził,
+że sześć wynikowych reguł `.topbar` nie zawiera przyklejenia do ekranu.
+Poprzednia wersja: `dpl_Et45CyrXjAAt4wczHLFZKd4Lpn5g`.
+
+Odbiór produkcji zakończony: **8/8 wariantów** czterech tras przy 390 i 1440 px
+(`/admin/calendar`, `/admin/services`, `/app/calendar/offer`, `/app/calendar`).
+Potwierdzono faktyczne widoki danych, jeden widoczny Shell i nagłówek, przewijanie
+belki z dokumentem, brak poziomego overflow, stabilny sidebar komputera,
+powrót przycisków na górze i obsługę menu telefonu klawiaturą z powrotem fokusu.
+Oferta w domyślnym miesiącu zawierała dwie prawdziwe karty demo; kontrolki miesiąca,
+tytuł miesiąca i karty nie kolidowały z belką. Obejrzano produkcyjne zrzuty oferty
+obu szerokości i kalendarza administratora.
+
+Kontrola użyła istniejącego własnego konta administratora oraz istniejącego konta
+demo opiekuna. Nie tworzono kont, nie zmieniano haseł/ról i nie wysyłano linków ani
+powiadomień. Własne tymczasowe sesje wylogowano przez `scope: local`, z potwierdzeniem
+obu wyników. Przeglądarka blokowała metody inne niż GET/HEAD; **0 prób zapisów i
+0 błędów przeglądarki**. Nie zmieniano produkcyjnego schematu ani konfiguracji DB.
+Pierwszy harness błędnie oczekiwał nawigacji miesięcy u opiekuna (domyślnie tydzień);
+po korekcie oczekiwania powtórzono cały wąski odbiór z wynikiem 8/8, bez zmian aplikacji.
+
+Dowody prywatne: ignorowane `.local/header-release-20261016/hosted-smoke.json`,
+`css-proof.json`, identyfikatory wdrożenia oraz zrzuty w tym samym katalogu.
+To automatyczny Chrome, bez fizycznego telefonu. Nie powtarzano 95 lokalnych
+wariantów ani testów domenowych na produkcji; zakres kontroli dotyczył tej poprawki UI.
+Przy `/app/calendar` na 1440 px zawartość mieściła się w ekranie (maksymalny scroll
+0 px), więc pełne zniknięcie belki nie mogło być zaobserwowane w tym jednym
+wariancie. Pozostałe siedem wariantów pozwalało potwierdzić także jej pełne
+przewinięcie poza ekran; krótkiego widoku nie wydłużano sztucznymi danymi.
