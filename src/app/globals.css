@@ -343,9 +343,6 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 18px;
-  position: sticky;
-  top: 0;
-  z-index: 25;
   padding: 16px 0;
   background: linear-gradient(
     180deg,

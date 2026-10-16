@@ -97,6 +97,11 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Belka podczas przewijania](iterations/2026-10-16-belka-przewijanie.md): lokalna
+korekta po feedbacku z 16.10. Górny nagłówek przewija się z dokumentem w obu
+panelach i nie zasłania treści. Pełny lokalny odbiór objął 95 wariantów stron;
+użytkownik 16.10 zatwierdził publikację tej poprawki.
+
 [Usunięcie dopisku fotografa](iterations/2026-10-15-watermark.md): bezpośrednia
 korekta opublikowanych zdjęć po prośbie użytkownika. Retusz ograniczony do znaku,
 reszta pikseli zachowana. Wydanie dotyczy wyłącznie czterech fotografii i ich ścieżek.
