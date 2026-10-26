@@ -56,7 +56,8 @@ Końcowy odczyt potwierdził **65 migracji**, zgodny SQL, zachowane 87 tabel,
 konta, hasła, identities, Storage, konfigurację Auth i istniejące harmonogramy.
 Projekt ACTIVE_HEALTHY; brak uprawnień anon i tabel publicznych bez RLS.
 
-Końcowe porównanie po własnych sesjach odbioru rozróżnia dane biznesowe od
+Końcowy odczyt 26.10, 14:32 UTC: PASS. Porównanie po własnych sesjach odbioru
+rozróżnia dane biznesowe od
 technicznych znaczników czasu: jedyną zmianą wcześniejszych tabel publicznych
 jest heartbeat istniejącego `reminder_worker_state`. Hasła, role, metadata
 użytkowników, pełne identities i Storage zachowane; liczba kont nadal cztery.
@@ -66,6 +67,8 @@ administratora. Ostatnia data pokrywa się z wygenerowaniem magiclink w końcowy
 odbiorze. [Kod Supabase Auth](https://github.com/supabase/auth/blob/master/internal/api/mail.go)
 używa tej samej gałęzi dla magiclink/recovery i zapisuje to pole także dla
 magiclink. Nie jest to dowód resetu hasła ani wysłania recovery e-maila.
+Techniczne liczniki Auth zmieniły się: sessions 9→13, refresh_tokens 20→24,
+mfa_amr_claims 9→13; konta, identities i flow_state zachowały swoje liczby.
 Pierwszy ścisły wynik porównania przy migracji zachowano oddzielnie.
 
 ## Wyłączone integracje
@@ -89,7 +92,8 @@ nazwie). Doprecyzowanie selektora h2 i osobne ponowienie dały 3/3 PASS przy
 320/390/1440 px. Aplikacja nie wymagała tej korekty. Pierwotny raport zachowano
 bez zmiany wyników; łącznie sprawdzono 41 różnych wariantów. Trzy odmowy
 endpointów PASS: nieuprawnione workery 401, wyłączony webhook 503.
-Bez błędów JavaScript, prób zapisów biznesowych i pozostawionych sesji.
+Bez błędów JavaScript i prób zapisów biznesowych; SDK potwierdziło wylogowanie
+obu własnych sesji odbioru.
 
 **Końcowy odbiór po aktualizacji Zod: 41/41 wariantów UI i 3/3 endpointy
 PASS w jednym nowym pełnym przebiegu.** Sprawdzono oba panele i odmowy
