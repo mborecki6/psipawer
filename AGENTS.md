@@ -26,9 +26,20 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
-- Użytkownik 26.10 autoryzował publikację poprawek po audycie. Kod aplikacji
+- Bieżący onboarding opisuje `docs/iterations/2026-10-26-onboarding.md`.
+  Po akceptacji wizualizacji użytkownik 26.10 polecił wdrożenie. Kod `d22ffd9`
+  i migracja 66 są opublikowane; lokalna i produkcyjna baza mają 66 migracji.
+  Brief obowiązuje tylko nowe konta opiekunów po migracji. Wcześniejsze konta
+  nie mają rekordu i są trwale zwolnione; admin omija onboarding. Nie backfilluj.
+  Odpowiedzi są prywatne dla opiekuna, bez panelu Asi i automatycznej karty psa.
+  Pauza, ukończenie i edycja są trwałe; edycja nie cofa ukończenia.
+  Odbiór: 1956 unit, 6 Chromium, 3 WebKit oraz 12 UI/3 odmowy endpointów online
+  PASS. Świeżą kopię odtworzono i próbnie zmigrowano przed zmianą produkcji.
+  Nie utworzono prawdziwych kont, nie włączono SMTP/Tpay/zaproszeń ani Pro.
+  Osobna aktualizacja infrastruktury Supabase nadal pozostaje do uzgodnienia.
+- Wcześniej 26.10 użytkownik autoryzował publikację poprawek po audycie. Kod aplikacji
   `50a0543` (z dodatkową poprawką Zod 4.6.6) i migracje 61–65 są opublikowane;
-  produkcja ma teraz 65 migracji.
+  produkcja miała wtedy 65 migracji.
   Wydanie opisuje `docs/iterations/2026-10-26-publikacja-poprawek.md`.
   Tpay, symulator w chmurze, oba kanały SMTP, zaproszenia i nowe workery
   pozostają wyłączone; plan nadal Free. Nie aktywowano kont prawdziwych klientów.
@@ -38,8 +49,8 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   infrastruktury Supabase, osobna od zakupu Pro; aktualizacji nie wykonano.
   Sprawdzono dostępny cel 17.11.0.003 i estymatę platformy 1 h, bez ostrzeżeń.
   Nie traktuj restartu ani lokalnych testów jako trwałego usunięcia tego błędu.
-  Krótkie wprowadzenie opiekuna jest propozycją treści w tej iteracji,
-  bez implementacji i bez zgody na automatyczne dodanie kolejnej funkcji.
+  Krótkie wprowadzenie było w tamtej iteracji propozycją; późniejszą osobną
+  zgodę, implementację i publikację opisano powyżej.
 - Odbiór przed płatnościami z 23.10 opisuje
   `docs/iterations/2026-10-23-gotowosc-platnosci.md`, a instrukcję konfiguracji
   `docs/PAYMENT-EMAIL-RELEASE.md`. Użytkownik zatwierdził lokalne poprawki i

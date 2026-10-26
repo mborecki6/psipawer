@@ -90,6 +90,27 @@ Potwierdzono dziewięć przełączników poczty, zaproszeń i Tpay jako OFF.
 
 ## Stan publikacji
 
-Kandydat sprawdzony lokalnie. Publikacja i końcowa kontrola hostingu jeszcze
-przed nami; ten zapis nie jest ich potwierdzeniem. Znany problem starego
-PostgREST pozostaje odrębną sprawą infrastruktury.
+Opublikowano kod `d22ffd9` i migrację 66 po osobnej zgodzie użytkownika.
+Kontrolowany build `dpl_TJknLnzRe8Augsa7z511tgvWWc9i` miał stan READY,
+zgodny commit, projekt, właściciela i odcisk 427 wejść runtime. Następnie
+zastosowano migrację i potwierdzono relację w PostgREST bez odczytu klientów;
+dopiero wtedy przełączono `psipawer.vercel.app`. Dodatkowy odczyt przez
+eksperymentalne `vercel api` przekroczył czas; potwierdzenie wykonano przez
+`inspect` i bezpośrednie API z istniejącym poświadczeniem CLI, bez eksportu
+sekretów lub środowiska. Nie pominięto kontroli tożsamości kandydata.
+
+Odbiór online: 12/12 UI i 3/3 odmowy wyłączonych endpointów PASS, zero błędów
+JavaScript, zero prób zapisu z przeglądarki. Sprawdzono istniejące własne konto
+administratora i istniejące DEMO, brak nowego briefu na profilu dawnych kont, przekierowania
+`/onboarding` dla admina/opiekuna/anonima, profil i reprezentatywne dotychczasowe
+widoki. Sesje kontrolne wylogowano. Nie tworzono kont, nie wysyłano wiadomości
+ani nie wykonywano płatności. Pełną nową kohortę odebrano lokalnie; na produkcji
+nie tworzono dodatkowego konta w celu powtórzenia tej ścieżki.
+
+Produkcyjne porównanie po odbiorze obejmuje 92 wcześniejsze tabele: 91 bez zmian,
+a `reminder_worker_state` ma normalną zmianę technicznego heartbeat.
+Konta/hasła, tożsamości i Storage zachowane; konfiguracja Auth oraz cron bez zmian.
+Płatności i mail biznesowy OFF, kolejki puste, brak anonimowych grantów,
+wszystkie tabele publiczne z RLS. Lokalnie i na produkcji 66 migracji.
+Znany problem starego PostgREST pozostaje odrębną sprawą infrastruktury;
+to wydanie nie jest aktualizacją wersji Supabase ani odbiorem prawdziwego SMTP/Tpay.

@@ -1,8 +1,24 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 26.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login). Poprawki z 18 i 23.10 opublikowano po nowej zgodzie użytkownika; kod aplikacji `50a0543` obejmuje też dodatkową aktualizację bezpieczeństwa Zod 4.6.6. Produkcja ma **65 migracji**. Rzeczywistych klientów jeszcze nie zaproszono. Nowe płatności Tpay, SMTP i zaproszenia pozostają wyłączone, plan Supabase nadal Free. [Publikacja i odbiór z 26.10](iterations/2026-10-26-publikacja-poprawek.md).
+Aktualizacja: 26.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login).
+Po akceptacji wizualizacji opublikowano obowiązkowy start nowych opiekunów
+(kod `d22ffd9`, migracja 66). **Lokalnie i na produkcji 66 migracji.**
+Trzy kroki, różne zdjęcia i karta startu; zapis, pauza i ukończenie działają
+między urządzeniami, a późniejsza edycja nie blokuje ponownie panelu.
+Istniejące konta i admin nie dostają nowego briefu. Notatka pozostaje prywatna,
+a zapis nie tworzy psa. [Zakres i odbiór onboardingu](iterations/2026-10-26-onboarding.md).
 
-Po poprawce Zod powtórzono pełne 1843 testy, TypeScript, ESLint i audyt
+Odbiór: **1956 unit, 6 Chromium, 3 WebKit, 12/12 UI online i 3/3 odmowy
+endpointów PASS**, bez błędów JavaScript i zapisów biznesowych na hostingu.
+Przed migracją wykonano świeżą kopię, odtworzenie i próbę zachowania danych.
+Rzeczywistych klientów nie zaproszono. Tpay, SMTP i zaproszenia pozostają
+wyłączone; plan Supabase nadal Free.
+
+Wcześniejsze poprawki z 18 i 23.10 opublikowano po osobnej zgodzie użytkownika;
+kod `50a0543` obejmował dodatkową aktualizację bezpieczeństwa Zod 4.6.6.
+[Publikacja i odbiór wcześniejszych poprawek z 26.10](iterations/2026-10-26-publikacja-poprawek.md).
+
+Po wcześniejszej poprawce Zod powtórzono pełne 1843 testy, TypeScript, ESLint i audyt
 produkcyjnych zależności (0 zgłoszeń). Końcowy odbiór hostingu: **41/41 UI
 i 3/3 odmowy endpointów PASS**, bez zapisów biznesowych i błędów JavaScript.
 To odbiór wyłączonych integracji; rzeczywisty operator i doręczenia nadal
@@ -22,9 +38,8 @@ wykonano. Przed wpuszczeniem prawdziwych klientów trzeba uzgodnić okno,
 wykonać aktualizację i odebrać logowanie/odczyty. Nie deklarujemy, że restart
 trwale naprawił problem. Szczegóły i źródła w iteracji z 26.10.
 
-Krótki przewodnik po współpracy i zapisach ma przygotowaną propozycję czterech
-kroków. Nie jest częścią opublikowanego kodu; film Asi pozostaje opcjonalnym
-pomysłem, bez wymogu wychodzenia z aplikacji.
+Film Asi pozostaje opcjonalnym pomysłem. Opublikowany onboarding nie wymaga
+wychodzenia z aplikacji ani oglądania filmu.
 
 ## Przygotowanie płatności i poczty — lokalnie, 23.10.2026
 

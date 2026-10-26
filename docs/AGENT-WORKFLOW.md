@@ -97,12 +97,20 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Obowiązkowy start nowych opiekunów — 26.10](iterations/2026-10-26-onboarding.md):
+osobne propozycje biznesu i techniki, uzgodnione AC-01–14, implementacja w dwóch
+rozłącznych zakresach oraz recenzja z nowego kontekstu. Prywatny brief i trwała
+karta startu wyłącznie dla nowej kohorty; wcześniejsze konta zwolnione. Po
+lokalnym odbiorze, świeżej kopii i odtworzeniu opublikowano kod i migrację 66,
+bez aktywacji integracji. Odbiór hostingu 12 UI i 3 odmowy endpointów PASS.
+
 [Publikacja i onboarding — 26.10](iterations/2026-10-26-publikacja-poprawek.md):
 nowa zgoda na wdrożenie poprawek, świeża kopia i próba produkcyjnych danych,
 publikacja kodu i migracji 61–65 z integracjami OFF. Odbiór hostingu i problem
 starego PostgREST mają oddzielne dowody; restart nie zamyka potrzeby aktualizacji
 infrastruktury. Osobne propozycje biznesu i techniki oceniają delikatny
-przewodnik opiekuna bez implementacji w tym wydaniu.
+przewodnik opiekuna bez implementacji w tamtym wydaniu; późniejszą osobną
+realizację opisano powyżej.
 
 [Odbiór przed płatnościami — 23.10](iterations/2026-10-23-gotowosc-platnosci.md):
 niezależny brief biznesowy i techniczny, AC-R01–R20, lokalne poprawki płatności,
