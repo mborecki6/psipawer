@@ -14,6 +14,9 @@ const paymentMethods: Record<string, string> = {
   card: "Karta",
   other: "Inna metoda",
   gift_card: "Karta podarunkowa",
+  tpay_simulator: "BLIK · symulacja lokalna",
+  tpay_sandbox: "BLIK · Tpay sandbox",
+  tpay_live: "BLIK · Tpay",
 };
 
 export function PaymentRow({

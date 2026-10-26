@@ -28,9 +28,13 @@ function PaymentForm({ charge }: { charge: FinanceCharge }) {
 export function ChargeRow({
   charge,
   admin,
+  onlinePaymentEnabled = false,
+  onlinePaymentEnvironment = null,
 }: {
   charge: FinanceCharge;
   admin: boolean;
+  onlinePaymentEnabled?: boolean;
+  onlinePaymentEnvironment?: "sandbox" | "simulator" | "live" | null;
 }) {
   return (
     <article className={styles.row} id={`charge-${charge.kind}-${charge.id}`}>
@@ -97,6 +101,23 @@ export function ChargeRow({
           Pozostało {money(charge.dueCents)}.
         </p>
       )}
+      {!admin &&
+        onlinePaymentEnabled &&
+        charge.canPay &&
+        !charge.reviewReason &&
+        charge.kind !== "package" &&
+        charge.dueCents > 0 && (
+          <p className={styles.rowNote}>
+            <Link
+              className="primary-button"
+              href={`/app/payments/new?kind=${charge.kind}&target=${encodeURIComponent(charge.id)}`}
+            >
+              {onlinePaymentEnvironment === "live"
+                ? "Zapłać BLIKIEM"
+                : "Zapłać BLIKIEM — test"}
+            </Link>
+          </p>
+        )}
       {admin && charge.canPay && (
         <Details title="Rozlicz należność" icon={<Wallet aria-hidden="true" />}>
           <div

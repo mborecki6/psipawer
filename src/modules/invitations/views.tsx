@@ -22,6 +22,7 @@ export function InvitationsView({
   draftId,
   saved,
   enabled,
+  deliveryMode = "local",
   archived = false,
   search = "",
 }: {
@@ -31,6 +32,7 @@ export function InvitationsView({
   draftId: string;
   saved: boolean;
   enabled: boolean;
+  deliveryMode?: "local" | "smtp";
   archived?: boolean;
   search?: string;
 }) {
@@ -58,7 +60,9 @@ export function InvitationsView({
       </header>
       <div className="alert">
         {enabled
-          ? "Tryb lokalny: wiadomości trafiają do skrzynki testowej. Przygotowanie zaproszenia niczego nie wysyła."
+          ? deliveryMode === "local"
+            ? "Tryb lokalny: wiadomości trafiają do skrzynki testowej. Przygotowanie zaproszenia niczego nie wysyła."
+            : "Wysyłka e-mail jest włączona. Przygotowanie zaproszenia niczego nie wysyła; wiadomość wyślesz osobnym przyciskiem."
           : "Wysyłka jest wyłączona do czasu konfiguracji poczty i uruchomienia testów. Możesz przygotować listę zaproszeń."}
       </div>
       {saved && (
@@ -148,7 +152,11 @@ export function InvitationsView({
       <ol className={styles.list}>
         {items.map((i) => (
           <li className="card pad" key={i.id}>
-            <InvitationSummary invitation={i} enabled={enabled} />
+            <InvitationSummary
+              invitation={i}
+              enabled={enabled}
+              deliveryMode={deliveryMode}
+            />
             <Link className="ghost-button" href={`/admin/invitations/${i.id}`}>
               Historia zaproszenia →
             </Link>
@@ -196,9 +204,11 @@ export function InvitationsView({
 function InvitationSummary({
   invitation: i,
   enabled,
+  deliveryMode = "local",
 }: {
   invitation: Invitation;
   enabled: boolean;
+  deliveryMode?: "local" | "smtp";
 }) {
   return (
     <div className={styles.summaryBody}>
@@ -260,7 +270,9 @@ function InvitationSummary({
               action={sendInvitation}
               label={
                 i.delivery_status === "draft"
-                  ? "Wyślij do skrzynki testowej"
+                  ? deliveryMode === "local"
+                    ? "Wyślij do skrzynki testowej"
+                    : "Wyślij zaproszenie e-mailem"
                   : "Wyślij nowe zaproszenie"
               }
               pendingLabel="Wysyłam…"
@@ -309,12 +321,14 @@ export function InvitationDetailView({
   more,
   page,
   enabled,
+  deliveryMode = "local",
 }: {
   invitation: Invitation;
   attempts: InvitationAttempt[];
   more: boolean;
   page: number;
   enabled: boolean;
+  deliveryMode?: "local" | "smtp";
 }) {
   return (
     <div className="stack">
@@ -341,7 +355,11 @@ export function InvitationDetailView({
         <RefreshInbox />
       </header>
       <article className={`card pad ${styles.summary}`}>
-        <InvitationSummary invitation={invitation} enabled={enabled} />
+        <InvitationSummary
+          invitation={invitation}
+          enabled={enabled}
+          deliveryMode={deliveryMode}
+        />
         {!enabled && <p className="muted">Wysyłka jest obecnie wyłączona.</p>}
       </article>
       <section className={styles.history} aria-labelledby="invitation-attempts">

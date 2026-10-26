@@ -26,12 +26,38 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
+- Odbiór przed płatnościami z 23.10 opisuje
+  `docs/iterations/2026-10-23-gotowosc-platnosci.md`, a instrukcję konfiguracji
+  `docs/PAYMENT-EMAIL-RELEASE.md`. Użytkownik zatwierdził lokalne poprawki i
+  przygotowanie SMTP Auth oraz maili o terminach, przypomnieniach i wpłatach.
+  Lokalne migracje 62–65 zastosowano po kopii, zachowując poprzednie rekordy
+  i Auth: lokalnie jest 65, produkcja nadal 60 migracji. Wysyłka biznesowa jest
+  wyłączona; lokalny podgląd używa jawnego symulatora bez operatora i pieniędzy.
+  Konfiguracje hosted i live są przygotowane z osobnymi wyłącznikami, ale nie
+  zostały włączone ani odebrane u operatora. Nie publikuj, nie włączaj SMTP,
+  nie uruchamiaj realnych płatności i nie kupuj Pro na podstawie tej iteracji.
+  Po audycie zależności podniesiono lokalnie Next i eslint-config-next do
+  16.4.1; nie oznacza to aktualizacji istniejącej produkcji.
+- Lokalny wariant BLIK przez Tpay z 18.10 opisuje
+  `docs/iterations/2026-10-18-tpay-blik-lokalnie.md`. Zgoda obejmuje wyłącznie
+  lokalne testy. Użytkownik nie ma sandboxa; działa jawny symulator bez operatora
+  i pieniędzy, a adapter sandbox wymaga późniejszego rzeczywistego odbioru.
+  Spacer przyjęty automatycznie zgodnie z dotychczasowymi zasadami także można
+  opłacić. Wtedy lokalny Supabase miał 61 migracji; stan z 23.10 podano wyżej.
+  Nie przenoś konfiguracji symulatora do chmury ani nie uruchamiaj live Tpay.
 - Bieżące wydanie opisuje `docs/iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md`.
   Poprawki odporności formularzy, zapisu psa i kwalifikacji, rozliczeń, odczytów
   i liczników oraz ręczne linki dostępu opublikowano 16.10 po zgodzie użytkownika;
   produkcja ma 60 migracji. Nie tworzono prawdziwych kont ani nie włączano SMTP.
-  Przed zapraszaniem prawdziwych opiekunów pozostają kopie produkcji i zdjęć;
-  użytkownik wybrał Pro, ale odłożył logowanie i płatną zmianę planu.
+  Decyzja użytkownika z 17.10 zastępuje wcześniejszy wybór Pro: pozostajemy
+  na Supabase Free, a zaproszenia odkładamy do przyszłej integracji SMTP;
+  nie ma jeszcze listy prawdziwych odbiorców. Dla zdjęć wybrano zaszyfrowane
+  archiwum na prywatnym Google Drive, z kluczem przechowywanym osobno.
+  Lokalną kopię 12 plików marki zaszyfrowano i odtworzono 17.10; wysyłkę na
+  Drive użytkownik odłożył do listy zadań. Nie używaj służbowego Dysku.
+  Zadania do wznowienia opisuje `docs/PRODUCT-STATUS.md`. Produkcyjna kopia
+  DB pozostaje niedomknięta; kopia zdjęć jej nie zastępuje. Nie włączaj Pro,
+  SMTP ani zaproszeń bez nowego polecenia w odpowiednim zakresie.
   Wydanie wizualne opisują `docs/iterations/2026-10-15-brzoskwinia-miejsce-kursu.md`
   i `docs/iterations/2026-10-15-fotografie-panelu.md`. Zdjęcia, paleta i formularz
   kursu opublikowano 15.10 po zgodzie użytkownika, bez zmian DB.

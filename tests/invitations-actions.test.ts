@@ -131,6 +131,20 @@ it("requires local delivery to be configured before claiming or sending", async 
   expect(m.rpc).not.toHaveBeenCalled();
   expect(m.provider).not.toHaveBeenCalled();
 });
+it("reports hosted SMTP acceptance separately from actual delivery and account activation", async () => {
+  m.config.mockReturnValue({
+    origin: "https://app.example.test",
+    url: "https://abcdefghijklmnopqrst.supabase.co",
+    key: "hosted-test-only-key",
+    mode: "smtp",
+  });
+  const result = await sendInvitation({}, form());
+  expect(m.send).toHaveBeenCalledWith("db-recipient@example.test", {
+    redirectTo: "https://app.example.test/auth/invitation",
+  });
+  expect(result.success).toContain("Nie jest to potwierdzenie doręczenia");
+  expect(result.success).not.toContain("lokalną");
+});
 it("uses the claimed database recipient and fixed destination, never browser email, role or redirect", async () => {
   expect(
     (

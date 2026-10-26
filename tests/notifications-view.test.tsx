@@ -229,6 +229,36 @@ it("keeps staff activity and settings selection independent of the owner's group
     ),
   ).toBe(true);
 });
+it("keeps payment details and confirmation in the finance navigation for both roles", () => {
+  for (const role of ["client", "admin"] as const) {
+    const base = role === "admin" ? "/admin" : "/app";
+    for (const path of [`${base}/payments/new`, `${base}/payments/attempt`]) {
+      const navigation = getShellNavigation(role, path);
+      expect(navigation.active(`${base}/finance`)).toBe(true);
+      expect(navigation.active(base)).toBe(false);
+      expect(
+        navigation.nav
+          .filter((item) => navigation.active(item.href))
+          .map((item) => item.href),
+      ).toEqual([`${base}/finance`]);
+      mocks.path.mockReturnValue(path);
+      const html = renderToStaticMarkup(
+        <Shell role={role} name="Test" unreadNotifications={0}>
+          Płatność
+        </Shell>,
+      );
+      const financeLink = html.match(
+        new RegExp(`<a[^>]*href="${base}/finance"[^>]*>`),
+      )?.[0];
+      expect(financeLink).toContain('aria-current="page"');
+    }
+    expect(
+      getShellNavigation(role, `${base}/payments-other`).active(
+        `${base}/finance`,
+      ),
+    ).toBe(false);
+  }
+});
 it("does not show zero unread when the navigation count is unavailable", () => {
   const unknown = renderToStaticMarkup(
     <Shell role="admin" name="Prowadząca" unreadNotifications={null}>

@@ -1,11 +1,19 @@
 // Explicit local-only environment for Next and browser tests. Passing Node's
 // --env-file to Next dev is unsupported by its child-process NODE_OPTIONS.
 import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
+import {
+  readFileSync,
+  mkdirSync,
+  writeFileSync,
+  chmodSync,
+  existsSync,
+} from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, resolve, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
+import { localTpayConfig } from "./lib/local-tpay-config.mjs";
+import { localEmailConfig } from "./lib/local-email-config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function localOrigin(value) {
@@ -30,13 +38,22 @@ try {
     readFileSync(resolve(root, ".env.test.local"), "utf8"),
   );
   const api = localOrigin(values.NEXT_PUBLIC_SUPABASE_URL);
-  const app = localOrigin(values.NEXT_PUBLIC_APP_URL);
+  const configuredApp = localOrigin(values.NEXT_PUBLIC_APP_URL);
+  const port = process.env.PSI_LOCAL_PORT || "3000";
+  if (!/^\d{4,5}$/.test(port) || Number(port) < 1024 || Number(port) > 65535)
+    throw new Error("port");
+  const app = `http://localhost:${port}`;
   if (
-    app !== "http://localhost:3000" ||
+    configuredApp !== "http://localhost:3000" ||
     !values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     !values.SUPABASE_SECRET_KEY
   )
     throw new Error("configuration");
+  const tpayPath = resolve(root, ".local/tpay-sandbox.env");
+  const tpay = localTpayConfig(
+    existsSync(tpayPath) ? parseEnv(readFileSync(tpayPath, "utf8")) : {},
+  );
+  const email = localEmailConfig(values);
   const preview = command === "build" || command === "preview";
   const manifestPath = resolve(root, ".local/preview-build.json");
   const buildIdPath = resolve(root, ".next-local/BUILD_ID");
@@ -80,6 +97,8 @@ try {
     SUPABASE_SECRET_KEY: values.SUPABASE_SECRET_KEY,
     NEXT_PUBLIC_APP_URL: app,
     AUTH_EMAIL_ENABLED: "true",
+    AUTH_EMAIL_HOSTED_ENABLED: "",
+    AUTH_EMAIL_APP_ORIGIN: "",
     CLIENT_INVITATIONS_ENABLED: "true",
     // Explicit empty values also stop Next's dotenv loader from falling back
     // to a hosted project's push identity in .env.local.
@@ -90,6 +109,10 @@ try {
     NODE_ENV:
       command === "dev" ? "development" : preview ? "production" : "test",
     PSI_LOCAL_PREVIEW: preview ? "1" : "0",
+    TPAY_RECONCILIATION_ENABLED: "false",
+    PAYMENTS_WORKER_SECRET: "",
+    ...tpay,
+    ...email,
   };
   delete env.NODE_OPTIONS;
   const args =
@@ -100,7 +123,7 @@ try {
           "--hostname",
           "127.0.0.1",
           "--port",
-          "3000",
+          port,
         ]
       : command === "build"
         ? ["node_modules/next/dist/bin/next", "build"]

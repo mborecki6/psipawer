@@ -1,0 +1,153 @@
+.root {
+  display: grid;
+  gap: 20px;
+  max-width: 760px;
+  min-width: 0;
+}
+
+.header h2,
+.panel h2,
+.panel h3 {
+  margin: 0;
+}
+
+.header p {
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  scroll-margin-top: 24px;
+  overflow-wrap: anywhere;
+}
+
+.panel p {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.testNotice {
+  padding: 16px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--paper-2);
+  overflow-wrap: anywhere;
+}
+
+.testNotice p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.facts {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1fr);
+  gap: 6px 20px;
+}
+
+.facts dt {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.root button,
+.root select,
+.root a,
+.panel a {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.root button,
+.root :global(.primary-button) {
+  min-height: 44px;
+}
+
+.attempts {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attempts li {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.attemptTop,
+.attemptMeta {
+  display: flex;
+  align-items: start;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.attemptTop {
+  justify-content: space-between;
+}
+
+.attemptLink {
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.attemptMeta time {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.reviewNote {
+  padding-left: 12px;
+  border-left: 3px solid var(--line-strong);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+@media (max-width: 480px) {
+  .facts > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions,
+  .actions > form {
+    width: 100%;
+  }
+
+  .actions > form > button {
+    width: 100%;
+  }
+}

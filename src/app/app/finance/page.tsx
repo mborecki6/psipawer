@@ -2,6 +2,7 @@ import { requireSession } from "@/lib/auth/session";
 import { getFinanceData } from "@/lib/data/finance-queries";
 import { FinanceView } from "@/components/finance";
 import type { FinanceSearch } from "@/lib/finance-pagination";
+import { getOnlinePaymentContext } from "@/modules/payments/server";
 
 export default async function Page({
   searchParams,
@@ -16,6 +17,7 @@ export default async function Page({
       admin={false}
       dueOnly={search.filter === "due"}
       search={search}
+      onlinePayments={await getOnlinePaymentContext()}
     />
   );
 }

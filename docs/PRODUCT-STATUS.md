@@ -1,6 +1,58 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 14.10.2026. MVP z lżejszym panelem prowadzącej działa na [psipawer.vercel.app](https://psipawer.vercel.app/login) do wspólnych testów administratora, behawiorystki i dwóch fikcyjnych opiekunów. Vercel oraz Supabase pozostają platformą pilota; rzeczywistych klientów nie zapraszano. Wydanie z 14.10 dodaje markę Psi Pawer, prostszy wybór oferty, własny profil i kontakt WhatsApp do funkcji opublikowanych 13.10; chmura i środowisko lokalne mają 57 migracji.
+Aktualizacja: 23.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login). Ostatnie opublikowane wydanie aplikacji pochodzi z 16.10 (`c7cfd25`); produkcja ma 60 migracji. Rzeczywistych klientów jeszcze nie zaproszono. Historyczny odbiór obejmował lokalny pilot 50 opiekunów i odrębne kontrole hostingu. Prace z 18 i 23.10 są wyłącznie lokalne; nie stanowią nowego odbioru produkcji.
+
+## Przygotowanie płatności i poczty — lokalnie, 23.10.2026
+
+Użytkownik zatwierdził audyt i lokalne poprawki przed przyjmowaniem pieniędzy,
+przygotowanie SMTP Auth i oddzielnych maili o terminach, przypomnieniach oraz
+potwierdzonych wpłatach. Konfiguracje hosted, trwałe kolejki i uzgadnianie
+rozpoczętych transakcji są przygotowane; prawdziwy SMTP i Tpay pozostają
+wyłączone i wymagają rzeczywistego odbioru. Symulator nie łączy się z operatorem.
+
+Lokalnie zastosowano migracje 62–65 po kopii, bez zmiany wcześniejszych danych
+i Auth. **Lokalnie 65, produkcja 60 migracji.** Nie włączono planu Pro, nie
+publikowano kodu, nie utworzono kont prawdziwych odbiorców ani zewnętrznej wysyłki.
+Audyt zależności wskazał aktualizację zabezpieczeń Next.js; lokalny kandydat ma
+Next i eslint-config-next 16.4.1, bez zgłoszeń w ponownym audycie produkcyjnych
+zależności. Aktualizacja produkcji wymaga osobnego wydania.
+
+Końcowy odbiór lokalny: **1843 testy jednostkowe, 173 testy PostgreSQL,
+78 E2E Chromium i 13 E2E WebKit — PASS**. Po korekcie dwóch plików testowych
+powtórzono zgodne 13 scenariuszy Chromium — PASS. Pilot 50+1 i 153 rzeczywiste
+widoki przeglądarki przeszły; przy 50 jednoczesnych zapisach zachowano limit
+4 miejsc, a 50 ponowień tej samej wpłaty utworzyło jeden wpływ. Fizyczne
+lokalne odtworzenie 144 tabel, Auth, dwóch plików Storage oraz płatności i
+kolejek przeszło. Własne dane testowe usunięto, wcześniejsze dane zachowano.
+Znane uwagi recenzenta zamknięto. Wyniki nie zastępują przyszłego odbioru
+rzeczywistego operatora, doręczeń oraz hostingu.
+
+[Zakres i wyniki odbioru](iterations/2026-10-23-gotowosc-platnosci.md) oraz
+[instrukcja konfiguracji i publikacji](PAYMENT-EMAIL-RELEASE.md) rozróżniają
+sprawdzony kod, lokalne próby i otwarte testy integracji. Żaden lokalny wynik
+nie potwierdza doręczenia na prawdziwą skrzynkę ani przyjęcia prawdziwego BLIK.
+
+## BLIK przez Tpay — lokalny wariant testowy, 18.10.2026
+
+Przyjęta i wyceniona usługa ma testową płatność w rozliczeniach opiekuna. Obejmuje spacer, konsultację, kurs i PSI FITNESS; kwota pochodzi z bazy i uwzględnia wcześniejsze wpłaty. Spacer przyjęty automatycznie według istniejących reguł także może być opłacony, zgodnie z odpowiedzią użytkownika. Zakupy pakietów spacerowych i kart pozostają poza tą iteracją.
+
+Użytkownik nie ma konta sandbox Tpay. W lokalnym podglądzie włączono **jawną symulację, bez połączenia z Tpay i bez pieniędzy**. Adapter sandbox, odczyt statusu i weryfikacja powiadomień są przygotowane; rzeczywista transakcja u operatora pozostaje do odbioru po założeniu konta. Nie wolno przedstawiać symulatora ani atrap odpowiedzi API jako przeprowadzonego testu prawdziwej bramki.
+
+Migrację `202610180001_tpay_blik.sql` zastosowano wyłącznie lokalnie: **lokalnie 61, produkcja 60 migracji**. Wcześniej wykonano lokalną kopię; porównanie po migracji potwierdziło niezmienione wcześniejsze dane i konta. Nie publikowano kodu, nie zmieniano chmury, SMTP ani kont prawdziwych użytkowników. [Zakres, konfiguracja i odbiór płatności](iterations/2026-10-18-tpay-blik-lokalnie.md).
+
+## Bieżące decyzje i zadania do wznowienia — 17.10.2026
+
+Użytkownik zdecydował pozostać na **Supabase Free**; zastępuje to wcześniejszy wybór Pro. Nie włączono płatnego planu ani SMTP. Zaproszenia prawdziwych opiekunów są odłożone do przyszłej integracji SMTP; lista odbiorców nie jest jeszcze dostępna. Ręczne narzędzie dostępu pozostaje gotowe, ale dziś nie utworzono kont, linków ani wysyłki.
+
+- [ ] Podłączyć prywatny Google Drive i wysłać przygotowane zaszyfrowane archiwum zdjęć, przenośny czytnik oraz instrukcję. **Wysyłkę użytkownik jawnie odłożył**; nie korzystać ze służbowego Dysku.
+- [ ] Pobrać archiwum z Drive i potwierdzić rozmiar, SHA-256 oraz odtworzenie wszystkich plików. Samo odtworzenie lokalne nie potwierdza kopii w chmurze.
+- [ ] Zabezpieczyć klucz w osobnym bezpiecznym miejscu poza komputerem i Drive. Obecnie jest zapisany oddzielnie, poza repozytorium.
+- [ ] Uzgodnić i sprawdzić produkcyjną kopię bazy danych. Dzisiejszy odczyt wykazał 0 dostępnych kopii; archiwum zdjęć nie zastępuje kopii DB ani Auth.
+- [ ] W osobnym etapie skonfigurować SMTP i odebrać doręczenie oraz dostęp pierwszych prawdziwych opiekunów.
+
+**Wykonane lokalnie:** jednorazowe archiwum 12 plików `public/brand` (11 fotografii i logo, 5 635 046 B), AES-256-GCM i osobny klucz. Przenośny czytnik odtworzył wszystkie 12 plików identycznie bajt po bajcie; źródła pozostały bez zmian. Narzędzie przeszło 8 testów oraz niezależny przegląd z poprawką sprawdzania rozmiarów przed ekstrakcją. Oba prywatne buckety były puste w odczycie z 17.10, 12:51 UTC. Ta kopia nie obejmuje później dodanych zdjęć i nie jest automatyczna. Niczego nie wysłano na Drive.
+
+[Szczegóły ostatniego wydania i odbioru](iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md). Poniższe sekcje zachowują historię wcześniejszych iteracji.
 
 ## Marka, oferta i profil — online, 14.10.2026
 

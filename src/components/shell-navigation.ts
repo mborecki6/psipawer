@@ -133,9 +133,11 @@ export function getShellNavigation(role: Role, path: string) {
         ? activitiesView
         : href === base
           ? path === base
-          : href === "/app/services"
-            ? within(href) || within("/app/service-requests")
-            : within(href);
+          : href === `${base}/finance`
+            ? within(href) || within(`${base}/payments`)
+            : href === "/app/services"
+              ? within(href) || within("/app/service-requests")
+              : within(href);
   return {
     base,
     pageTitle,

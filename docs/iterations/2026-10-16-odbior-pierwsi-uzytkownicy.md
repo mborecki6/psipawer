@@ -582,3 +582,17 @@ fizycznego telefonu i doręczenia Web Push również pozostaje osobną kontrolą
 rozmiar ekranu i silnik przeglądarki nie zastępują urządzenia.
 
 Prywatne logi i raporty: ignorowane `.local/launch-20261016/`.
+
+## Aktualizacja operacyjna 17.10 — decyzje użytkownika
+
+Dzisiejsza decyzja pozostawia Supabase na **Free** i zastępuje wcześniejszy wybór Pro. Nie zmieniono planu ani nie uruchomiono płatności. Zaproszenia prawdziwych opiekunów odłożono do przyszłej integracji SMTP; nie ma jeszcze listy adresów. Dziś nie utworzono prawdziwych kont ani linków i nie wysłano wiadomości.
+
+Odczyt produkcji potwierdził healthy, 60 migracji, Asię jako primary, ochronę RLS i prywatne buckety oraz brak zaległych i nieudanych kolejek. Alias aplikacji nadal wskazuje kod `c7cfd25`. Nie zmieniano kodu aplikacji, schematu ani konfiguracji produkcji. Dostępnych kopii DB nadal nie ma.
+
+Przygotowano lokalne jednorazowe archiwum wszystkich 12 plików `public/brand`: 11 fotografii i logo, 5 635 046 B. Odczyt obu prywatnych bucketów z 12:51:50 UTC potwierdził 0 obiektów i 0 B; nie eksportowano DB, Auth ani sekretów. Szyfrowanie AES-256-GCM używa losowego klucza zapisanego osobno poza checkoutem i Drive. Dozwolony zestaw do przyszłej wysyłki zawiera wyłącznie szyfrogram, przenośny czytnik Node i polską instrukcję.
+
+Niezależny przegląd wykrył brak kontroli rozmiaru wpisów przed ekstrakcją; autor poprawił go i dodał regresję. Ponowny przegląd: brak otwartych uwag w lokalnym zakresie, 8/8 testów i składnia PASS. Koordynator odtworzył rzeczywistą kopię za pomocą dołączonego czytnika: wszystkie 12 plików identyczne bajt po bajcie, źródła bez zmian; katalog próbnego odtworzenia usunięto. Szyfrogram ma 5 652 626 B i SHA-256 `ce5bd67e891d79236f61a3d5158ddb436df22d2f11cd29af770a2ec1248c1709`.
+
+Użytkownik wybrał **prywatny Drive**, a następnie jawnie odłożył jego podłączenie i wysyłkę do listy zadań. Nie wysłano żadnego pliku. Próba utworzenia folderu w przeglądarce nie została potwierdzona po odświeżeniu; nie traktujemy jej jako wykonanej kopii. Odbiór pobrania i odtworzenia z Drive pozostaje niewykonany. Kopia klucza poza komputerem również wymaga osobnego zabezpieczenia przez właściciela.
+
+Archiwum jest lokalną kopią zdjęć, bez automatyzacji i bez późniejszych plików opiekunów; nie zamyka warunku produkcyjnej kopii DB. Aktualną listę do wznowienia zapisano w [stanie produktu](../PRODUCT-STATUS.md#bieżące-decyzje-i-zadania-do-wznowienia--17102026). Prywatne narzędzie, wyniki i ścieżka lokalnej kopii: `.local/launch-20261017/`.

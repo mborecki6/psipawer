@@ -2,7 +2,15 @@
 // the existing local environment is never replaced by the restored database.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  readdirSync,
+  mkdirSync,
+  writeFileSync,
+  chmodSync,
+  renameSync,
+} from "node:fs";
+import { resolve } from "node:path";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -32,6 +40,13 @@ import {
   verifyBackupGifts,
   disposeBackupGifts,
 } from "../helpers/backup-gift-fixtures.mjs";
+import {
+  prepareBackupPayments,
+  verifyBackupPayments,
+  disposeBackupPayments,
+  restoreBackupPaymentSettings,
+  disposeBackupPaymentCare,
+} from "../helpers/backup-payment-fixtures.mjs";
 
 const credentials = localBackupConfiguration(
   parseEnv(readFileSync(".env.test.local", "utf8")),
@@ -56,13 +71,97 @@ const run = randomUUID(),
   courses = [],
   fitness = { dogs: [], packages: [] },
   gifts = { cards: [], packages: [] },
+  paymentFixture = {},
   clients = [];
 let failed = false,
   phase = "source-baseline",
   sourceBefore,
+  sourceAuthBefore,
+  sourceSharedSettings,
   practiceFixture;
+const journalDirectory = resolve(".local/launch-20261023");
+mkdirSync(journalDirectory, { recursive: true, mode: 0o700 });
+const journalPath = resolve(journalDirectory, `repair-backup-${run}.json`);
+const diagnosticsPath = resolve(
+  journalDirectory,
+  `repair-backup-${run}-errors.json`,
+);
+const diagnostics = [];
+function privateJson(path, value) {
+  const temporary = `${path}.tmp`;
+  writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", {
+    mode: 0o600,
+  });
+  chmodSync(temporary, 0o600);
+  renameSync(temporary, path);
+}
+function checkpoint() {
+  privateJson(journalPath, {
+    run,
+    phase,
+    sourceBefore,
+    sourceAuthBefore,
+    sourceSharedSettings,
+    users: users.map(({ id, email, role }) => ({ id, email, role })),
+    dogs,
+    files,
+    leases,
+    courses,
+    fitness,
+    gifts,
+    paymentFixture: {
+      owner: paymentFixture.owner,
+      dogs: paymentFixture.dogs,
+      dog: paymentFixture.dog,
+      targets: paymentFixture.targets,
+      requests: paymentFixture.requests,
+      attempts: paymentFixture.attempts?.map(
+        ({ id, target_id, dog_id, guardian_id, merchant_id }) => ({
+          id,
+          target_id,
+          dog_id,
+          guardian_id,
+          merchant_id,
+        }),
+      ),
+      settings: paymentFixture.settings,
+    },
+  });
+}
+function recordFailure(error) {
+  const secrets = [
+    credentials.key,
+    credentials.secret,
+    ...users.map((user) => user.password),
+  ].filter(Boolean);
+  const clean = (value) => {
+    let text = String(value || "");
+    for (const secret of secrets) text = text.split(secret).join("[REDACTED]");
+    return text
+      .replace(
+        /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
+        "[REDACTED_TOKEN]",
+      )
+      .replace(
+        /((?:token_hash|access_token|refresh_token|code)=)[^&\s]+/g,
+        "$1[REDACTED]",
+      );
+  };
+  const serialize = (value) => ({
+    name: clean(value?.name),
+    message: clean(value?.message),
+    code: clean(value?.code),
+    stack: clean(value?.stack),
+    cause: value?.cause ? serialize(value.cause) : undefined,
+    errors: value?.errors ? Array.from(value.errors, serialize) : undefined,
+  });
+  diagnostics.push({ phase, error: serialize(error) });
+  privateJson(diagnosticsPath, diagnostics);
+  checkpoint();
+}
 const onStage = (value) => {
   phase = value;
+  checkpoint();
 };
 // Each operation releases its connection before the physical backup stops DB.
 async function practiceQuery(statement, json = false) {
@@ -92,11 +191,22 @@ async function publicSnapshot() {
   }
 }
 function checked(result) {
-  assert(!result.error, "Rzeczywiste lokalne API odrzuciło operację próbną.");
+  if (result.error)
+    throw new Error("Rzeczywiste lokalne API odrzuciło operację próbną.", {
+      cause: result.error,
+    });
   return result.data;
 }
 try {
   sourceBefore = await publicSnapshot();
+  sourceAuthBefore = await practiceQuery(
+    "select to_json(md5(coalesce(string_agg(md5(to_jsonb(u)::text),'' order by id),''))) from auth.users u;",
+    true,
+  );
+  sourceSharedSettings = await practiceQuery(
+    "select jsonb_build_object('primary',(select primary_practitioner_id from public.calendar_settings limit 1),'online',(select to_jsonb(s) from public.online_payment_settings s where singleton),'email',(select to_jsonb(s) from public.business_email_settings s where singleton));",
+    true,
+  );
   onStage("source-accounts");
   for (const [index, role] of ["client", "client", "admin"].entries()) {
     const fixture = {
@@ -105,6 +215,8 @@ try {
       role,
     };
     users.push(fixture);
+    // Persist the exact synthetic address before Auth can accept the request.
+    checkpoint();
     const { user } = checked(
       await db.auth.admin.createUser({
         email: fixture.email,
@@ -114,6 +226,7 @@ try {
     );
     assert(user?.id);
     fixture.id = user.id;
+    onStage("source-account-owned");
     checked(
       await db
         .from("profiles")
@@ -245,6 +358,12 @@ try {
     gifts,
     onStage,
   });
+  await prepareBackupPayments({
+    owner,
+    staff,
+    fixture: paymentFixture,
+    onStage,
+  });
   const pending = {
     bucket: "dog-avatars",
     path: `${owner.id}/${dog.id}/${randomUUID()}.webp`,
@@ -336,6 +455,12 @@ try {
         assert.equal(json(roles)[0].role, user.role);
       }
       report.api_isolation_verified = true;
+      await verifyBackupPayments({
+        sql,
+        fixture: paymentFixture,
+        report,
+        onStage: restoreStage,
+      });
       for (const file of files) {
         const path = `/object/authenticated/${file.bucket}/${file.path}`;
         for (const user of [owner, staff]) {
@@ -536,12 +661,14 @@ try {
       course_restore_verified: report.course_restore_verified,
       fitness_restore_verified: report.fitness_restore_verified,
       gift_restore_verified: report.gift_restore_verified,
+      payment_restore_verified: report.payment_restore_verified,
       calendar_restore_verified: report.calendar_restore_verified,
       avatar_reservation_verified: report.avatar_reservation_verified,
     }),
   );
-} catch {
+} catch (error) {
   failed = true;
+  recordFailure(error);
   console.error(
     `Próba odtworzenia nie przeszła na etapie ${phase}. Treści oraz poświadczenia pominięto.`,
   );
@@ -552,6 +679,16 @@ try {
       data: async () => {
         for (const file of files)
           checked(await db.storage.from(file.bucket).remove([file.path]));
+        await disposeBackupPayments(paymentFixture);
+        const ownedCareDogs = [...new Set([...dogs, ...fitness.dogs])];
+        if (ownedCareDogs.length) {
+          const sql = await new LocalPostgres().ready();
+          try {
+            await disposeBackupPaymentCare(sql, ownedCareDogs);
+          } finally {
+            await sql.close();
+          }
+        }
         await disposeBackupGifts(db, gifts);
         await disposeBackupFitness(db, fitness);
         await disposeBackupCourses(db, dogs[0], courses);
@@ -587,7 +724,16 @@ try {
         }
       },
       restore: async () => {
-        await practiceFixture?.restore();
+        const results = await Promise.allSettled([
+          restoreBackupPaymentSettings(paymentFixture),
+          practiceFixture?.restore(),
+        ]);
+        const failures = results.filter((r) => r.status === "rejected");
+        if (failures.length)
+          throw new AggregateError(
+            failures.map((r) => r.reason),
+            "Fixture settings restore failed",
+          );
       },
       accounts: async () => {
         for (const client of clients) checked(await client.auth.signOut());
@@ -616,11 +762,22 @@ try {
         sourceBefore,
         "Cała wcześniejsza zawartość tabel publicznych musi zostać zachowana.",
       );
+    if (sourceAuthBefore)
+      assert.equal(
+        await practiceQuery(
+          "select to_json(md5(coalesce(string_agg(md5(to_jsonb(u)::text),'' order by id),''))) from auth.users u;",
+          true,
+        ),
+        sourceAuthBefore,
+        "Wcześniejsze konta Auth muszą pozostać bez zmian.",
+      );
+    onStage("complete");
     console.log(
       "Próba kopii: własne dane i pliki usunięte; skróty wszystkich wcześniejszych tabel publicznych zgodne.",
     );
   } catch (error) {
     failed = true;
+    recordFailure(error);
     console.error(
       `Sprzątanie próby niepotwierdzone (etapy: ${(error.cleanupStages ?? ["verification"]).join(", ")}); nie resetuj lokalnej bazy.`,
     );

@@ -1,4 +1,5 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { writeFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checked, freeCalendarStart } from "./local-fixtures";
 import { dateInput } from "./walk-journey";
@@ -88,18 +89,66 @@ export async function consultationJourney({
     await staff.goto(`/admin/consultations/${consultation}`, {
       waitUntil: "commit",
     });
-    await expect(staff.getByLabel("Termin (czas polski)")).toBeVisible();
+    await expect(staff.getByLabel("Termin (czas polski)")).toBeAttached();
+    const preview = await staff
+      .getByLabel("Termin (czas polski)")
+      .evaluate((element) => {
+        const ancestors = [];
+        for (
+          let node: Element | null = element;
+          node;
+          node = node.parentElement
+        ) {
+          const id = node.getAttribute("id") || "";
+          if (node.hasAttribute("hidden") || id.startsWith("S:"))
+            ancestors.push({
+              tag: node.tagName,
+              id,
+              hidden: node.hasAttribute("hidden"),
+            });
+        }
+        return {
+          disabled: element.matches(":disabled"),
+          ancestors,
+          readyState: document.readyState,
+        };
+      });
+    writeFileSync(
+      test.info().outputPath("slow-hydration-preview.json"),
+      JSON.stringify(preview, null, 2),
+    );
+    // A streamed Suspense segment can still be hidden while bootstrap scripts
+    // are held in WebKit. Its controls must be disabled regardless of paint.
+    if (!(await staff.getByLabel("Termin (czas polski)").isVisible()))
+      expect(
+        preview.ancestors.some(
+          (node) => node.hidden && node.id.startsWith("S:"),
+        ),
+      ).toBe(true);
     await expect(staff.getByLabel("Termin (czas polski)")).toBeDisabled();
     await expect(
       staff.getByLabel("Prowadzący", { exact: true }),
     ).toBeDisabled();
     await expect(
-      staff.getByRole("button", { name: "Przygotowuję formularz…" }),
+      staff.getByRole("button", {
+        name: "Przygotowuję formularz…",
+        includeHidden: true,
+      }),
     ).toBeDisabled();
   } finally {
     releaseScripts();
     await staff.unrouteAll({ behavior: "wait" });
   }
+  await expect(staff.getByLabel("Termin (czas polski)")).toBeVisible();
+  await expect(staff.getByLabel("Termin (czas polski)")).toBeEnabled();
+  await expect(staff.getByLabel("Prowadzący", { exact: true })).toBeVisible();
+  await expect(staff.getByLabel("Prowadzący", { exact: true })).toBeEnabled();
+  await expect(
+    staff.getByRole("button", {
+      name: "Potwierdź uzgodniony termin",
+      exact: true,
+    }),
+  ).toBeEnabled();
   const start = dateInput(
     await freeCalendarStart(db, { after: Date.now() + 8 * 86400000 }),
   );

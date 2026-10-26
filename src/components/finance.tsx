@@ -9,6 +9,14 @@ import { NewPackageForm } from "./finance/package-form";
 import { PackageCard } from "./finance/package-card";
 import { PaymentRow } from "./finance/payment-row";
 import { FinancePager } from "./finance/pagination";
+import {
+  OnlinePaymentAttempts,
+  OnlinePaymentTestNotice,
+} from "../modules/payments/views";
+import type {
+  OnlinePaymentAttempt,
+  OnlinePaymentEnvironment,
+} from "../modules/payments/types";
 import styles from "./finance.module.css";
 
 export function FinanceView({
@@ -16,16 +24,44 @@ export function FinanceView({
   admin,
   dueOnly = false,
   search = {},
+  onlinePayments,
 }: {
   data: FinanceData;
   admin: boolean;
   dueOnly?: boolean;
   search?: FinanceSearch;
+  onlinePayments?: {
+    enabled: boolean;
+    environment: OnlinePaymentEnvironment | null;
+    walkGate: string;
+    notice?: string;
+    attempts: OnlinePaymentAttempt[];
+  };
 }) {
   const base = admin ? "/admin" : "/app";
   const pages = financePages(data, search);
+  const unresolvedPayments =
+    onlinePayments?.attempts.filter((attempt) =>
+      ["creating", "pending", "uncertain", "requires_review"].includes(
+        attempt.status,
+      ),
+    ).length || 0;
   return (
     <div className={styles.root}>
+      {onlinePayments?.enabled &&
+        onlinePayments.environment &&
+        onlinePayments.environment !== "live" && (
+          <OnlinePaymentTestNotice environment={onlinePayments.environment} />
+        )}
+      {onlinePayments &&
+        !onlinePayments.enabled &&
+        onlinePayments.attempts.length > 0 && (
+          <p className="alert" role="status">
+            Nowe płatności BLIK są obecnie wyłączone. Historia wcześniejszych
+            prób pozostaje dostępna. Przed kolejną wpłatą sprawdź
+            nierozstrzygnięte próby poniżej.
+          </p>
+        )}
       {pages.packageUnavailable && (
         <div className="alert" role="status">
           Ten pakiet nie jest dostępny na Twoim koncie. Poniżej znajdziesz
@@ -52,7 +88,9 @@ export function FinanceView({
           <span className={styles.summaryNote}>
             {data.charges.length
               ? `Rozliczenia wymagające uwagi: ${data.charges.length}`
-              : "Wszystko rozliczone"}
+              : unresolvedPayments
+                ? `Płatności do sprawdzenia: ${unresolvedPayments}`
+                : "Wszystko rozliczone"}
           </span>
         </Link>
         <Link className={styles.summaryCard} href={`${base}/finance#packages`}>
@@ -110,7 +148,11 @@ export function FinanceView({
             <p>
               {admin
                 ? "Nierozliczone kursy, konsultacje, spacery i pakiety oraz uzgodnienia po rezygnacji. Zapisuj wpłaty po ich otrzymaniu."
-                : "Twoje nierozliczone usługi i uzgodnienia po rezygnacji. Sposób płatności lub zwrotu ustal z prowadzącą. Otrzymane wpłaty pojawią się w tym panelu."}
+                : onlinePayments?.enabled
+                  ? onlinePayments.environment === "live"
+                    ? "Twoje nierozliczone usługi i uzgodnienia po rezygnacji. Przy dostępnych usługach możesz zapłacić BLIKIEM. Pozostałe rozliczenia ustal z prowadzącą."
+                    : "Twoje nierozliczone usługi i uzgodnienia po rezygnacji. Przy dostępnych usługach możesz przetestować płatność BLIK. Pozostałe rozliczenia ustal z prowadzącą."
+                  : "Twoje nierozliczone usługi i uzgodnienia po rezygnacji. Sposób płatności lub zwrotu ustal z prowadzącą. Otrzymane wpłaty pojawią się w tym panelu."}
             </p>
           </div>
           <span className={styles.count}>{money(data.totals.dueCents)}</span>
@@ -123,6 +165,12 @@ export function FinanceView({
                   key={`${charge.kind}-${charge.id}`}
                   charge={charge}
                   admin={admin}
+                  onlinePaymentEnabled={Boolean(
+                    onlinePayments?.enabled &&
+                    (charge.kind !== "registration" ||
+                      onlinePayments.walkGate === "accepted"),
+                  )}
+                  onlinePaymentEnvironment={onlinePayments?.environment}
                 />
               ))}
             </div>
@@ -144,6 +192,13 @@ export function FinanceView({
           />
         </div>
       </section>
+      {onlinePayments &&
+        (onlinePayments.enabled || onlinePayments.attempts.length > 0) && (
+          <OnlinePaymentAttempts
+            attempts={onlinePayments.attempts}
+            admin={admin}
+          />
+        )}
       {!dueOnly && (
         <>
           <section
@@ -201,8 +256,12 @@ export function FinanceView({
                 <h2 id="payments-heading">Historia wpłat</h2>
                 <p>
                   {admin
-                    ? "Wpłaty zapisane ręcznie po otrzymaniu pieniędzy oraz historia zwrotów i korekt."
-                    : "Wpłaty potwierdzone przez behawiorystę. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."}
+                    ? onlinePayments?.enabled
+                      ? "Potwierdzone wpłaty, w tym testowe płatności online, oraz historia zwrotów i korekt."
+                      : "Wpłaty zapisane ręcznie po otrzymaniu pieniędzy oraz historia zwrotów i korekt."
+                    : onlinePayments?.enabled
+                      ? "Potwierdzone i rozliczone wpłaty. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."
+                      : "Wpłaty potwierdzone przez behawiorystę. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."}
                 </p>
               </div>
               <ReceiptText size={23} aria-hidden="true" />

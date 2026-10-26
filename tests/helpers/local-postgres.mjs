@@ -26,7 +26,7 @@ export class LocalPostgres {
     // Neither arbitrary databases nor another server can be selected.
     assert(
       database === "postgres" ||
-        /^psi_(fitness|gift|calendar|dog)_[0-9a-f]{32}$/.test(database),
+        /^psi_(fitness|gift|calendar|dog|tpay|email)_[0-9a-f]{32}$/.test(database),
     );
     this.pending = null;
     this.buffer = "";

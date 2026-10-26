@@ -69,7 +69,7 @@ export async function sendInvitation(
   if (!config)
     return {
       error:
-        "Wysyłka zaproszeń jest wyłączona. Obecnie przygotowujemy dostęp i testujemy wyłącznie lokalną skrzynkę.",
+        "Wysyłka zaproszeń jest wyłączona. Możesz przygotować dostęp; wysyłkę uruchamiamy po konfiguracji i odbiorze poczty.",
     };
   const attempt = randomUUID();
   let email: string;
@@ -108,7 +108,7 @@ export async function sendInvitation(
     revalidatePath(`/admin/invitations/${parsed.data.id}`);
     return {
       error:
-        "Nie udało się połączyć z lokalną pocztą. Odśwież listę i sprawdź stan zaproszenia.",
+        "Nie udało się przygotować połączenia z pocztą. Odśwież listę i sprawdź stan zaproszenia.",
     };
   }
   let outcome: "sent" | "failed" | "uncertain" = "uncertain";
@@ -157,11 +157,13 @@ export async function sendInvitation(
       error:
         code === "rate_limited"
           ? "Serwer ograniczył liczbę wiadomości. Spróbuj ponownie później."
-          : "Serwer nie przyjął zaproszenia. Sprawdź adres oraz ustawienia lokalnej poczty.",
+          : "Serwer nie przyjął zaproszenia. Sprawdź adres oraz ustawienia poczty.",
     };
   return {
     success:
-      "Serwer przyjął zaproszenie. Sprawdź lokalną skrzynkę testową. Aktywacja konta będzie widoczna osobno po otwarciu linku.",
+      config.mode === "smtp"
+        ? "Serwer przyjął zaproszenie do wysyłki. Nie jest to potwierdzenie doręczenia. Aktywacja konta będzie widoczna osobno po otwarciu linku."
+        : "Serwer przyjął zaproszenie. Sprawdź lokalną skrzynkę testową. Aktywacja konta będzie widoczna osobno po otwarciu linku.",
   };
 }
 

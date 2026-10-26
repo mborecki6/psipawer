@@ -52,6 +52,20 @@ const props = {
   saved: false,
   enabled: false,
 };
+it("labels hosted SMTP invitations truthfully without implying local delivery or confirmed receipt", () => {
+  const html = renderToStaticMarkup(
+    createElement(InvitationsView, {
+      ...props,
+      enabled: true,
+      deliveryMode: "smtp",
+      items: [{ ...invite, delivery_status: "draft" }],
+    }),
+  );
+  expect(html).toContain("Wyślij zaproszenie e-mailem");
+  expect(html).toContain("Przygotowanie zaproszenia niczego nie wysyła");
+  expect(html).not.toContain("skrzynki testowej");
+  expect(m.send).not.toHaveBeenCalled();
+});
 it("allows preparation when sending is disabled but exposes no send controls or side effects", () => {
   const html = renderToStaticMarkup(createElement(InvitationsView, props));
   expect(html).toContain("Przygotuj zaproszenie");

@@ -116,9 +116,15 @@ describe("password recovery: no enumeration, no GET consumption, fixed destinati
     expect(authEmailOrigin()).toBeNull();
   });
 
-  it("accepts configured HTTPS outside development, but never a remote origin in development", () => {
+  it("accepts explicitly approved hosted SMTP only in a production environment", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("AUTH_EMAIL_HOSTED_ENABLED", "true");
+    vi.stubEnv("AUTH_EMAIL_APP_ORIGIN", "https://app.example.test");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://app.example.test");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "https://abcdefghijklmnopqrst.supabase.co",
+    );
     expect(authEmailOrigin()).toBe("https://app.example.test");
     vi.stubEnv("NODE_ENV", "development");
     expect(authEmailOrigin()).toBeNull();

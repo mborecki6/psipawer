@@ -14,11 +14,13 @@ export default async function InvitationDetail({
     query.page && /^\d{1,5}$/.test(query.page)
       ? Math.max(1, Number(query.page))
       : 1;
+  const delivery = invitationDeliveryConfig();
   return (
     <InvitationDetailView
       {...await getInvitation(id, page)}
       page={page}
-      enabled={Boolean(invitationDeliveryConfig())}
+      enabled={Boolean(delivery)}
+      deliveryMode={delivery?.mode}
     />
   );
 }

@@ -97,6 +97,14 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Odbiór przed płatnościami — 23.10](iterations/2026-10-23-gotowosc-platnosci.md):
+niezależny brief biznesowy i techniczny, AC-R01–R20, lokalne poprawki płatności,
+SMTP Auth oraz osobna kolejka maili biznesowych. Recenzent odtwarza problemy
+przed konfrontacją z autorami. Audyt obejmuje też zależności, realne lokalne
+wyścigi PostgreSQL, UI, kopię i odtworzenie oraz pilot 50+1. Wyniki i otwarte
+bramki integracji zapisano w iteracji; zakres nie obejmuje publikacji,
+zewnętrznej wysyłki, prawdziwych opłat ani zakupu Pro.
+
 [Odbiór przed pierwszymi użytkownikami](iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md):
 16.10 użytkownik zlecił szczegółowe testy, naprawy i publikację przed pilotażem
 do 50 prawdziwych opiekunów. Wybrał ręczne prywatne linki bez SMTP.

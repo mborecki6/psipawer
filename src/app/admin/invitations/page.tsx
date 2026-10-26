@@ -18,6 +18,7 @@ export default async function Invitations({
     p.page && /^\d{1,5}$/.test(p.page) ? Math.max(1, Number(p.page)) : 1;
   const archived = p.archived === "1";
   const search = typeof p.q === "string" ? p.q.trim().slice(0, 254) : "";
+  const delivery = invitationDeliveryConfig();
   return (
     <InvitationsView
       {...await getInvitations(page, archived, search)}
@@ -26,7 +27,8 @@ export default async function Invitations({
       page={page}
       draftId={randomUUID()}
       saved={z.uuid().safeParse(p.saved).success}
-      enabled={Boolean(invitationDeliveryConfig())}
+      enabled={Boolean(delivery)}
+      deliveryMode={delivery?.mode}
     />
   );
 }

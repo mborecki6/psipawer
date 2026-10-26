@@ -6,12 +6,14 @@ const m = vi.hoisted(() => ({
   mkdir: vi.fn(),
   write: vi.fn(),
   chmod: vi.fn(),
+  exists: vi.fn(),
 }));
 vi.mock("node:fs", () => ({
   readFileSync: m.read,
   mkdirSync: m.mkdir,
   writeFileSync: m.write,
   chmodSync: m.chmod,
+  existsSync: m.exists,
 }));
 vi.mock("node:child_process", () => ({ spawn: m.spawn }));
 const argv = process.argv;
@@ -32,6 +34,7 @@ beforeEach(() => {
   completed = false;
   m.spawn.mockReturnValue(child);
   m.read.mockReturnValue(environment());
+  m.exists.mockReturnValue(false);
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -49,6 +52,10 @@ it("overrides inherited cloud credentials before Next starts and never prints ei
   vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "cloud-push-public");
   vi.stubEnv("VAPID_PRIVATE_KEY", "cloud-push-secret");
   vi.stubEnv("VAPID_SUBJECT", "https://cloud.example");
+  vi.stubEnv("BUSINESS_EMAIL_ENABLED", "true");
+  vi.stubEnv("BUSINESS_EMAIL_SMTP_PASSWORD", "cloud-smtp-secret");
+  vi.stubEnv("PAYMENTS_WORKER_SECRET", "cloud-worker-secret");
+  vi.stubEnv("TPAY_RECONCILIATION_ENABLED", "true");
   await import("../scripts/local-app.mjs");
   expect(m.read.mock.calls[0][0]).toMatch(/\/\.env\.test\.local$/);
   const [, args, options] = m.spawn.mock.calls[0];
@@ -68,10 +75,14 @@ it("overrides inherited cloud credentials before Next starts and never prints ei
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: "",
     VAPID_PRIVATE_KEY: "",
     VAPID_SUBJECT: "",
+    BUSINESS_EMAIL_ENABLED: "false",
+    BUSINESS_EMAIL_SMTP_PASSWORD: "",
+    PAYMENTS_WORKER_SECRET: "",
+    TPAY_RECONCILIATION_ENABLED: "false",
   });
   expect(options.env.NODE_OPTIONS).toBeUndefined();
   expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(
-    /local-private|local-public|hosted-secret/,
+    /local-private|local-public|hosted-secret|cloud-smtp-secret|cloud-worker-secret/,
   );
 });
 it("passes push settings only from the explicitly local file", async () => {
@@ -87,6 +98,25 @@ it("passes push settings only from the explicitly local file", async () => {
   });
   expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(
     /local-vapid/,
+  );
+});
+it("loads the optional simulator file without inheriting hosted Tpay settings", async () => {
+  vi.stubEnv("TPAY_CLIENT_SECRET", "hosted-tpay-secret");
+  vi.stubEnv("TPAY_MODE", "live");
+  m.exists.mockReturnValue(true);
+  m.read.mockImplementation((path: string) =>
+    path.endsWith("tpay-sandbox.env")
+      ? "TPAY_ENABLED=true\nTPAY_MODE=simulator\n"
+      : environment(),
+  );
+  await import("../scripts/local-app.mjs");
+  expect(m.spawn.mock.calls[0][2].env).toMatchObject({
+    TPAY_ENABLED: "true",
+    TPAY_MODE: "simulator",
+    TPAY_CLIENT_SECRET: "",
+  });
+  expect(JSON.stringify(vi.mocked(console.log).mock.calls)).not.toMatch(
+    /hosted-tpay-secret/,
   );
 });
 it.each([
