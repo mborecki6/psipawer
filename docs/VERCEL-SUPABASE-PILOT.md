@@ -2,6 +2,32 @@
 
 Pilot od 06.10.2026 działa pod [psipawer.vercel.app](https://psipawer.vercel.app/login). Jest przeznaczony do walidacji MVP przez administratora, behawiorystkę i fikcyjne konta opiekunów. Kwoty i spotkania DEMO nie stanowią rzeczywistych transakcji ani rezerwacji. [Scenariusze testów](PILOT-TEST-SCENARIOS.md) opisują oba panele.
 
+## Poprawki po audycie — 26.10.2026
+
+Po nowej zgodzie użytkownika opublikowano przygotowanie płatności i poczty,
+poprawki odporności z 18/23.10 oraz aktualizacje bezpieczeństwa Next.js 16.4.1
+i Zod 4.6.6. Kod runtime `50a0543`, build `dpl_3tLWwRqJnZNpk2BVtPmxvCntimCW`.
+Produkcja ma **65 migracji**, zastosowanych atomowo po świeżej kopii i próbie
+odtworzenia. Tpay, symulator w chmurze, oba transporty SMTP i zaproszenia są
+wyłączone; nie tworzono prawdziwych kont ani nowych harmonogramów.
+Końcowy odbiór po poprawce Zod: 41/41 wariantów UI i 3/3 odmowy endpointów
+PASS, bez zapisów biznesowych; obie własne sesje wylogowano. Pełne lokalne
+1843 testy, TypeScript, lint i ponowny audyt zależności także PASS.
+
+Podczas odbioru wykryto PGRST303 dla świeżych sesji na PostgREST 14.5.
+Jeden kontrolowany restart projektu przywrócił Data API, lecz wersja pozostała
+14.5. Przed prawdziwymi klientami pozostaje aktualizacja wersji projektu,
+osobna od zakupu Pro; sprawdzono dostępny cel 17.11.0.003, platforma szacuje
+operację na 1 h. Nie wykonano aktualizacji. Kopia jest lokalna, regularna
+kopia poza komputerem pozostaje zadaniem otwartym.
+[Dowody publikacji, ograniczenia i propozycja onboardingu](iterations/2026-10-26-publikacja-poprawek.md).
+
+Bieżące przypisanie głównej domeny sprawdzaj przez API Vercel
+`GET /v4/aliases/psipawer.vercel.app`; pole `deploymentId` jest rozstrzygające.
+Lista `aliases` z metadanych deploymentu może nie odzwierciedlać od razu promocji.
+Wycofanie kodu nie cofa migracji ani zmian danych. Nie odtwarzaj kopii DB
+automatycznie; zachowaj wyłączniki integracji i oceniaj zgodność konkretnego buildu.
+
 ## Marka, oferta i profil — 14.10.2026
 
 Po zatwierdzeniu lokalnego podglądu opublikowano oryginalne logo, hasło

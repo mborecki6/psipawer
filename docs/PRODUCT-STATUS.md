@@ -1,8 +1,35 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 23.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login). Ostatnie opublikowane wydanie aplikacji pochodzi z 16.10 (`c7cfd25`); produkcja ma 60 migracji. Rzeczywistych klientów jeszcze nie zaproszono. Historyczny odbiór obejmował lokalny pilot 50 opiekunów i odrębne kontrole hostingu. Prace z 18 i 23.10 są wyłącznie lokalne; nie stanowią nowego odbioru produkcji.
+Aktualizacja: 26.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login). Poprawki z 18 i 23.10 opublikowano po nowej zgodzie użytkownika; kod aplikacji `50a0543` obejmuje też dodatkową aktualizację bezpieczeństwa Zod 4.6.6. Produkcja ma **65 migracji**. Rzeczywistych klientów jeszcze nie zaproszono. Nowe płatności Tpay, SMTP i zaproszenia pozostają wyłączone, plan Supabase nadal Free. [Publikacja i odbiór z 26.10](iterations/2026-10-26-publikacja-poprawek.md).
+
+Po poprawce Zod powtórzono pełne 1843 testy, TypeScript, ESLint i audyt
+produkcyjnych zależności (0 zgłoszeń). Końcowy odbiór hostingu: **41/41 UI
+i 3/3 odmowy endpointów PASS**, bez zapisów biznesowych i błędów JavaScript.
+To odbiór wyłączonych integracji; rzeczywisty operator i doręczenia nadal
+wymagają oddzielnych testów.
+
+## Warunek infrastruktury przed prawdziwymi klientami — 26.10.2026
+
+Odbiór hostingu wykrył PGRST303 „JWT issued at future” także dla świeżej
+sesji DEMO. Potwierdzono PostgREST 14.5 i zgodne zegary klienta/HTTP/DB.
+Jeden kontrolowany restart projektu przywrócił Data API, ale wersja pozostała
+14.5; ryzyko nawrotu nie jest zamknięte. Oficjalny incydent Supabase zaleca
+aktualizację wersji projektu. To **osobna operacja od zakupu planu Pro**.
+Sprawdzono eligibility: obecnie `supabase-postgres-17.6.1.166`, dostępne
+`supabase-postgres-17.11.0.003` w głównej wersji PostgreSQL 17, brak ostrzeżeń
+i obiektów do usunięcia; platforma szacuje operację na 1 h. Aktualizacji nie
+wykonano. Przed wpuszczeniem prawdziwych klientów trzeba uzgodnić okno,
+wykonać aktualizację i odebrać logowanie/odczyty. Nie deklarujemy, że restart
+trwale naprawił problem. Szczegóły i źródła w iteracji z 26.10.
+
+Krótki przewodnik po współpracy i zapisach ma przygotowaną propozycję czterech
+kroków. Nie jest częścią opublikowanego kodu; film Asi pozostaje opcjonalnym
+pomysłem, bez wymogu wychodzenia z aplikacji.
 
 ## Przygotowanie płatności i poczty — lokalnie, 23.10.2026
+
+Poniższy zapis zachowuje stan z 23.10. Publikację po późniejszej zgodzie
+i aktualny stan produkcji opisano powyżej.
 
 Użytkownik zatwierdził audyt i lokalne poprawki przed przyjmowaniem pieniędzy,
 przygotowanie SMTP Auth i oddzielnych maili o terminach, przypomnieniach oraz

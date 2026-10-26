@@ -1,11 +1,18 @@
 # Płatności i poczta — instrukcja przygotowania wydania
 
+Aktualizacja 26.10: po nowej zgodzie opublikowano kod i migracje 61–65;
+produkcja ma 65 migracji. Wszystkie nowe płatności i kanały poczty pozostają
+wyłączone, nie kupowano Pro. Odbiór ujawnił błąd starego PostgREST 14.5;
+restart przywrócił dostępność, lecz przed prawdziwymi klientami pozostaje
+aktualizacja wersji projektu i jej odbiór. [Wydanie i otwarte warunki](iterations/2026-10-26-publikacja-poprawek.md).
+
 Stan instrukcji: 23.10.2026. Opisuje kod przygotowany lokalnie według
 [AC-R01–R20](iterations/2026-10-23-gotowosc-platnosci.md), a nie zgodę na jego
 publikację. Użytkownik objął zakresem zaproszenia i hasła oraz wiadomości o
 terminach, przypomnieniach i potwierdzonych wpłatach. Ta iteracja nie wykonuje
 zewnętrznej wysyłki, prawdziwych transakcji, konfiguracji chmury, zmiany planu
-Supabase ani wdrożenia. Produkcja pozostaje przy **60 migracjach**.
+Supabase ani wdrożenia. W historycznym stanie z 23.10 produkcja pozostawała
+przy **60 migracjach**; od publikacji z 26.10 ma **65**.
 
 Lokalne testy i symulator nie są odbiorem operatora ani poczty. Przed użyciem
 prawdziwych pieniędzy potrzebne są osobne wyniki sandboxa Tpay, rzeczywistej
@@ -37,7 +44,8 @@ użytkowników. Wgranie kodu wymagającego nowych RPC przed migracjami może daw
 jawny stan niedostępności; nie traktuj go jako pustej historii ani zerowej
 należności. Po migracjach porównaj ich rzeczywistą listę ze źródłami. Sam plik
 w repozytorium nie oznacza zastosowania migracji w lokalnej lub produkcyjnej DB.
-Lokalny kandydat ma 65 migracji; produkcja nadal 60. Migracje 64 i 65 dodano po
+W punkcie wyjścia lokalny kandydat miał 65 migracji, a produkcja 60;
+po publikacji z 26.10 produkcja również ma 65. Migracje 64 i 65 dodano po
 niezależnych reprodukcjach; zastosowanych wcześniej migracji nie przepisano.
 
 Lokalny launcher bierze business SMTP wyłącznie z prywatnego

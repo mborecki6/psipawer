@@ -26,18 +26,33 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
+- Użytkownik 26.10 autoryzował publikację poprawek po audycie. Kod aplikacji
+  `50a0543` (z dodatkową poprawką Zod 4.6.6) i migracje 61–65 są opublikowane;
+  produkcja ma teraz 65 migracji.
+  Wydanie opisuje `docs/iterations/2026-10-26-publikacja-poprawek.md`.
+  Tpay, symulator w chmurze, oba kanały SMTP, zaproszenia i nowe workery
+  pozostają wyłączone; plan nadal Free. Nie aktywowano kont prawdziwych klientów.
+  Odbiór ujawnił produkcyjny PGRST303 dla świeżych JWT w PostgREST 14.5.
+  Jeden kontrolowany restart całego projektu przywrócił REST, lecz wersja
+  pozostała 14.5. Przed prawdziwymi klientami pozostaje aktualizacja wersji
+  infrastruktury Supabase, osobna od zakupu Pro; aktualizacji nie wykonano.
+  Sprawdzono dostępny cel 17.11.0.003 i estymatę platformy 1 h, bez ostrzeżeń.
+  Nie traktuj restartu ani lokalnych testów jako trwałego usunięcia tego błędu.
+  Krótkie wprowadzenie opiekuna jest propozycją treści w tej iteracji,
+  bez implementacji i bez zgody na automatyczne dodanie kolejnej funkcji.
 - Odbiór przed płatnościami z 23.10 opisuje
   `docs/iterations/2026-10-23-gotowosc-platnosci.md`, a instrukcję konfiguracji
   `docs/PAYMENT-EMAIL-RELEASE.md`. Użytkownik zatwierdził lokalne poprawki i
   przygotowanie SMTP Auth oraz maili o terminach, przypomnieniach i wpłatach.
   Lokalne migracje 62–65 zastosowano po kopii, zachowując poprzednie rekordy
-  i Auth: lokalnie jest 65, produkcja nadal 60 migracji. Wysyłka biznesowa jest
+  i Auth: wtedy lokalnie było 65, produkcja pozostawała przy 60 migracjach.
+  Aktualny stan produkcji podano w wydaniu z 26.10 powyżej. Wysyłka biznesowa jest
   wyłączona; lokalny podgląd używa jawnego symulatora bez operatora i pieniędzy.
   Konfiguracje hosted i live są przygotowane z osobnymi wyłącznikami, ale nie
   zostały włączone ani odebrane u operatora. Nie publikuj, nie włączaj SMTP,
   nie uruchamiaj realnych płatności i nie kupuj Pro na podstawie tej iteracji.
   Po audycie zależności podniesiono lokalnie Next i eslint-config-next do
-  16.4.1; nie oznacza to aktualizacji istniejącej produkcji.
+  16.4.1; opublikowano je dopiero po nowej zgodzie 26.10.
 - Lokalny wariant BLIK przez Tpay z 18.10 opisuje
   `docs/iterations/2026-10-18-tpay-blik-lokalnie.md`. Zgoda obejmuje wyłącznie
   lokalne testy. Użytkownik nie ma sandboxa; działa jawny symulator bez operatora
@@ -45,10 +60,10 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   Spacer przyjęty automatycznie zgodnie z dotychczasowymi zasadami także można
   opłacić. Wtedy lokalny Supabase miał 61 migracji; stan z 23.10 podano wyżej.
   Nie przenoś konfiguracji symulatora do chmury ani nie uruchamiaj live Tpay.
-- Bieżące wydanie opisuje `docs/iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md`.
+- Historyczne wydanie z 16.10 opisuje `docs/iterations/2026-10-16-odbior-pierwsi-uzytkownicy.md`.
   Poprawki odporności formularzy, zapisu psa i kwalifikacji, rozliczeń, odczytów
   i liczników oraz ręczne linki dostępu opublikowano 16.10 po zgodzie użytkownika;
-  produkcja ma 60 migracji. Nie tworzono prawdziwych kont ani nie włączano SMTP.
+  wtedy produkcja miała 60 migracji. Nie tworzono prawdziwych kont ani nie włączano SMTP.
   Decyzja użytkownika z 17.10 zastępuje wcześniejszy wybór Pro: pozostajemy
   na Supabase Free, a zaproszenia odkładamy do przyszłej integracji SMTP;
   nie ma jeszcze listy prawdziwych odbiorców. Dla zdjęć wybrano zaszyfrowane
@@ -56,7 +71,8 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   Lokalną kopię 12 plików marki zaszyfrowano i odtworzono 17.10; wysyłkę na
   Drive użytkownik odłożył do listy zadań. Nie używaj służbowego Dysku.
   Zadania do wznowienia opisuje `docs/PRODUCT-STATUS.md`. Produkcyjna kopia
-  DB pozostaje niedomknięta; kopia zdjęć jej nie zastępuje. Nie włączaj Pro,
+  DB ma świeżą lokalną kopię i próbę odtworzenia z 26.10; regularne kopie poza
+  komputerem pozostają niedomknięte. Kopia zdjęć nie zastępuje DB. Nie włączaj Pro,
   SMTP ani zaproszeń bez nowego polecenia w odpowiednim zakresie.
   Wydanie wizualne opisują `docs/iterations/2026-10-15-brzoskwinia-miejsce-kursu.md`
   i `docs/iterations/2026-10-15-fotografie-panelu.md`. Zdjęcia, paleta i formularz

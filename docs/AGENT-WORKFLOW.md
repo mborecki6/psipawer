@@ -97,6 +97,13 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Publikacja i onboarding — 26.10](iterations/2026-10-26-publikacja-poprawek.md):
+nowa zgoda na wdrożenie poprawek, świeża kopia i próba produkcyjnych danych,
+publikacja kodu i migracji 61–65 z integracjami OFF. Odbiór hostingu i problem
+starego PostgREST mają oddzielne dowody; restart nie zamyka potrzeby aktualizacji
+infrastruktury. Osobne propozycje biznesu i techniki oceniają delikatny
+przewodnik opiekuna bez implementacji w tym wydaniu.
+
 [Odbiór przed płatnościami — 23.10](iterations/2026-10-23-gotowosc-platnosci.md):
 niezależny brief biznesowy i techniczny, AC-R01–R20, lokalne poprawki płatności,
 SMTP Auth oraz osobna kolejka maili biznesowych. Recenzent odtwarza problemy
