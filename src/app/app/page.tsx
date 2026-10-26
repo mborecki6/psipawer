@@ -8,13 +8,20 @@ import { QualificationAlerts } from "@/components/qualification-alert";
 import { getDashboardFinanceSummary } from "@/lib/data/finance-queries";
 import { money } from "@/lib/domain";
 import { financePackageHref } from "@/lib/finance-pagination";
+import { requireSession } from "@/lib/auth/session";
+import { OnboardingStartCard } from "@/modules/onboarding/start-card";
 export default async function Page() {
-  const [{ walks, dogs, registrations }, finance, nextAppointment] =
-    await Promise.all([
-      getSnapshot(),
-      getDashboardFinanceSummary(),
-      getNextAppointment(),
-    ]);
+  const [
+    { walks, dogs, registrations },
+    finance,
+    nextAppointment,
+    { onboarding },
+  ] = await Promise.all([
+    getSnapshot(),
+    getDashboardFinanceSummary(),
+    getNextAppointment(),
+    requireSession("client"),
+  ]);
   const cancelled = walks.filter(
     (w) =>
       w.status === "cancelled" &&
@@ -38,7 +45,11 @@ export default async function Page() {
           </div>
         </div>
       ))}
-      <NextAppointment appointment={nextAppointment} admin={false} />
+      {!nextAppointment && onboarding?.completed_at ? (
+        <OnboardingStartCard record={onboarding} />
+      ) : (
+        <NextAppointment appointment={nextAppointment} admin={false} />
+      )}
       <div className="dashboard-grid">
         <article className="card">
           <div className="card-head">

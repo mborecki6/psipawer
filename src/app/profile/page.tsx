@@ -12,7 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Profile() {
-  const { user, profile, role } = await requireSession(undefined, false);
+  const { user, profile, role, onboarding } = await requireSession(
+    undefined,
+    false,
+  );
   const panelHref = role === "admin" ? "/admin" : "/app";
 
   return (
@@ -65,6 +68,22 @@ export default async function Profile() {
         <Link className="ghost-button" href={panelHref}>
           Anuluj i wróć do panelu
         </Link>
+        {role === "client" && onboarding && (
+          <section className="stack">
+            <h2>Wasza karta startu</h2>
+            <p>Twoje odpowiedzi pomagają wybrać pierwszy krok w aplikacji.</p>
+            <Link
+              className="ghost-button"
+              href={
+                onboarding.completed_at ? "/onboarding" : "/onboarding?resume=1"
+              }
+            >
+              {onboarding.completed_at
+                ? "Zobacz i zmień odpowiedzi →"
+                : "Dokończ wprowadzenie →"}
+            </Link>
+          </section>
+        )}
       </section>
     </main>
   );

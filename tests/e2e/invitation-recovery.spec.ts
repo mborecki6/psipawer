@@ -8,6 +8,7 @@ import {
   login,
   disposeCareFixtures,
   setupLocalPractitioner,
+  completeNewOnboarding,
 } from "./local-fixtures";
 
 import {
@@ -120,7 +121,7 @@ test("invitation → phone onboarding → consultation → care → recovery →
     await guardian
       .getByRole("button", { name: "Zapisz i przejdź dalej" })
       .click();
-    await expect(guardian).toHaveURL(/\/app$/);
+    await completeNewOnboarding(guardian);
     const role = await checked(
       db.from("user_roles").select("role").eq("user_id", invitedId).single(),
     );

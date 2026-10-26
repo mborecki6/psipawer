@@ -188,6 +188,9 @@ export async function account(
   db: SupabaseClient,
   ids: string[],
   role: "admin" | "client",
+  {
+    onboarding = "complete",
+  }: { onboarding?: "required" | "complete" | "legacy" } = {},
 ) {
   const email = `psi-e2e-${role}-${crypto.randomUUID()}@example.test`;
   const password = `Psi-E2E!${crypto.randomUUID()}`;
@@ -209,6 +212,34 @@ export async function account(
   await checked(
     db.from("user_roles").update({ role }).eq("user_id", data.user.id),
   );
+  if (role === "client" && onboarding !== "required") {
+    // Service-role setup is local-only. Existing scenario fixtures deliberately
+    // represent a ready account; onboarding scenarios opt into a fresh account.
+    if (onboarding === "legacy") {
+      await checked(
+        db.from("guardian_onboarding").delete().eq("guardian_id", data.user.id),
+      );
+    } else {
+      await checked(
+        db
+          .from("guardian_onboarding")
+          .update({
+            answers: {
+              dogName: "",
+              age: "unknown",
+              goal: "unknown",
+              format: "unknown",
+              note: "",
+              collaboration: "unknown",
+              rhythm: "unknown",
+            },
+            current_step: "plan",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("guardian_id", data.user.id),
+      );
+    }
+  }
   return { id: data.user.id, email, password };
 }
 export async function login(
@@ -225,6 +256,25 @@ export async function login(
   await expect(page).toHaveURL(role === "admin" ? /\/admin$/ : /\/app$/, {
     timeout: 15000,
   });
+}
+
+// Explicitly exercise the new-account journey instead of granting completion
+// to a user created through an invitation or a manual activation link.
+export async function completeNewOnboarding(page: Page) {
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page.getByRole("button", { name: "Poznajmy się", exact: true }).click();
+  await page.locator('input[name="age"][value="unknown"]').check();
+  await page.getByRole("button", { name: "Dalej", exact: true }).click();
+  await page.locator('input[name="goal"][value="unknown"]').check();
+  await page.getByRole("button", { name: "Dalej", exact: true }).click();
+  await page.locator('input[name="format"][value="unknown"]').check();
+  await page
+    .getByRole("button", { name: "Przygotuj mój start", exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "Przejdź do mojego panelu", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/app$/);
 }
 // Delete only IDs belonging to this test, in FK order. Cleanup errors fail the
 // test instead of accumulating misleading demo data across subsequent runs.

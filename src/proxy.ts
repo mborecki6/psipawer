@@ -37,5 +37,6 @@ export const config = {
     "/account/:path*",
     "/profile",
     "/complete-profile",
+    "/onboarding",
   ],
 };

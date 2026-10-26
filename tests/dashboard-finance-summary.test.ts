@@ -42,6 +42,9 @@ vi.mock("@/modules/calendar/queries", () => ({
 vi.mock("@/modules/calendar/next-appointment", () => ({
   NextAppointment: () => null,
 }));
+vi.mock("@/modules/onboarding/start-card", () => ({
+  OnboardingStartCard: () => null,
+}));
 vi.mock("@/modules/work/queries", () => ({
   getWorkQueue: async () => ({ items: [], counts: [] }),
 }));
