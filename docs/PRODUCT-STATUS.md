@@ -63,7 +63,7 @@ Nadal 66 migracji, Supabase Free; Tpay/PayU,
 symulator w chmurze, SMTP i zaproszenia pozostają wyłączone. Nie aktualizowano
 infrastruktury Supabase. [Publikacja i dowody](iterations/2026-10-27-publikacja-uproszczen.md).
 
-Po kolejnej uwadze użytkownika przygotowano **wyłącznie lokalnie**
+Po kolejnej uwadze użytkownika przygotowano najpierw lokalnie
 [obsługę w biegu](iterations/2026-10-27-obsluga-w-biegu.md): wpłaty kursu/fitnessu
 bez wychodzenia z rozliczeń, jawny placeholder głosu przy czterech rodzajach
 spotkania Asi i start opiekuna skupiony na zaleceniach/dostępnych zajęciach.
@@ -72,8 +72,11 @@ utracie odpowiedzi, usunięciu wiersza i powrocie po paginacji. Niezależne uwag
 zamknięto. 2085 unit, 17 różnych scenariuszy Chromium, 6 WebKit, build/lint/typy
 PASS; odczytowy przeklik 104 otwarć obu paneli i 12 przejść mobilnego menu PASS.
 Ograniczenia niepustych danych opisano w raporcie. 92 tabele biznesowe zachowano;
-zmienił się tylko techniczny heartbeat przypomnień. **Nie publikowano tej partii,
-nie zmieniano migracji ani konfiguracji integracji.**
+zmienił się tylko techniczny heartbeat przypomnień. Następnie po osobnej zgodzie
+opublikowano kod `4b0c7a5`: **102 warianty UI i trzy odmowy endpointów online PASS**.
+Wpłaty otwierają się w rozliczeniach, głos pozostaje placeholderem, Home bez kwot.
+Dane, konta, Storage i wyłączone integracje zachowano. Nadal 66 migracji i Free.
+[Publikacja oraz ograniczenia odbioru](iterations/2026-10-27-publikacja-obsluga-w-biegu.md).
 
 Wcześniejsze poprawki z 18 i 23.10 opublikowano po osobnej zgodzie użytkownika;
 kod `50a0543` obejmował dodatkową aktualizację bezpieczeństwa Zod 4.6.6.

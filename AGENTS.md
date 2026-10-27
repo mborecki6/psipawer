@@ -26,13 +26,15 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
-- Lokalna iteracja z 27.10: `docs/iterations/2026-10-27-obsluga-w-biegu.md`.
+- Opublikowana iteracja z 27.10: `docs/iterations/2026-10-27-obsluga-w-biegu.md`;
+  odbiór: `docs/iterations/2026-10-27-publikacja-obsluga-w-biegu.md`.
   Szybka wpłata kursu/fitnessu w rozliczeniach, jawny placeholder głosu w czterech
   rodzajach spotkania Asi i Home opiekuna bez rozliczeń, z publikacjami/ofertą.
   2085 unit, 17 różnych scenariuszy Chromium, 6 WebKit, build/lint/typy PASS;
   przeklik obu ról i zachowanie 92 tabel biznesowych potwierdzono. Znane uwagi
-  zamknięte; ograniczenia danych opisano w raporcie. Bez publikacji/migracji;
-  nie aktywuj nagrywania, operatora ani SMTP na podstawie tej iteracji.
+  zamknięte; ograniczenia danych opisano w raporcie. Po osobnej zgodzie opublikowano
+  kod `4b0c7a5`; 102 warianty UI i 3 odmowy endpointów online PASS, dane zachowane.
+  Bez migracji; nie aktywuj nagrywania, operatora ani SMTP na podstawie tej iteracji.
 - Wydanie z 27.10 opisuje `docs/iterations/2026-10-27-publikacja-uproszczen.md`.
   Użytkownik zatwierdził publikację uproszczeń oraz klikalnego podglądu płatności.
   Kod `971d0d9` jest online; obejmuje też wcześniejsze uproszczenia zaleceń i kursu.

@@ -103,7 +103,9 @@ finansów, placeholdera głosu oraz Home. Recenzent oceniał faktyczny diff z no
 kontekstu; zamknięto zbędne odczyty finansowe i utratę niepotwierdzonego klucza
 po odświeżeniu/paginacji. Koordynator wykonał przeklik obu ról i prawdziwe lokalne
 scenariusze Next/Supabase w Chromium/WebKit. Szczegółowe dowody oraz ograniczenia
-danych są w iteracji. Bez publikacji, migracji i aktywacji integracji.
+danych są w iteracji. Po osobnej zgodzie użytkownika opublikowano kod `4b0c7a5`;
+102 warianty UI i 3 odmowy endpointów online PASS, bez migracji i aktywacji integracji.
+[Odbiór publikacji](iterations/2026-10-27-publikacja-obsluga-w-biegu.md).
 
 [Uproszczenia po audycie — lokalnie, 27.10](iterations/2026-10-27-uproszczenia-po-audycie.md):
 po zgodzie użytkownika uzgodniono AC-01–22; biznes doprecyzował wyjątki aktywnych

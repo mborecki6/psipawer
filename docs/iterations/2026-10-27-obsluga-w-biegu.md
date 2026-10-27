@@ -144,6 +144,9 @@ Dokumentacja źródłowa, komponenty, rzeczywisty przeklik i ograniczenia danych
 mają powyżej oddzielne wyniki. Nie ma znanych otwartych uwag recenzenta
 blokujących sprawdzony lokalny zakres.
 
-**Gotowe lokalnie. Produkcja pozostaje bez zmian.** Nie publikowano kodu,
-nie zmieniano bazy ani infrastruktury chmury. Nadal 66 migracji; operator,
-symulator w chmurze, oba kanały SMTP i zaproszenia pozostają wyłączone.
+Pierwotny odbiór zakończono lokalnie. Użytkownik następnie osobno polecił
+publikację; kod `4b0c7a5` opublikowano 27.10. **102 warianty UI i trzy odmowy
+endpointów online PASS**, bez migracji, zmian danych biznesowych i aktywacji
+integracji. [Osobny zapis publikacji](2026-10-27-publikacja-obsluga-w-biegu.md).
+Nadal 66 migracji; operator, symulator w chmurze, oba kanały SMTP i zaproszenia
+pozostają wyłączone. Nie zmieniano infrastruktury Supabase.
