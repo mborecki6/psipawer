@@ -26,6 +26,18 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
+- Wydanie z 27.10 opisuje `docs/iterations/2026-10-27-publikacja-uproszczen.md`.
+  Użytkownik zatwierdził publikację uproszczeń oraz klikalnego podglądu płatności.
+  Kod `971d0d9` jest online; obejmuje też wcześniejsze uproszczenia zaleceń i kursu.
+  Podgląd własnej przyjętej, wycenionej należności pokazuje saldo, bez tworzenia
+  prób i wpłat. Operator jest jawnie niedostępny. Bez nowych migracji: nadal 66.
+  Tpay/PayU, symulator w chmurze, oba kanały SMTP, zaproszenia i nowe workery
+  pozostają wyłączone; plan Free. Nie aktualizowano infrastruktury Supabase.
+  Końcowo 2057 testów w 144 plikach PASS; do wcześniejszych 28 Chromium/5 WebKit
+  doszedł rzeczywisty podgląd płatności w obu silnikach. Odbiór hostingu: 102
+  warianty UI i 3 odmowy endpointów PASS, bez zapisów biznesowych/JS/HTTP błędów.
+  Zachowano 92 tabele biznesowe, Auth i Storage; zmienił się tylko heartbeat
+  przypomnień. Dowody oraz ograniczenia opisano w zapisie publikacji.
 - Bieżący onboarding opisuje `docs/iterations/2026-10-26-onboarding.md`.
   Po akceptacji wizualizacji użytkownik 26.10 polecił wdrożenie. Kod `d22ffd9`
   i migracja 66 są opublikowane; lokalna i produkcyjna baza mają 66 migracji.

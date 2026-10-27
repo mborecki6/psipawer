@@ -57,3 +57,9 @@ ostrzeżenie i odsyłacz; nie promujemy nowej płatności.
 
 To nie jest test operatora, odbiór prawdziwego BLIK ani symulowana wpłata.
 Publikację i odczytowy odbiór hostingu opisze osobny zapis wydania.
+
+## Późniejsza publikacja
+
+Po osobnej zgodzie użytkownika zmianę opublikowano w wydaniu z 27.10.
+[Zapis publikacji i odbioru](2026-10-27-publikacja-uproszczen.md) podaje bieżącą
+wersję hostingu; powyższy zapis zachowuje dowody pierwotnego odbioru lokalnego.

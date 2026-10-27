@@ -153,3 +153,9 @@ zakresem. Ten etap poprawia opis jej zasięgu i odsyłacze, bez rozszerzenia RPC
 
 Materiały lokalne: `.local/ux-audit-20261026/` (logi i zrzuty) oraz `test-results/`
 z ostatniego przebiegu. Nie zawierają eksportu sesji ani kluczy w repozytorium.
+
+## Późniejsza publikacja
+
+Po osobnej zgodzie użytkownika zmianę opublikowano w wydaniu z 27.10.
+[Zapis publikacji i odbioru](2026-10-27-publikacja-uproszczen.md) podaje bieżącą
+wersję hostingu; powyższy zapis zachowuje dowody pierwotnego odbioru lokalnego.

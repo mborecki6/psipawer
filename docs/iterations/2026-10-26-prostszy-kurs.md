@@ -79,3 +79,9 @@ Raport, zrzuty oraz wyniki są w ignorowanym `.local/course-simplify-20261026/`.
 Stan: implementacja, niezależny przegląd i lokalny odbiór zakończone.
 Zmiana nie została opublikowana. Nie zmieniano SQL, produkcji, kwot ani integracji;
 obie bazy pozostają przy 66 migracjach. Wcześniejszy lokalny diff care zachowano.
+
+## Późniejsza publikacja
+
+Po osobnej zgodzie użytkownika zmianę opublikowano w wydaniu z 27.10.
+[Zapis publikacji i odbioru](2026-10-27-publikacja-uproszczen.md) podaje bieżącą
+wersję hostingu; powyższy zapis zachowuje dowody pierwotnego odbioru lokalnego.

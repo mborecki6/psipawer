@@ -103,7 +103,14 @@ zgłoszeń, technika realizowała trzy rozłączne zakresy, koordynator nawigacj
 komponenty wspólne i integrację. Recenzent oceniał wymagania i rzeczywisty diff
 z nowego kontekstu, bez zmian kodu; autorzy zamknęli odtworzone uwagi. Odbiór
 obejmuje komponenty, responsywność i rzeczywiste lokalne ścieżki Next/Supabase.
-Bez publikacji, migracji i uruchamiania integracji.
+Po późniejszej osobnej zgodzie użytkownika opublikowano je 27.10 razem
+z wcześniejszymi usprawnieniami zaleceń i kursu oraz odczytowym
+[podglądem płatności online](iterations/2026-10-27-podglad-platnosci.md).
+Dla podglądu uzgodniono AC-P01–08; technika i recenzent pracowali w osobnych
+zakresach. Końcowo 2057 testów/144 pliki PASS, wcześniejsze 28 Chromium/5 WebKit
+oraz dodatkowy podgląd w każdym silniku. Bez nowych migracji (nadal 66),
+aktywacji integracji i aktualizacji infrastruktury Supabase.
+[Publikacja i odbiór hostingu](iterations/2026-10-27-publikacja-uproszczen.md).
 
 [Audyt prostoty — 26.10](iterations/2026-10-26-audyt-prostoty.md): niezależne
 propozycje biznesowe i techniczne, osobna ocena ścieżki opiekuna oraz krytyka
@@ -115,12 +122,13 @@ agregacji danych. Wyłącznie analiza i rekomendacje, bez implementacji i publik
 niezależne propozycje, AC-01–08 i źródłowa recenzja czterech plików UI,
 oddzielna własność testów. Kompaktowy harmonogram z wyborem spotkania,
 ustawienia i historia w dalszym planie; zasady zapisów i kwoty bez zmian.
-Brak publikacji.
+Lokalny odbiór z 26.10 poprzedzał publikację w wydaniu z 27.10.
 
 [Prostsze zalecenia przy psie — lokalnie, 26.10](iterations/2026-10-26-prostsze-zalecenia.md):
 osobne propozycje biznesu i techniki, AC-01–08, jeden właściciel trzech plików UI,
 niezależny przegląd i odbiór rzeczywistych komponentów oraz Next/Supabase.
-Jeden widoczny plan i rozwijane opcje; reguły zapisu bez zmian. Bez publikacji.
+Jeden widoczny plan i rozwijane opcje; reguły zapisu bez zmian. Lokalny odbiór
+z 26.10 poprzedzał publikację w wydaniu z 27.10.
 
 [Obowiązkowy start nowych opiekunów — 26.10](iterations/2026-10-26-onboarding.md):
 osobne propozycje biznesu i techniki, uzgodnione AC-01–14, implementacja w dwóch

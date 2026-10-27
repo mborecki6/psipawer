@@ -8,27 +8,27 @@ między urządzeniami, a późniejsza edycja nie blokuje ponownie panelu.
 Istniejące konta i admin nie dostają nowego briefu. Notatka pozostaje prywatna,
 a zapis nie tworzy psa. [Zakres i odbiór onboardingu](iterations/2026-10-26-onboarding.md).
 
-Odbiór: **1956 unit, 6 Chromium, 3 WebKit, 12/12 UI online i 3/3 odmowy
+Historyczny odbiór onboardingu z 26.10: **1956 unit, 6 Chromium, 3 WebKit, 12/12 UI online i 3/3 odmowy
 endpointów PASS**, bez błędów JavaScript i zapisów biznesowych na hostingu.
 Przed migracją wykonano świeżą kopię, odtworzenie i próbę zachowania danych.
 Rzeczywistych klientów nie zaproszono. Tpay, SMTP i zaproszenia pozostają
 wyłączone; plan Supabase nadal Free.
 
-Lokalnie przygotowano i sprawdzono uproszczenie adminowego widoku zaleceń przy psie: jeden
+Przygotowano i sprawdzono uproszczenie adminowego widoku zaleceń przy psie: jeden
 widoczny plan, zwijany wybór pozostałych, materiały i daty jako opcje oraz
 pomocnicza sekcja kontroli po edytorze. Reguły zapisu i publikacji pozostają
 bez zmian. [Zakres i odbiór](iterations/2026-10-26-prostsze-zalecenia.md).
 Odbiór: 127 testów reguł/DB, 52 warianty UI, 11 E2E Chromium i 3 WebKit PASS;
 niezależny przegląd bez nierozwiązanych uwag w sprawdzonym zakresie.
-Ta iteracja nie została opublikowana; nie zmienia migracji ani integracji.
+Pierwotny odbiór był lokalny; zmianę opublikowano w wydaniu z 27.10, bez nowych migracji i aktywacji integracji.
 
-Kolejna sprawdzona lokalna iteracja upraszcza administracyjny szczegół kursu: zwarta lista
+Kolejna sprawdzona iteracja upraszcza administracyjny szczegół kursu: zwarta lista
 terminów z jednym rozwiniętym spotkaniem, osobne obecności i opcje oraz warunki,
 ustawienia i historia poniżej głównej pracy. Zgłoszenia i rozliczenia zachowują
 dotychczasowe dane i ostrzeżenia. [Zakres i odbiór](iterations/2026-10-26-prostszy-kurs.md).
 Odbiór: 112 testów reguł, 64 warianty UI, 11 scenariuszy Next/API Chromium
 i 3 WebKit PASS; niezależna recenzja źródłowa bez potwierdzonych uwag.
-Bez publikacji i zmian DB; w tamtej iteracji nie przebudowywano jeszcze
+Lokalny odbiór poprzedzał publikację z 27.10, bez zmian DB; w pierwotnej iteracji nie przebudowywano jeszcze
 podobnych widoków fitness/konsultacji. Dalszą realizację z 27.10 opisano poniżej.
 
 Przeprowadzono odczytowy [audyt prostoty całej aplikacji](iterations/2026-10-26-audyt-prostoty.md):
@@ -39,7 +39,7 @@ także zbyt szeroki pusty komunikat kolejki pracy; rozszerzenie jej faktycznego
 zakresu jest osobnym zadaniem. Sam audyt był odczytowy; ograniczenia jego danych
 testowych opisano w raporcie. Użytkownik następnie zatwierdził lokalną realizację.
 
-Po zgodzie z 27.10 wdrożono lokalnie [uproszczenia po audycie](iterations/2026-10-27-uproszczenia-po-audycie.md):
+Po zgodzie z 27.10 przygotowano [uproszczenia po audycie](iterations/2026-10-27-uproszczenia-po-audycie.md):
 podgląd i edycję na żądanie przy psie, zwięzły skład spaceru, konsultacje zależne
 od stanu, kompaktowy fitness i kurs opiekuna, bieżące zgłoszenia wszystkich pięciu
 rodzajów na starcie, dokładne spotkanie z kalendarza, lżejsze raportowanie/cennik
@@ -48,15 +48,20 @@ Kwoty, wersje, kwalifikacja i prywatność zachowują dotychczasowe zasady.
 Pełne 2040 unit, build, TypeScript i ESLint PASS; 28 różnych scenariuszy Next/Supabase
 w Chromium oraz pięć WebKit PASS. Wcześniejsze dane biznesowe zachowano; jedyną
 różnicą 93-tabelowego porównania jest diagnostyczny stan lokalnego procesora
-przypomnień. **Ta partia nadal jest wyłącznie lokalna**, wraz z wcześniejszymi
-lokalnymi uproszczeniami zaleceń i kursu. Bez migracji i aktywacji integracji.
+przypomnień. Tę partię wraz z wcześniejszymi uproszczeniami zaleceń i kursu
+opublikowano 27.10, bez nowych migracji i aktywacji integracji.
 
 Użytkownik następnie zatwierdził publikację uproszczeń oraz rozszerzył wydanie
 o [klikalny podgląd płatności online](iterations/2026-10-27-podglad-platnosci.md).
 Podgląd jest odczytowy, pokazuje rzeczywistą pozostałą kwotę i jasno informuje,
 że operator jeszcze nie działa. Nie tworzy prób ani wpłat. Pełne 2057 testów,
-lokalny build i dodatkowy przeklik Chromium/WebKit PASS. Publikacja w toku;
-Tpay/PayU, symulator w chmurze, SMTP i zaproszenia pozostają wyłączone.
+lokalny build i dodatkowy przeklik Chromium/WebKit PASS. Kod `971d0d9` jest
+online; odbiór 102 wariantów UI i 3 odmów endpointów PASS, bez błędów JS/HTTP
+i zapisów biznesowych. Porównanie 93 tabel potwierdziło zachowanie danych
+(oprócz technicznego heartbeat przypomnień), kont, haseł i Storage.
+Nadal 66 migracji, Supabase Free; Tpay/PayU,
+symulator w chmurze, SMTP i zaproszenia pozostają wyłączone. Nie aktualizowano
+infrastruktury Supabase. [Publikacja i dowody](iterations/2026-10-27-publikacja-uproszczen.md).
 
 Wcześniejsze poprawki z 18 i 23.10 opublikowano po osobnej zgodzie użytkownika;
 kod `50a0543` obejmował dodatkową aktualizację bezpieczeństwa Zod 4.6.6.

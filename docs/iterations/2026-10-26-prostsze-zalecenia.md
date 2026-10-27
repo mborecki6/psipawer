@@ -80,3 +80,9 @@ dowody koordynatora z Chrome/WebKit. Raport i zrzut rzeczywistej lokalnej strony
 Stan: implementacja, lokalny odbiór i niezależny przegląd zakończone.
 Nie opublikowano tej zmiany. Lokalnie i na produkcji
 pozostaje 66 migracji; integracje i hosting bez zmian.
+
+## Późniejsza publikacja
+
+Po osobnej zgodzie użytkownika zmianę opublikowano w wydaniu z 27.10.
+[Zapis publikacji i odbioru](2026-10-27-publikacja-uproszczen.md) podaje bieżącą
+wersję hostingu; powyższy zapis zachowuje dowody pierwotnego odbioru lokalnego.
