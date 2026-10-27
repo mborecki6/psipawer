@@ -18,21 +18,20 @@ import { Badge, WalkRow, Empty } from "./ui";
 import { ActionForm, Field } from "./action-form";
 import {
   registerDog,
-  decideRegistration,
   cancelRegistration,
   cancelWalk,
-  markAttendance,
   createWalk,
   updateWalk,
   inviteDog,
 } from "@/lib/data/actions";
-import { dateLabel, money, labels, transitions } from "@/lib/domain";
+import { dateLabel, money, labels } from "@/lib/domain";
 import { uuid } from "@/lib/validation/schemas";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "./qualification-alert";
 import { ReopenRegistration } from "./reopen-registration";
 import { DetailsNavigation, ProgressiveDetails } from "./progressive-details";
 import { VoiceNotePlaceholder } from "./voice-note-placeholder";
+import { WalkRosterActions } from "./walk-roster-actions";
 import styles from "./walks.module.css";
 export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
   const { walks, registrations, role } = await getSnapshot();
@@ -173,23 +172,24 @@ export async function WalkDetail({ id }: { id: string }) {
         closedRegistrations.includes(registration)) &&
       ["due", "paid"].includes(registration.payment_status),
   );
+  const registrationHeading = (r: Registration) => (
+    <div className="section-title">
+      <Link href={`${base}/dogs/${r.dog_id}`}>
+        <strong>
+          {snapshot.dogs.find((d) => d.id === r.dog_id)?.name || "Profil psa"} →
+        </strong>
+      </Link>
+      <Badge status={r.status} />
+    </div>
+  );
   const registrationContent = (r: Registration) => (
     <>
-      <div className="section-title">
-        <Link href={`${base}/dogs/${r.dog_id}`}>
-          <strong>
-            {snapshot.dogs.find((d) => d.id === r.dog_id)?.name || "Profil psa"}{" "}
-            →
-          </strong>
-        </Link>
-        <Badge status={r.status} />
-      </div>
       <p className="muted">
         {r.package_id
           ? "Rozliczenie: pakiet"
           : `Płatność: ${labels[r.payment_status]}`}
-        {r.status === "accepted"
-          ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
+        {r.status === "accepted" && role === "client"
+          ? ` · Obecność: ${r.attendance === "pending" ? "Nieoznaczono" : labels[r.attendance]}`
           : ""}
       </p>
       {role === "client" &&
@@ -233,73 +233,6 @@ export async function WalkDetail({ id }: { id: string }) {
         Date.parse(walk.starts_at) > currentTime && (
           <ReopenRegistration id={r.id} admin={role === "admin"} />
         )}
-      {role === "admin" &&
-        !["cancelled", "completed"].includes(walk.status) &&
-        new Date(walk.starts_at) > new Date() &&
-        transitions[r.status].filter((s) => s !== "withdrawn").length > 0 && (
-          <ProgressiveDetails
-            label={
-              r.status === "pending" ? "Przejdź do decyzji" : "Zmień decyzję"
-            }
-            className={styles.action}
-            primary
-          >
-            <ActionForm
-              action={decideRegistration}
-              label="Zapisz decyzję"
-              confirm="Zapisać decyzję? Opiekun zobaczy nowy status zgłoszenia."
-            >
-              <input type="hidden" name="id" value={r.id} />
-              <label className="field">
-                <span>Decyzja</span>
-                <select name="status">
-                  {transitions[r.status]
-                    .filter((s) => s !== "withdrawn")
-                    .map((s) => (
-                      <option key={s} value={s}>
-                        {labels[s]}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <Field
-                label="Wiadomość dla opiekuna (opcjonalna)"
-                name="note"
-                maxLength={2000}
-              />
-            </ActionForm>
-          </ProgressiveDetails>
-        )}
-      {role === "admin" &&
-        r.status === "accepted" &&
-        new Date(walk.starts_at) <= new Date() && (
-          <ProgressiveDetails
-            label={
-              r.attendance === "pending" ? "Oznacz obecność" : "Zmień obecność"
-            }
-            className={styles.action}
-            primary
-          >
-            <ActionForm action={markAttendance} label="Zapisz obecność">
-              <input type="hidden" name="id" value={r.id} />
-              <label className="field">
-                <span>Obecność</span>
-                <select name="attendance" defaultValue={r.attendance}>
-                  {["pending", "present", "absent", "no_show"].map((s) => (
-                    <option key={s} value={s}>
-                      {s === "pending" ? "Do oznaczenia" : labels[s]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="muted">
-                {r.package_id
-                  ? "Do oznaczenia rezerwuje wejście. Obecność lub nieobecność płatna je zużywa. Usprawiedliwienie oddaje wejście do pakietu."
-                  : "Usprawiedliwienie zwalnia z opłaty. Otrzymaną wcześniej wpłatę rozlicz osobno w finansach."}
-              </p>
-            </ActionForm>
-          </ProgressiveDetails>
-        )}
       {role === "client" &&
         ["pending", "accepted", "waitlisted"].includes(r.status) &&
         new Date(walk.starts_at) > new Date() && (
@@ -325,25 +258,27 @@ export async function WalkDetail({ id }: { id: string }) {
       key={r.id}
     >
       {role === "admin" ? (
-        <ProgressiveDetails
-          initiallyOpen={["pending", "accepted", "waitlisted"].includes(
-            r.status,
-          )}
-          className={styles.registrationDetails}
-          label={
-            <span className={styles.registrationSummary}>
-              <strong>
-                {snapshot.dogs.find((dog) => dog.id === r.dog_id)?.name ||
-                  "Profil psa"}
-              </strong>
-              <Badge status={r.status} />
-            </span>
+        <WalkRosterActions
+          id={r.id}
+          dogName={
+            snapshot.dogs.find((dog) => dog.id === r.dog_id)?.name ||
+            "Profil psa"
           }
+          status={r.status}
+          attendance={r.attendance}
+          walkStatus={walk.status}
+          hasStarted={Date.parse(walk.starts_at) <= currentTime}
+          hasPackage={Boolean(r.package_id)}
+          price={money(walk.price_cents)}
+          heading={registrationHeading(r)}
         >
           {registrationContent(r)}
-        </ProgressiveDetails>
+        </WalkRosterActions>
       ) : (
-        registrationContent(r)
+        <>
+          {registrationHeading(r)}
+          {registrationContent(r)}
+        </>
       )}
     </section>
   );

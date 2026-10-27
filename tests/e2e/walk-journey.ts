@@ -1,4 +1,9 @@
 import { revealFor } from "./details-ui";
+import {
+  submitWalkDecision,
+  submitWalkAttendance,
+  type WalkAttendance,
+} from "./walk-roster-ui";
 import { expect, type Browser, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { completeServerAction } from "./action-completion";
@@ -253,29 +258,12 @@ export async function walkJourney(
     async function accept(id: string, reg: string) {
       await staff.goto(`/admin/walks/${id}`);
       const card = staff.locator(`#registration-${reg}`);
-      await revealFor(card.getByLabel("Decyzja"));
-      await card.getByLabel("Decyzja").selectOption("accepted");
-      staff.once("dialog", (dialog) => dialog.accept());
-      await revealFor(
-        card.getByRole("button", {
-          includeHidden: true,
-          name: "Zapisz decyzję",
-          exact: true,
-        }),
-      );
-      await card
-        .getByRole("button", {
-          includeHidden: true,
-          name: "Zapisz decyzję",
-          exact: true,
-        })
-        .click();
+      await submitWalkDecision(card, "accepted");
       await expect(card.getByRole("status")).toContainText("Decyzja zapisana");
       await expect(
-        card
-          .locator(":scope > details > summary")
-          .getByText("Zaakceptowany", { exact: true }),
+        card.getByText("Zaakceptowany", { exact: true }),
       ).toBeVisible();
+      await expect(card.getByText("W składzie", { exact: true })).toBeVisible();
     }
     async function registration(id: string) {
       return checked(
@@ -481,22 +469,7 @@ export async function walkJourney(
     async function attendance(id: string, reg: string, value: string) {
       await staff.goto(`/admin/walks/${id}`);
       const card = staff.locator(`#registration-${reg}`);
-      await revealFor(card.getByLabel("Obecność"));
-      await card.getByLabel("Obecność").selectOption(value);
-      await revealFor(
-        card.getByRole("button", {
-          includeHidden: true,
-          name: "Zapisz obecność",
-          exact: true,
-        }),
-      );
-      await card
-        .getByRole("button", {
-          includeHidden: true,
-          name: "Zapisz obecność",
-          exact: true,
-        })
-        .click();
+      await submitWalkAttendance(card, value as WalkAttendance);
       await expect(card.getByRole("status")).toContainText("Obecność zapisana");
       await expect
         .poll(() => registration(reg))

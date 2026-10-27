@@ -308,9 +308,9 @@ it("places pending decisions, accepted dogs and reserve before adding and closed
   expect(html).toContain('href="#registration-withdrawn"');
   expect(html).toContain('id="registration-withdrawn"');
   expect(html).toContain("Przywróć zgłoszenie do decyzji");
-  expect(html).toMatch(
-    /<details[^>]*data-detail-primary="true"><summary>Przejdź do decyzji<\/summary><div><form/,
-  );
+  expect(html).toContain('aria-label="Przyjmij: Figa"');
+  expect(html).toContain('aria-label="Nie przyjmuj: Figa"');
+  expect(html).not.toContain("Przejdź do decyzji");
   expect(html).toContain('name="id" value="pending"');
   expect(html).not.toContain("Zapisz obecność");
   expect(html.indexOf("Bieżący skład")).toBeLessThan(
@@ -342,13 +342,14 @@ it("keeps qualification and relation warnings visible before the admin roster", 
   expect(html).toContain("Nie łączyć tej pary.");
   expect(html).toContain(`#registration-accepted`);
 });
-it("opens attendance only on demand for each accepted dog after the start", async () => {
+it("shows ordinary attendance directly for each accepted dog after the start", async () => {
   walk.starts_at = "2029-12-31T12:00:00Z";
   registrations = [makeRegistration("accepted", "accepted", dogId, "due")];
   const html = renderToStaticMarkup(await WalkDetail({ id: walkId }));
-  expect(html).toMatch(
-    /<details[^>]*data-detail-primary="true"><summary>Oznacz obecność<\/summary><div><form/,
-  );
+  expect(html).toContain('aria-label="Był: Figa"');
+  expect(html).toContain('aria-label="Nie był · płatne: Figa"');
+  expect(html).toContain("Nieoznaczono");
+  expect(html).not.toContain("Oznacz obecność");
   expect(html).toContain('name="attendance"');
   expect(html).toContain('value="no_show"');
   expect(html).not.toContain("Zapisz decyzję");

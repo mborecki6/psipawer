@@ -85,33 +85,133 @@
   }
 }
 
-.registrationDetails > summary {
+.rosterRow,
+.rowControls {
+  min-width: 0;
+  width: 100%;
+}
+
+.rowControls {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.rowControls > p,
+.rowControls form > p {
+  margin: 0;
+}
+
+.rowControls > :global(.section-title) {
+  margin-bottom: 0;
+  gap: 10px;
+}
+
+.rowControls > :global(.form-stack) {
+  margin-top: 0;
+  gap: 10px;
+}
+
+.inRoster {
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  list-style: none;
+  gap: 6px;
+  color: #215a43;
+  font-weight: 650;
 }
-.registrationDetails > summary::before {
-  content: "›";
-  font-size: 22px;
+
+.rosterHint,
+.attendanceStatus {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.rosterHint {
+  font-size: 14px;
   color: var(--ink-soft);
 }
-.registrationDetails[open] > summary::before {
-  transform: rotate(90deg);
+
+.rowDetails {
+  min-width: 0;
 }
-.registrationDetails > summary::-webkit-details-marker {
+
+.rowDetails > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.rowDetails > summary:focus-visible,
+.rowFeedback:focus-visible {
+  outline: 2px solid var(--ink-soft);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.rowDetails[open] > summary {
+  margin-bottom: 8px;
+}
+
+.secondaryChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.secondaryChoices > button,
+.attendanceActions > button,
+.changePanel button {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.attendanceActions {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.attendanceActions > button {
+  justify-self: start;
+}
+
+.changePanel {
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--paper-2);
+  min-width: 0;
+}
+
+.rowFeedback {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rowFeedback:empty {
   display: none;
 }
-.registrationDetails[open] > summary {
-  margin-bottom: 16px;
-}
-.registrationSummary {
+
+.rowFeedback > div > p[role="status"] {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
+  gap: 8px;
+}
+
+@media (max-width: 400px) {
+  .changePanel {
+    padding: 10px;
+  }
+
+  .secondaryChoices > button {
+    flex: 1 1 100%;
+  }
 }

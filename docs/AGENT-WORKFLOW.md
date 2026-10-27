@@ -97,6 +97,15 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Prosty skład i obecność — lokalnie, 27.10](iterations/2026-10-27-prosty-sklad-obecnosc.md):
+osobne propozycje biznesu/techniki, uzgodnione AC-01–15, rozłączna implementacja
+kursów i spacerów, wspólna prezentacja przycisków oraz osobna własność E2E.
+Świeży recenzent wskazał trzy P2 trwałości stanu kursu; autor poprawił je wraz
+z przypadkami ponowienia, przejść między akcjami i filtrowaniem. Koordynator
+odtworzył je na własnych lokalnych fixture’ach i sprawdził obie role, mobilne
+szerokości oraz rzeczywistą utratę odpowiedzi. 2106 unit, 25 różnych Chromium,
+6 WebKit PASS; dane 93 tabel zachowane. Zakres pozostaje lokalny.
+
 [Obsługa w biegu — lokalnie, 27.10](iterations/2026-10-27-obsluga-w-biegu.md):
 niezależne propozycje biznesu i techniki, uzgodnione AC-01–16 i rozłączna własność
 finansów, placeholdera głosu oraz Home. Recenzent oceniał faktyczny diff z nowego

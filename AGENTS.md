@@ -26,6 +26,13 @@ Proces i format przekazania wyników opisuje [docs/AGENT-WORKFLOW.md](docs/AGENT
   i przekaż jego `developer_instructions` jako instrukcję zadania. Nie zakładaj,
   że samo nadanie nazwy agentowi załadowało profil lub zmieniło jego uprawnienia.
 - Zachowuj model i poziom rozumowania bieżącej sesji, chyba że użytkownik wybierze inne.
+- Bieżąca lokalna iteracja: `docs/iterations/2026-10-27-prosty-sklad-obecnosc.md`.
+  Kursy i spacery mają widoczny skład oraz duże przyciski przyjęcia/obecności,
+  z zachowaniem usprawiedliwień, korekt, historii i rozliczeń. 2106 unit,
+  25 różnych scenariuszy Chromium i 6 WebKit PASS; 93 lokalne tabele zachowane.
+  Uwagi niezależnej recenzji zamknięto i odtworzono w przeglądarce. Bez migracji
+  i aktywacji integracji. Ta iteracja NIE jest opublikowana; wcześniejsza zgoda
+  na wydanie `4b0c7a5` jej nie obejmuje.
 - Opublikowana iteracja z 27.10: `docs/iterations/2026-10-27-obsluga-w-biegu.md`;
   odbiór: `docs/iterations/2026-10-27-publikacja-obsluga-w-biegu.md`.
   Szybka wpłata kursu/fitnessu w rozliczeniach, jawny placeholder głosu w czterech

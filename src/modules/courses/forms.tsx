@@ -1,5 +1,7 @@
 "use client";
 import {
+  createContext,
+  useContext,
   useActionState,
   useEffect,
   useId,
@@ -7,9 +9,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { RosterActionButtons } from "../../components/roster-action-buttons";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
-import { withFormActionRecovery } from "@/components/form-action-recovery";
+import {
+  withFormActionRecovery,
+  unconfirmedFormMessage,
+} from "@/components/form-action-recovery";
 import { money } from "@/lib/domain";
 import { warsawDateTimeInput } from "@/lib/time";
 import type { Service } from "@/modules/services/types";
@@ -17,6 +23,7 @@ import type {
   Course,
   CourseAttendance,
   CourseEnrollment,
+  EnrollmentStatus,
   SessionDetail,
 } from "./types";
 import { attendanceLabels } from "./types";
@@ -27,6 +34,7 @@ import {
   recordAttendance,
   editCourse,
   correctAttendance,
+  decideEnrollment,
   reopenEnrollment,
   type CourseActionState,
 } from "./actions";
@@ -48,8 +56,23 @@ function useCourseForm(action: Action, version: number) {
       previous: CourseActionState & { version: number },
       form: FormData,
     ) => {
-      const result = await withFormActionRecovery(action)(previous, form);
-      return { ...result, version: result.version ?? previous.version };
+      // Bind every result to the submitted version, including a version just
+      // confirmed by a sibling form. Refreshed server props never supply it.
+      const submitted = form.has("expected_version")
+        ? Number(form.get("expected_version"))
+        : undefined;
+      const sourceVersion =
+        submitted !== undefined &&
+        Number.isInteger(submitted) &&
+        submitted >= 0 &&
+        submitted <= 2147483646
+          ? submitted
+          : previous.version;
+      const result = await withFormActionRecovery(action)(
+        { ...previous, version: sourceVersion },
+        form,
+      );
+      return { ...result, version: result.version ?? sourceVersion };
     },
     { version },
   );
@@ -112,6 +135,460 @@ function Submit({
     <button className="primary-button" disabled={busy || disabled}>
       {busy ? "Proszę czekać…" : label}
     </button>
+  );
+}
+
+type DecisionIntent =
+  "accept" | "waitlist" | "reject" | "cancel" | "reconsider" | "restore";
+type DecisionCommand = {
+  id: string;
+  dogName: string;
+  version: number;
+  intent: DecisionIntent;
+  note: string;
+};
+type DecisionRecord = {
+  version?: number;
+  status?: EnrollmentStatus;
+  message?: string;
+  command?: DecisionCommand & { pending: boolean; error?: string };
+};
+type DecisionRegistry = {
+  records: Record<string, DecisionRecord>;
+  begin: (command: DecisionCommand) => void;
+  finish: (command: DecisionCommand, result: CourseActionState) => void;
+};
+const DecisionConfirmation = createContext<DecisionRegistry | undefined>(
+  undefined,
+);
+const decisionText: Record<DecisionIntent, string> = {
+  accept: "Przyjmij",
+  waitlist: "Przenieś na rezerwę",
+  reject: "Nie przyjmuj",
+  cancel: "Zapisz rezygnację",
+  reconsider: "Wróć do decyzji o zgłoszeniu",
+  restore: "Przywróć udział na kursie",
+};
+const decisionResult: Record<
+  DecisionIntent,
+  { status: EnrollmentStatus; message: string }
+> = {
+  accept: { status: "accepted", message: "Przyjęto na kurs." },
+  waitlist: { status: "waitlisted", message: "Przeniesiono na rezerwę." },
+  reject: { status: "rejected", message: "Nie przyjęto na kurs." },
+  cancel: { status: "cancelled", message: "Zapisano rezygnację." },
+  reconsider: {
+    status: "requested",
+    message: "Zgłoszenie wróciło do decyzji.",
+  },
+  restore: { status: "accepted", message: "Przywrócono udział na kursie." },
+};
+async function runEnrollmentDecision(
+  registry: DecisionRegistry | undefined,
+  dogName: string,
+  previous: CourseActionState,
+  data: FormData,
+  action: Action,
+) {
+  const command: DecisionCommand = {
+    id: String(data.get("id")),
+    dogName,
+    version: Number(data.get("expected_version")),
+    intent: String(data.get("intent")) as DecisionIntent,
+    note: String(data.get("note") || ""),
+  };
+  const unconfirmed = registry?.records[command.id]?.command;
+  if (
+    unconfirmed?.error === unconfirmedFormMessage &&
+    (unconfirmed.version !== command.version ||
+      unconfirmed.intent !== command.intent ||
+      unconfirmed.note !== command.note)
+  ) {
+    return {
+      version: unconfirmed.version,
+      error:
+        "Najpierw potwierdź wcześniejszą decyzję, ponawiając jej zachowaną treść. Sprawdź aktualny status zgłoszenia.",
+    };
+  }
+  registry?.begin(command);
+  // Recovery must reach the provider even if the row has already unmounted.
+  const result = await withFormActionRecovery(action)(previous, data);
+  registry?.finish(command, result);
+  return result;
+}
+
+// Store only command receipts and submitted drafts, never fetched row/finance
+// data. These survive a filtered row disappearing before its response arrives.
+export function CourseDecisionFeedback({
+  children,
+  visibleEnrollmentIds = [],
+}: {
+  children: React.ReactNode;
+  visibleEnrollmentIds?: string[];
+}) {
+  const [records, setRecords] = useState<Record<string, DecisionRecord>>({});
+  const registry: DecisionRegistry = {
+    records,
+    begin: (command) =>
+      setRecords((previous) => ({
+        ...previous,
+        [command.id]: {
+          ...previous[command.id],
+          message: undefined,
+          command: { ...command, pending: true },
+        },
+      })),
+    finish: (command, result) =>
+      setRecords((previous) => {
+        if (result.success) {
+          const outcome = decisionResult[command.intent];
+          // Repeated decisions replace one receipt and move it to the newest
+          // position, so the five visible confirmations include this result.
+          const remaining = { ...previous };
+          delete remaining[command.id];
+          return {
+            ...remaining,
+            [command.id]: {
+              version: result.version,
+              status: outcome.status,
+              message: `${command.dogName}: ${outcome.message}`,
+            },
+          };
+        }
+        return {
+          ...previous,
+          [command.id]: {
+            ...previous[command.id],
+            command: {
+              ...command,
+              pending: false,
+              error: result.error || unconfirmedFormMessage,
+            },
+          },
+        };
+      }),
+  };
+  return (
+    <DecisionConfirmation.Provider value={registry}>
+      <div aria-live="polite" aria-atomic="true">
+        {Object.entries(records)
+          .filter(([, record]) => record.message)
+          .slice(-5)
+          .map(([id, record]) => (
+            <p key={id} role="status" className="alert green">
+              {record.message}
+            </p>
+          ))}
+      </div>
+      {Object.entries(records).map(
+        ([id, record]) =>
+          record.command &&
+          !visibleEnrollmentIds.includes(id) && (
+            <CourseDecisionRecovery key={id} command={record.command} />
+          ),
+      )}
+      {children}
+    </DecisionConfirmation.Provider>
+  );
+}
+
+function CourseDecisionRecovery({
+  command,
+}: {
+  command: NonNullable<DecisionRecord["command"]>;
+}) {
+  const registry = useContext(DecisionConfirmation);
+  const { ref, error, state, submit, busy } = useCourseForm(
+    (previous, data) =>
+      runEnrollmentDecision(
+        registry,
+        command.dogName,
+        previous,
+        data,
+        ["restore", "reconsider"].includes(command.intent)
+          ? reopenEnrollment
+          : decideEnrollment,
+      ),
+    command.version,
+  );
+  useEffect(() => {
+    if (command.error) error.current?.focus();
+  }, [command.error, error]);
+  return (
+    <form
+      ref={ref}
+      action={submit}
+      className={styles.decisionRecovery}
+      aria-label={`Ponowienie decyzji: ${command.dogName}`}
+      aria-busy={busy || command.pending}
+    >
+      <strong>
+        {command.dogName} · {decisionText[command.intent]}
+      </strong>
+      <input type="hidden" name="id" value={command.id} />
+      <input type="hidden" name="expected_version" value={command.version} />
+      <input type="hidden" name="intent" value={command.intent} />
+      <input type="hidden" name="note" value={command.note} />
+      {command.note && (
+        <p className="preserve-lines">
+          Zachowany powód lub wiadomość: {command.note}
+        </p>
+      )}
+      <p className="muted">
+        Sprawdź aktualny status zgłoszenia przed ponowieniem. Ponowienie
+        zachowuje wysłaną decyzję i jej powód.
+      </p>
+      <Feedback
+        state={{ ...state, error: state.error || command.error }}
+        error={error}
+        pending={busy || command.pending}
+      />
+      <button className="secondary-button" disabled={busy || command.pending}>
+        Ponów tę samą decyzję: {command.dogName}
+      </button>
+    </form>
+  );
+}
+
+export function CourseEnrollmentControls({
+  enrollment,
+  dogName,
+  allowed,
+  children,
+  admin = true,
+}: {
+  enrollment: CourseEnrollment;
+  dogName: string;
+  allowed: string[];
+  children: React.ReactNode;
+  admin?: boolean;
+}) {
+  const registry = useContext(DecisionConfirmation);
+  const retained = registry?.records[enrollment.id];
+  const [original] = useState({
+    id: enrollment.id,
+    version: retained?.command?.version ?? enrollment.version,
+  });
+  const [rejecting, setRejecting] = useState(
+    retained?.command?.intent === "reject",
+  );
+  const [note, setNote] = useState(retained?.command?.note || "");
+  const [operation, setOperation] = useState<DecisionIntent | null>(
+    retained?.command?.intent || null,
+  );
+  const [confirmed, setConfirmed] = useState<{
+    version: number;
+    status: EnrollmentStatus;
+  } | null>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const { ref, error, state, submit, busy } = useCourseForm(
+    async (previous, data) => {
+      const saved = registry?.records[original.id]?.command;
+      if (saved?.error === unconfirmedFormMessage) {
+        data.set("expected_version", String(saved.version));
+        data.set("intent", saved.intent);
+        data.set("note", saved.note);
+      }
+      const intent = String(data.get("intent")) as DecisionIntent;
+      setOperation(intent);
+      const result = await runEnrollmentDecision(
+        registry,
+        dogName,
+        previous,
+        data,
+        ["restore", "reconsider"].includes(intent)
+          ? reopenEnrollment
+          : decideEnrollment,
+      );
+      if (result.success) {
+        setConfirmed({
+          version: result.version!,
+          status: decisionResult[intent].status,
+        });
+        setRejecting(false);
+        setNote("");
+      }
+      return result;
+    },
+    original.version,
+  );
+  useEffect(() => {
+    if (rejecting) reasonRef.current?.focus();
+  }, [rejecting]);
+  useEffect(() => {
+    if (!state.error && retained?.command?.error) error.current?.focus();
+  }, [state.error, retained?.command?.error, error]);
+  const ownResult =
+    retained?.version && (!confirmed || retained.version > confirmed.version)
+      ? { version: retained.version, status: retained.status! }
+      : confirmed;
+  const status =
+    ownResult && ownResult.version > enrollment.version
+      ? ownResult.status
+      : enrollment.status;
+  const accepted = status === "accepted";
+  const decided = ["rejected", "cancelled"].includes(status);
+  const canDecide = !accepted && !decided && allowed.includes("accept");
+  const rowBusy = busy || retained?.command?.pending;
+  const unconfirmed = retained?.command?.error === unconfirmedFormMessage;
+  const noteValue = unconfirmed ? retained.command!.note : note;
+  const selectedOperation = unconfirmed ? retained.command!.intent : operation;
+  const newerOwnResult = (retained?.version || 0) > state.version;
+  const decisionError =
+    retained?.command?.error || (newerOwnResult ? undefined : state.error);
+  if (!admin) return <>{children}</>;
+  return (
+    <fieldset disabled={rowBusy} className={styles.enrollmentControls}>
+      <legend className="sr-only">Działania zgłoszenia: {dogName}</legend>
+      {accepted && <p className={styles.inRoster}>✓ W składzie kursu</p>}
+      {(canDecide || decisionError || state.success) && (
+        <form
+          ref={ref}
+          action={submit}
+          className={styles.rosterForm}
+          aria-label={`Decyzja: ${dogName}`}
+          aria-busy={busy}
+        >
+          <input type="hidden" name="id" value={original.id} />
+          <input
+            type="hidden"
+            name="expected_version"
+            value={
+              unconfirmed
+                ? retained.command!.version
+                : Math.max(state.version, retained?.version || 0)
+            }
+          />
+          {(canDecide || decisionError) && (
+            <>
+              <RosterActionButtons
+                name="intent"
+                participantName={dogName}
+                label="Decyzja o zgłoszeniu"
+                choices={[
+                  {
+                    value: "accept",
+                    label: "Przyjmij",
+                    tone: "positive",
+                    disabled: rejecting,
+                  },
+                  {
+                    value: "reject",
+                    label: "Nie przyjmuj",
+                    tone: "negative",
+                    type: "button",
+                  },
+                ]}
+                disabled={busy || !canDecide || unconfirmed}
+                busy={busy}
+                onChoose={() => {
+                  setRejecting(true);
+                  setOperation("reject");
+                }}
+              />
+              {rejecting ? (
+                <div className={styles.rejectionReason}>
+                  <label className="field">
+                    <span>Powód odmowy dla opiekuna</span>
+                    <textarea
+                      ref={reasonRef}
+                      name="note"
+                      value={noteValue}
+                      readOnly={unconfirmed}
+                      onChange={(event) => setNote(event.target.value)}
+                      minLength={3}
+                      maxLength={3000}
+                      rows={2}
+                      required
+                    />
+                  </label>
+                  <div className={styles.rosterSecondaryActions}>
+                    <button
+                      className="secondary-button"
+                      name="intent"
+                      value="reject"
+                      disabled={!canDecide || unconfirmed}
+                    >
+                      Potwierdź odmowę: {dogName}
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      disabled={unconfirmed}
+                      onClick={() => setRejecting(false)}
+                    >
+                      Anuluj odmowę
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <details className={styles.optionalDecisionNote}>
+                    <summary>Wiadomość do decyzji (opcjonalnie)</summary>
+                    <label className="field">
+                      <span>Wiadomość dla opiekuna (opcjonalnie)</span>
+                      <textarea
+                        name="note"
+                        value={noteValue}
+                        readOnly={unconfirmed}
+                        onChange={(event) => setNote(event.target.value)}
+                        maxLength={3000}
+                        rows={2}
+                      />
+                    </label>
+                  </details>
+                  {allowed.includes("waitlist") &&
+                    status !== "waitlisted" &&
+                    enrollment.status !== "waitlisted" && (
+                      <button
+                        className={`ghost-button ${styles.rosterSecondary}`}
+                        name="intent"
+                        value="waitlist"
+                        disabled={!canDecide || unconfirmed}
+                      >
+                        Przenieś na rezerwę: {dogName}
+                      </button>
+                    )}
+                </>
+              )}
+            </>
+          )}
+          {unconfirmed && retained?.command && (
+            <>
+              {retained.command.note && (
+                <p className="preserve-lines">
+                  Zachowany powód lub wiadomość: {retained.command.note}
+                </p>
+              )}
+              <button
+                className="secondary-button"
+                name="intent"
+                value={retained.command.intent}
+              >
+                Ponów tę samą decyzję: {dogName}
+              </button>
+            </>
+          )}
+          {decisionError && selectedOperation && (
+            <p className="muted">
+              Wybrana decyzja: {decisionText[selectedOperation]}.
+            </p>
+          )}
+          <Feedback
+            state={{
+              ...state,
+              error: decisionError,
+              success:
+                busy || rejecting || note || newerOwnResult
+                  ? undefined
+                  : state.success,
+            }}
+            error={error}
+          />
+        </form>
+      )}
+      {children}
+    </fieldset>
   );
 }
 export function CourseCreateForm({
@@ -401,6 +878,7 @@ export function CommandForm({
   allowed,
   label,
   enabled = true,
+  enrollmentDecision,
 }: {
   id: string;
   version: number;
@@ -409,12 +887,24 @@ export function CommandForm({
   allowed: string[];
   label: string;
   enabled?: boolean;
+  enrollmentDecision?: { dogName: string };
 }) {
+  const registry = useContext(DecisionConfirmation);
+  const retained = enrollmentDecision ? registry?.records[id] : undefined;
   const [original] = useState({ id, version });
   const [intent, setIntent] = useState(allowed[0] || options[0].value),
     [note, setNote] = useState("");
   const { ref, error, state, submit, busy } = useCourseForm(
-      action,
+      (previous, data) =>
+        enrollmentDecision
+          ? runEnrollmentDecision(
+              registry,
+              enrollmentDecision.dogName,
+              previous,
+              data,
+              action,
+            )
+          : action(previous, data),
       original.version,
     ),
     prefix = useId();
@@ -428,7 +918,11 @@ export function CommandForm({
       aria-busy={busy}
     >
       <input type="hidden" name="id" value={original.id} />
-      <input type="hidden" name="expected_version" value={state.version} />
+      <input
+        type="hidden"
+        name="expected_version"
+        value={Math.max(state.version, retained?.version || 0)}
+      />
       <fieldset
         disabled={busy || !enabled || !allowed.length}
         className={styles.fields}
@@ -483,10 +977,14 @@ export function CommandForm({
 export function ReopeningPanel({
   enrollment,
   enabled,
+  dogName = "Pies zgłoszenia",
 }: {
   enrollment: CourseEnrollment;
   enabled: boolean;
+  dogName?: string;
 }) {
+  const registry = useContext(DecisionConfirmation);
+  const confirmed = registry?.records[enrollment.id];
   const terminal = ["rejected", "cancelled"].includes(enrollment.status);
   const [original, setOriginal] = useState<CourseEnrollment | null>(
     terminal ? enrollment : null,
@@ -494,14 +992,23 @@ export function ReopeningPanel({
   // Mount a fresh editor only when there was no reopening editor before.
   // Once open, it keeps its original version even after another action refreshes
   // the page. Its own successful confirmation stays visible after restoration.
-  if (!original && terminal) setOriginal(enrollment);
+  if (
+    terminal &&
+    (!original ||
+      (confirmed?.version === enrollment.version &&
+        !confirmed.command &&
+        original.version < enrollment.version))
+  )
+    setOriginal(enrollment);
   if (!original) return null;
   return (
     <details>
       <summary>Ponowna decyzja lub przywrócenie udziału</summary>
       <ReopeningForm
+        key={original.version}
         enrollment={original}
         enabled={enabled && enrollment.status === original.status}
+        dogName={dogName}
       />
     </details>
   );
@@ -509,15 +1016,25 @@ export function ReopeningPanel({
 function ReopeningForm({
   enrollment,
   enabled,
+  dogName,
 }: {
   enrollment: CourseEnrollment;
   enabled: boolean;
+  dogName: string;
 }) {
+  const registry = useContext(DecisionConfirmation);
   const [original] = useState(enrollment);
   const intent = original.status === "rejected" ? "reconsider" : "restore";
   const [note, setNote] = useState("");
   const { ref, error, state, submit, busy } = useCourseForm(
-    reopenEnrollment,
+    (previous, data) =>
+      runEnrollmentDecision(
+        registry,
+        dogName,
+        previous,
+        data,
+        reopenEnrollment,
+      ),
     original.version,
   );
   const prefix = useId(),
@@ -725,51 +1242,47 @@ export function AttendanceForm({
     enrollmentId,
     version: attendance?.version || 0,
   });
-  const [value, setValue] = useState(attendance?.attendance || "present");
+  const [confirmed, setConfirmed] = useState(attendance?.attendance || null);
+  const [operation, setOperation] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [dirty, setDirty] = useState(false);
   const { ref, error, state, submit, busy } = useCourseForm(
-      async (previous, data) => {
-        const result = await (
-          correction ? correctAttendance : recordAttendance
-        )(previous, data);
-        if (result.success) setDirty(false);
-        return result;
-      },
-      original.version,
-    ),
-    prefix = useId();
+    async (previous, data) => {
+      const value = String(data.get("attendance"));
+      setOperation(value);
+      const result = await (correction ? correctAttendance : recordAttendance)(
+        previous,
+        data,
+      );
+      if (result.success) {
+        setConfirmed(value as CourseAttendance["attendance"]);
+        setDirty(false);
+      }
+      return result;
+    },
+    original.version,
+  );
   return (
     <form
       ref={ref}
       action={submit}
-      className="form-stack"
+      className={styles.rosterForm}
       aria-label={`${correction ? "Korekta obecności" : "Obecność"}: ${dogName}`}
       aria-busy={busy}
     >
       <input type="hidden" name="session_id" value={original.sessionId} />
       <input type="hidden" name="enrollment_id" value={original.enrollmentId} />
       <input type="hidden" name="expected_version" value={state.version} />
+      <div className={styles.rosterIdentity}>
+        <strong>{dogName}</strong>
+        <span
+          className={`badge ${confirmed === "present" ? "green" : confirmed === "absent" ? "red" : "neutral"}`}
+        >
+          {confirmed ? attendanceLabels[confirmed] : "Nieoznaczono"}
+        </span>
+      </div>
       <fieldset disabled={busy || !enabled} className={styles.fields}>
         <legend className="sr-only">Obecność</legend>
-        <div className="field">
-          <label htmlFor={prefix}>{dogName}</label>
-          <select
-            id={prefix}
-            name="attendance"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value as typeof value);
-              setDirty(true);
-            }}
-          >
-            {Object.entries(attendanceLabels).map(([v, text]) => (
-              <option key={v} value={v}>
-                {text}
-              </option>
-            ))}
-          </select>
-        </div>
         {correction && (
           <label className="field">
             <span>Powód korekty obecności</span>
@@ -787,15 +1300,47 @@ export function AttendanceForm({
             />
           </label>
         )}
+        <RosterActionButtons
+          name="attendance"
+          participantName={dogName}
+          label={correction ? "Korekta obecności" : "Obecność"}
+          selectedValue={confirmed}
+          disabled={busy || !enabled}
+          busy={busy}
+          choices={[
+            {
+              value: "present",
+              label: "Był",
+              tone: "positive",
+              disabled: confirmed === "present",
+            },
+            {
+              value: "absent",
+              label: "Nie był",
+              tone: "negative",
+              disabled: confirmed === "absent",
+            },
+          ]}
+        />
+        <button
+          className={`ghost-button ${styles.rosterSecondary}`}
+          name="attendance"
+          value="excused"
+          aria-label={`Usprawiedliwiony: ${dogName}`}
+          disabled={confirmed === "excused"}
+        >
+          Usprawiedliwiony
+        </button>
       </fieldset>
+      {state.error && operation && (
+        <p className="muted">
+          Wybrana obecność:{" "}
+          {attendanceLabels[operation as CourseAttendance["attendance"]]}.
+        </p>
+      )}
       <Feedback
         state={{ ...state, success: dirty || busy ? undefined : state.success }}
         error={error}
-      />
-      <Submit
-        busy={busy}
-        disabled={!enabled}
-        label={correction ? "Zapisz korektę obecności" : "Zapisz obecność"}
       />
     </form>
   );

@@ -98,6 +98,8 @@ export async function loseCommittedReply(
   form: Locator,
   marker: string,
   assertCommitted: () => Promise<void>,
+  submit = form.locator("button").last(),
+  feedbackScope = form,
 ) {
   const current = new URL(page.url());
   const match = (url: URL) =>
@@ -122,7 +124,7 @@ export async function loseCommittedReply(
       return route.continue();
     intercepted = true;
     try {
-      await expect(form.locator("button").last()).toBeDisabled();
+      await expect(submit).toBeDisabled();
       const response = await route.fetch({ maxRedirects: 0 });
       expect(response.status()).toBe(200);
       await assertCommitted();
@@ -135,15 +137,17 @@ export async function loseCommittedReply(
   };
   await page.route(match, handler);
   try {
-    await form.locator("button").last().click();
+    await submit.click();
     await expect.poll(() => intercepted).toBe(true);
     await committed;
-    const error = form.getByRole("alert");
+    const error = feedbackScope.getByRole("alert");
     await expect(error).toContainText("Nie udało się potwierdzić zapisu");
     await expect(error).toBeFocused();
-    await expect(form.getByRole("status")).toHaveCount(0);
-    await expect(form.locator("button").last()).toBeEnabled();
-    await assertRetainedLayout(page, form);
+    await expect(feedbackScope.getByRole("status")).toHaveCount(0);
+    // An uncertain action may disable the original choice and expose a
+    // dedicated exact-command retry instead. That action must be available.
+    await expect(feedbackScope.locator("button").last()).toBeEnabled();
+    await assertRetainedLayout(page, feedbackScope);
   } finally {
     await page.unroute(match, handler);
   }

@@ -188,14 +188,17 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     );
     await f.staff.goto(staffUrl);
     const firstCard = await openCourseMeeting(f.staff, 1);
-    await openCourseSection(firstCard, "Obecności uczestników");
     const attendance = firstCard.getByRole("form", {
       name: `Obecność: ${f.dogName}`,
       exact: true,
     });
-    await attendance.getByRole("combobox").selectOption("present");
+    await expect(attendance).toBeVisible();
+    await expect(attendance.getByRole("combobox")).toHaveCount(0);
+    await expect(
+      attendance.getByText("Nieoznaczono", { exact: true }),
+    ).toBeVisible();
     await attendance
-      .getByRole("button", { name: "Zapisz obecność", exact: true })
+      .getByRole("button", { name: `Był: ${f.dogName}`, exact: true })
       .click();
     await expect(attendance.getByRole("status")).toHaveText(
       "Obecność zapisana.",

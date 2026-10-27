@@ -187,6 +187,85 @@
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
+.rosterSection {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.rosterSection h4 {
+  margin: 0 0 8px;
+}
+.rosterForm,
+.rejectionReason {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.rosterForm p {
+  margin: 0;
+}
+.rosterIdentity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+.rosterIdentity > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.enrollmentControls {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.rosterSecondaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.rosterSecondary,
+.rosterSecondaryActions button {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.rosterSecondary {
+  justify-self: start;
+  font-size: 13px;
+}
+.inRoster {
+  font-weight: 700;
+  color: #375943;
+  margin: 0 0 10px;
+}
+.optionalDecisionNote > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  font-size: 13px;
+}
+.decisionRecovery {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--amber);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.decisionRecovery p {
+  margin: 0;
+}
+.decisionRecovery button {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .facts {
   margin: 0;
   display: grid;

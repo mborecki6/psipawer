@@ -7,11 +7,7 @@ import {
 } from "../helpers/local-postgres.mjs";
 import { careFixture, careScreenshot } from "./care-journey";
 import { courseFixture, removeCourseCare } from "./course-fixtures";
-import {
-  openCourseMeeting,
-  openCourseSection,
-  openCourseSettings,
-} from "./course-ui";
+import { openCourseMeeting, openCourseSettings } from "./course-ui";
 import {
   test,
   account,
@@ -231,7 +227,6 @@ test("course settings and completed attendance: stale cards retain fields, histo
       f.staff.getByText("Kurs w trakcie", { exact: true }),
     ).toBeVisible();
     const meeting = await openCourseMeeting(f.staff, 1);
-    await openCourseSection(meeting, "Obecności uczestników");
     const correction = meeting.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,
@@ -239,32 +234,42 @@ test("course settings and completed attendance: stale cards retain fields, histo
     const staleAttendance = await f.staffContext.newPage();
     await staleAttendance.goto(url);
     const staleMeeting = await openCourseMeeting(staleAttendance, 1);
-    await openCourseSection(staleMeeting, "Obecności uczestników");
-    const staleCorrection = staleAttendance.getByRole("form", {
+    const staleCorrection = staleMeeting.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,
     });
-    await staleCorrection.getByRole("combobox").selectOption("excused");
+    await expect(correction).toBeVisible();
+    await expect(correction.getByRole("combobox")).toHaveCount(0);
+    await expect(staleCorrection).toBeVisible();
     await staleCorrection
       .getByLabel("Powód korekty obecności")
       .fill("Starszy opis usprawiedliwienia");
-    await correction.getByRole("combobox").selectOption("absent");
     await correction
       .getByLabel("Powód korekty obecności")
       .fill("Sprawdzona lista obecności");
     await correction
-      .getByRole("button", { name: "Zapisz korektę obecności", exact: true })
+      .getByRole("button", { name: `Nie był: ${f.dogName}`, exact: true })
       .click();
     await expect(correction.getByRole("status")).toContainText(
       "Korekta obecności zapisana",
     );
     await staleCorrection
-      .getByRole("button", { name: "Zapisz korektę obecności", exact: true })
+      .getByRole("button", {
+        name: `Usprawiedliwiony: ${f.dogName}`,
+        exact: true,
+      })
       .click();
     await expect(staleCorrection.getByRole("alert")).toContainText(
       "Obecność zmieniła się",
     );
-    await expect(staleCorrection.getByRole("combobox")).toHaveValue("excused");
+    await expect(
+      staleCorrection.getByText("Wybrana obecność: Usprawiedliwiony.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      staleCorrection.locator('[name="expected_version"]'),
+    ).toHaveValue("1");
     await expect(
       staleCorrection.getByLabel("Powód korekty obecności"),
     ).toHaveValue("Starszy opis usprawiedliwienia");
@@ -296,17 +301,18 @@ test("course settings and completed attendance: stale cards retain fields, histo
     );
     await f.staff.goto(url);
     await openCourseMeeting(f.staff, 1);
-    await openCourseSection(meeting, "Obecności uczestników");
     const after = f.staff.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,
     });
-    await after.getByRole("combobox").selectOption("excused");
     await after
       .getByLabel("Powód korekty obecności")
       .fill("Uzgodnienie po zakończeniu całego kursu");
     await after
-      .getByRole("button", { name: "Zapisz korektę obecności", exact: true })
+      .getByRole("button", {
+        name: `Usprawiedliwiony: ${f.dogName}`,
+        exact: true,
+      })
       .click();
     await expect(after.getByRole("status")).toContainText(
       "Korekta obecności zapisana",

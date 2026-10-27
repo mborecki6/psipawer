@@ -487,12 +487,9 @@ try {
       await page.goto(
         `${roleDetail}&feedback=${kind}#zgloszenie-${enrollmentId}`,
       );
-      await openSection(
-        participant,
-        role === "admin" ? "Decyzja o zgłoszeniu" : "Rezygnacja z kursu",
-      );
+      await openSection(participant, "Rezygnacja z kursu");
       const decision = participant.getByRole("form", {
-        name: "Decyzja: Kluska — dane fikcyjne",
+        name: "Rezygnacja: Kluska — dane fikcyjne",
         exact: true,
       });
       await decision

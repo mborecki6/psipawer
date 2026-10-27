@@ -7,6 +7,7 @@ import {
 } from "../helpers/local-postgres.mjs";
 import { careFixture, careScreenshot } from "./care-journey";
 import { courseFixture, removeCourseCare } from "./course-fixtures";
+import { revealFor } from "./details-ui";
 import {
   test,
   account,
@@ -254,6 +255,9 @@ test("course return: capacity error, retained stale form, frozen quote and parti
     await f.guardian.goto(
       `/app/courses/${cycle.id}?enrollment=${cycle.enrollment}`,
     );
+    await revealFor(
+      f.guardian.getByText("Przywrócony udział na kursie", { exact: true }),
+    );
     await expect(
       f.guardian.getByText("Przywrócony udział na kursie", { exact: true }),
     ).toBeVisible();
@@ -293,17 +297,26 @@ test("course return: capacity error, retained stale form, frozen quote and parti
     });
     const refusalUrl = `/admin/courses/${cycle.id}?enrollment=${extraEnrollments[2]}`;
     await f.staff.goto(refusalUrl);
-    await f.staff.getByText("Decyzja o zgłoszeniu", { exact: true }).click();
     const command = f.staff.getByRole("form", {
       name: "Decyzja: Powrót do kursu 2",
       exact: true,
     });
-    await command.getByRole("combobox").selectOption("reject");
+    await expect(command).toBeVisible();
+    await expect(command.getByRole("combobox")).toHaveCount(0);
     await command
-      .getByLabel("Powód dla opiekuna")
+      .getByRole("button", {
+        name: "Nie przyjmuj: Powrót do kursu 2",
+        exact: true,
+      })
+      .click();
+    await command
+      .getByLabel("Powód odmowy dla opiekuna")
       .fill("Najpierw uzgodnienie powrotu");
     await command
-      .getByRole("button", { name: "Zapisz zmianę", exact: true })
+      .getByRole("button", {
+        name: "Potwierdź odmowę: Powrót do kursu 2",
+        exact: true,
+      })
       .click();
     await expect(command.getByRole("status")).toContainText("Decyzja zapisana");
     // A fresh reopening editor appears after this page's own refusal without

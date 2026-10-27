@@ -11,6 +11,7 @@ import {
   setupLocalPractitioner,
 } from "./local-fixtures";
 import { dateInput } from "./walk-journey";
+import { submitWalkDecision } from "./walk-roster-ui";
 async function passwordLogin(
   page: Page,
   email: string,
@@ -134,11 +135,13 @@ test("password → dog → registration → admin approval → private location"
       .getByRole("link")
       .filter({ hasText: `Park testowy ${suffix}` })
       .click();
-    await revealFor(admin.getByLabel("Decyzja"));
-    await admin.getByLabel("Decyzja").selectOption("accepted");
-    admin.once("dialog", (dialog) => dialog.accept());
-    await admin.getByRole("button", { name: "Zapisz decyzję" }).click();
-    await expect(admin.getByRole("status")).toContainText("Decyzja zapisana");
+    const registration = admin.locator(
+      `#registration-${registered.data![0].id}`,
+    );
+    await submitWalkDecision(registration, "accepted");
+    await expect(registration.getByRole("status")).toContainText(
+      "Decyzja zapisana",
+    );
     await guardian.reload();
     await expect(
       guardian.getByText(`Sekretna zbiórka ${suffix}`),

@@ -3,6 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { test, checked, login } from "./local-fixtures";
 import { dateInput, mobileEvidence, walkJourney } from "./walk-journey";
+import { submitWalkDecision, type WalkDecision } from "./walk-roster-ui";
 
 type Journey = Awaited<ReturnType<typeof walkJourney>>;
 
@@ -38,30 +39,12 @@ async function decide(
   j: Journey,
   walk: string,
   registration: string,
-  status: string,
+  status: WalkDecision,
   note: string,
 ) {
   await j.staff.goto(`/admin/walks/${walk}`);
   const card = j.staff.locator(`#registration-${registration}`);
-  await revealFor(card.getByLabel("Decyzja"));
-  await card.getByLabel("Decyzja").selectOption(status);
-  await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
-  await card.getByLabel("Wiadomość dla opiekuna (opcjonalna)").fill(note);
-  j.staff.once("dialog", (d) => d.accept());
-  await revealFor(
-    card.getByRole("button", {
-      includeHidden: true,
-      name: "Zapisz decyzję",
-      exact: true,
-    }),
-  );
-  await card
-    .getByRole("button", {
-      includeHidden: true,
-      name: "Zapisz decyzję",
-      exact: true,
-    })
-    .click();
+  await submitWalkDecision(card, status, note);
   await expect(card.getByRole("status")).toContainText("Decyzja zapisana");
 }
 
@@ -154,26 +137,8 @@ test("a qualification change preserves an existing paid booking and blocks new a
     ).toHaveCount(0);
     await j.staff.goto(`/admin/walks/${pendingWalk}`);
     const card = j.staff.locator(`#registration-${pending}`);
-    await revealFor(card.getByLabel("Decyzja"));
-    await card.getByLabel("Decyzja").selectOption("accepted");
     const message = "Wiadomość zachowana po odmowie akceptacji.";
-    await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
-    await card.getByLabel("Wiadomość dla opiekuna (opcjonalna)").fill(message);
-    j.staff.once("dialog", (d) => d.accept());
-    await revealFor(
-      card.getByRole("button", {
-        includeHidden: true,
-        name: "Zapisz decyzję",
-        exact: true,
-      }),
-    );
-    await card
-      .getByRole("button", {
-        includeHidden: true,
-        name: "Zapisz decyzję",
-        exact: true,
-      })
-      .click();
+    await submitWalkDecision(card, "accepted", message);
     await expect(card.getByRole("alert")).toContainText(
       "Najpierw zakwalifikuj psa",
     );
@@ -290,30 +255,14 @@ test("waitlist → capacity refusal → released place → manual acceptance →
 
     await j.staff.goto(`/admin/walks/${walk}`);
     const card = j.staff.locator(`#registration-${waiting}`);
-    await revealFor(card.getByLabel("Decyzja"));
-    await card.getByLabel("Decyzja").selectOption("accepted");
-    await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
-    await card
-      .getByLabel("Wiadomość dla opiekuna (opcjonalna)")
-      .fill(`Gotowe przyjęcie ${j.suffix}`);
-    j.staff.once("dialog", (d) => d.accept());
-    await revealFor(
-      card.getByRole("button", {
-        includeHidden: true,
-        name: "Zapisz decyzję",
-        exact: true,
-      }),
-    );
-    await card
-      .getByRole("button", {
-        includeHidden: true,
-        name: "Zapisz decyzję",
-        exact: true,
-      })
-      .click();
+    await submitWalkDecision(card, "accepted", `Gotowe przyjęcie ${j.suffix}`);
     await expect(card.getByRole("alert")).toContainText("Brak wolnych miejsc");
     await expect(card.getByRole("alert")).toBeFocused();
-    await expect(card.getByLabel("Decyzja")).toHaveValue("accepted");
+    await expect(
+      card
+        .getByRole("form", { name: /^Ponowienie zapisu:/ })
+        .locator('input[name="status"]'),
+    ).toHaveValue("accepted");
     await expect(
       card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"),
     ).toHaveValue(`Gotowe przyjęcie ${j.suffix}`);

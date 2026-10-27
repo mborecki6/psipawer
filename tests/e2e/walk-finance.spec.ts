@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { test, checked } from "./local-fixtures";
 import { walkJourney, mobileEvidence } from "./walk-journey";
+import { submitWalkAttendance } from "./walk-roster-ui";
 
 test("walk cash: partial receipts → guardian cancellation → refunds, attendance corrections preserve the ledger", async ({
   browser,
@@ -143,7 +144,7 @@ test("walk cash: partial receipts → guardian cancellation → refunds, attenda
     });
     await j.staff.goto(`/admin/walks/${completed}`);
     await expect(j.staff.locator(`#registration-${attended}`)).toContainText(
-      "Obecność: Nieobecność usprawiedliwiona",
+      "Obecność: Usprawiedliwiono",
     );
     await expect(j.staff.locator(`#registration-${attended}`)).toContainText(
       "Płatność: Zwrot / korekta",
@@ -154,7 +155,9 @@ test("walk cash: partial receipts → guardian cancellation → refunds, attenda
       "Obecność: Nieobecność usprawiedliwiona",
     );
     await expect(
-      j.guardian.getByRole("button", { name: "Zapisz obecność" }),
+      j.guardian.getByRole("button", {
+        name: /^(?:Był|Nie był · płatne|Usprawiedliw|Zapisz korektę|Potwierdź usprawiedliwienie):/,
+      }),
     ).toHaveCount(0);
   } finally {
     await j.dispose();
@@ -189,15 +192,21 @@ test("returned package entry allocated elsewhere blocks attendance correction wi
     const before = await ledger();
     await j.staff.goto(`/admin/walks/${past}`);
     const card = j.staff.locator(`#registration-${pastReg}`);
-    await card.getByLabel("Obecność").selectOption("present");
-    await card
-      .getByRole("button", { name: "Zapisz obecność", exact: true })
-      .click();
+    await submitWalkAttendance(card, "present");
     await expect(card.getByRole("alert")).toContainText(
       "Brak dostępnych wejść w pakiecie",
     );
     await expect(card.getByRole("alert")).toBeFocused();
-    await expect(card.getByLabel("Obecność")).toHaveValue("present");
+    await expect(
+      card
+        .getByRole("form", { name: /^Korekta obecności:/ })
+        .locator('input[name="attendance"]'),
+    ).toHaveValue("present");
+    await expect(
+      card
+        .getByRole("form", { name: /^Ponowienie zapisu:/ })
+        .locator('input[name="attendance"]'),
+    ).toHaveValue("present");
     expect(await j.registration(pastReg)).toMatchObject({
       attendance: "absent",
       package_id: pkg,

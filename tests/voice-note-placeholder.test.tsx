@@ -90,6 +90,8 @@ vi.mock("../src/modules/courses/actions", () => ({
   changeSession: vi.fn(),
 }));
 vi.mock("../src/modules/courses/forms", () => ({
+  CourseDecisionFeedback: ({ children }: { children: ReactNode }) => children,
+  CourseEnrollmentControls: () => null,
   AttendanceForm: () => null,
   CommandForm: () => null,
   CourseCreateForm: () => null,

@@ -212,27 +212,25 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await staff
       .getByRole("link", { name: "Odśwież dane →", exact: true })
       .click();
-    async function decision(name: string, intent: string, success = true) {
+    async function decision(name: string, success = true) {
       const card = staff.getByRole("article", {
         name: `Zgłoszenie: ${name}`,
         exact: true,
       });
       const form = card.getByRole("form", {
-        includeHidden: true,
         name: `Decyzja: ${name}`,
         exact: true,
       });
-      const choice = form.getByRole("combobox", { includeHidden: true });
-      await revealFor(choice);
-      await choice.selectOption(intent);
+      await expect(form).toBeVisible();
+      await expect(form.getByRole("combobox")).toHaveCount(0);
       await form
-        .getByRole("button", { name: "Zapisz zmianę", exact: true })
+        .getByRole("button", { name: `Przyjmij: ${name}`, exact: true })
         .click();
       if (success)
         await expect(form.getByRole("status")).toHaveText("Decyzja zapisana.");
     }
-    await decision(names[0], "accept");
-    await decision(names[1], "accept", false); // A failed decision must leave the card and controls usable.
+    await decision(names[0]);
+    await decision(names[1], false); // A failed decision must leave the card and controls usable.
     const reserve = staff.getByRole("article", {
       name: `Zgłoszenie: ${names[1]}`,
       exact: true,
@@ -243,15 +241,12 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     const reserveDecision = reserve.getByRole("form", {
       name: `Decyzja: ${names[1]}`,
       exact: true,
-      includeHidden: true,
     });
-    const reserveChoice = reserveDecision.getByRole("combobox", {
-      includeHidden: true,
-    });
-    await revealFor(reserveChoice);
-    await reserveChoice.selectOption("waitlist");
     await reserveDecision
-      .getByRole("button", { name: "Zapisz zmianę", exact: true })
+      .getByRole("button", {
+        name: `Przenieś na rezerwę: ${names[1]}`,
+        exact: true,
+      })
       .click();
     await expect(reserve.getByRole("status")).toHaveText("Decyzja zapisana.");
     await ownerPage.reload();
@@ -559,15 +554,17 @@ test("course attendance panels: started meeting → recorded attendance → comp
     );
     await staff.goto(`/admin/courses/${id}`);
     const firstCard = await openCourseMeeting(staff, 1);
-    await openCourseSection(firstCard, "Obecności uczestników");
     const attendance = firstCard.getByRole("form", {
-      includeHidden: true,
       name: `Obecność: ${dogName}`,
       exact: true,
     });
-    await attendance.getByRole("combobox").selectOption("present");
+    await expect(attendance).toBeVisible();
+    await expect(attendance.getByRole("combobox")).toHaveCount(0);
+    await expect(
+      attendance.getByText("Nieoznaczono", { exact: true }),
+    ).toBeVisible();
     await attendance
-      .getByRole("button", { name: "Zapisz obecność", exact: true })
+      .getByRole("button", { name: `Był: ${dogName}`, exact: true })
       .click();
     await expect(attendance.getByRole("status")).toHaveText(
       "Obecność zapisana.",

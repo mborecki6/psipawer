@@ -1,0 +1,80 @@
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.choice {
+  display: inline-flex;
+  flex: 1 1 110px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.choice svg {
+  flex-shrink: 0;
+}
+
+.positive {
+  color: #215a43;
+  background: #edf5ef;
+  border-color: #adc9b7;
+}
+
+.negative {
+  color: #a32d2d;
+  background: #fcf0ed;
+  border-color: #dbaba1;
+}
+
+.neutral {
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border-color: var(--line-strong);
+}
+
+.positive.selected {
+  color: #fff;
+  background: #215a43;
+  border-color: #215a43;
+}
+
+.negative.selected {
+  color: #fff;
+  background: #a32d2d;
+  border-color: #a32d2d;
+}
+
+.neutral.selected {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.choice:focus-visible {
+  outline: 3px solid var(--brand-ink, #6e3a28);
+  outline-offset: 3px;
+}
+
+.choice:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+@media (hover: hover) {
+  .choice:not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+}
