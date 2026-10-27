@@ -104,7 +104,10 @@ kursów i spacerów, wspólna prezentacja przycisków oraz osobna własność E2
 z przypadkami ponowienia, przejść między akcjami i filtrowaniem. Koordynator
 odtworzył je na własnych lokalnych fixture’ach i sprawdził obie role, mobilne
 szerokości oraz rzeczywistą utratę odpowiedzi. 2106 unit, 25 różnych Chromium,
-6 WebKit PASS; dane 93 tabel zachowane. Zakres pozostaje lokalny.
+6 WebKit PASS; dane 93 tabel lokalnych zachowane. Po nowym poleceniu użytkownika
+opublikowano kod `2d0b1bd`: 18 sprawdzeń UI i 3 odmowy endpointów online PASS,
+bez zapisów biznesowych i aktywacji integracji. Dowody oraz ograniczenia:
+[odbiór publikacji](iterations/2026-10-27-publikacja-prostego-skladu.md).
 
 [Obsługa w biegu — lokalnie, 27.10](iterations/2026-10-27-obsluga-w-biegu.md):
 niezależne propozycje biznesu i techniki, uzgodnione AC-01–16 i rozłączna własność

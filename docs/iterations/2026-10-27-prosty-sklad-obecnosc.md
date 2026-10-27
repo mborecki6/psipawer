@@ -45,7 +45,9 @@ poprzedniego zakresu. Brak migracji, aktywacji integracji i nagrywania.
 
 ## Stan
 
-Implementacja i lokalny odbiór zakończone. Produkcja pozostaje bez zmian.
+Implementacja i lokalny odbiór zakończone. Następnie użytkownik osobno polecił
+wdrożenie: kod `2d0b1bd` jest opublikowany; 18 sprawdzeń UI online i trzy odmowy
+endpointów PASS. [Publikacja i ograniczenia](2026-10-27-publikacja-prostego-skladu.md).
 
 ## Przegląd i reguły
 
@@ -100,5 +102,6 @@ do spaceru w ramach zmiany interfejsu.
 
 Dowody pozostają w prywatnym `.local/roster-20261027/`: logi builda/unit/lint/typów,
 przekliku Chromium i WebKit, zrzuty oraz porównanie 93 tabel. Podgląd działa na
-`http://localhost:3000/admin/courses`; zmiany nie wymagają migracji. Głos pozostaje
+`http://localhost:3000/admin/courses`; wersja produkcyjna także działa na głównej
+domenie po późniejszym poleceniu użytkownika. Zmiany nie wymagają migracji. Głos pozostaje
 jawnym placeholderem, a rzeczywisty operator, SMTP i zaproszenia wyłączone.

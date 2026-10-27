@@ -78,7 +78,7 @@ Wpłaty otwierają się w rozliczeniach, głos pozostaje placeholderem, Home bez
 Dane, konta, Storage i wyłączone integracje zachowano. Nadal 66 migracji i Free.
 [Publikacja oraz ograniczenia odbioru](iterations/2026-10-27-publikacja-obsluga-w-biegu.md).
 
-Najnowsza zmiana jest **wyłącznie lokalna**:
+Najnowsza zmiana jest **opublikowana po osobnej zgodzie użytkownika**:
 [prosty skład i obecność](iterations/2026-10-27-prosty-sklad-obecnosc.md).
 W kursach i spacerach główne decyzje są widoczne przy psie, bez selectów i
 rozwijania listy obecności. Pierwszą zwykłą obecność zapisuje jeden przycisk;
@@ -86,8 +86,12 @@ usprawiedliwienia i korekty zachowują swoje zasady. Dokładna niepotwierdzona
 decyzja, powód i wersja przetrwają zniknięcie/powrót wiersza po filtrowaniu.
 2106 unit, 25 różnych scenariuszy Chromium i 6 WebKit PASS; build, typy i lint
 PASS. Recenzję zamknięto, wcześniejsze dane 93 lokalnych tabel pozostały identyczne.
+Po nowym poleceniu użytkownika kod `2d0b1bd` opublikowano na głównej domenie.
+18 sprawdzeń UI online i 3 odmowy endpointów PASS; bez błędów JS/HTTP i zapisów
+biznesowych. Dane, konta i Storage zachowane; tylko heartbeat przypomnień zmieniony.
 To odbiór przeglądarek także w szerokościach telefonu, bez fizycznego telefonu Asi.
-Nie publikowano, nie zmieniano migracji i nie aktywowano integracji.
+Nadal 66 migracji, Free i wyłączone integracje.
+[Publikacja i ograniczenia](iterations/2026-10-27-publikacja-prostego-skladu.md).
 
 Wcześniejsze poprawki z 18 i 23.10 opublikowano po osobnej zgodzie użytkownika;
 kod `50a0543` obejmował dodatkową aktualizację bezpieczeństwa Zod 4.6.6.
