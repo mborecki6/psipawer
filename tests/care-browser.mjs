@@ -26,12 +26,19 @@ const server = await createServer({
       enforce: "pre",
       resolveId(source, importer) {
         if (source === "next/link") return resolve(fixture, "link.tsx");
+        if (source === "next/navigation") return "\0navigation-fixture";
         if (
           (source === "./actions" &&
             importer?.includes("/src/modules/care/")) ||
           source === "@/lib/auth/actions"
         )
           return resolve(fixture, "actions.ts");
+      },
+      load(id) {
+        // The fixture runs outside Next. Match its control-flow exception
+        // contract without importing the CommonJS client router into Vite.
+        if (id === "\0navigation-fixture")
+          return 'export function unstable_rethrow(error) { if (error?.digest?.startsWith("NEXT_")) throw error }';
       },
     },
   ],
@@ -63,6 +70,7 @@ const server = await createServer({
       "react",
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
+      "react-dom",
       "react-dom/client",
       "lucide-react",
     ],
@@ -129,6 +137,7 @@ try {
   expect(last.intent).toBe("publish");
   expect(last.expected_version).toBe("1");
   expect(last.body).toBe("Nowa treść, opublikowana prosto z formularza.");
+  await page.getByText("Wstaw materiał z biblioteki", { exact: true }).click();
   await page
     .getByLabel("Zacznij od materiału z biblioteki")
     .selectOption("50000000-0000-4000-8000-000000000001");
@@ -139,12 +148,36 @@ try {
     "Nowa treść, opublikowana prosto z formularza.",
   );
 
+  // An acknowledgement arriving after a manual collapse must be visible,
+  // including a failure that leaves the editable text intact.
+  for (const fails of [true, false]) {
+    await page.evaluate((fail) => {
+      window.careDelay = 500;
+      window.careFail = fail;
+    }, fails);
+    await page
+      .getByRole("button", { name: "Zapisz szkic", exact: true })
+      .click();
+    await page.locator("#szkic > details > summary").click();
+    await expect(page.locator("#szkic > details")).not.toHaveAttribute(
+      "open",
+      "",
+    );
+    await expect(page.getByRole(fails ? "alert" : "status")).toBeVisible();
+    await expect(page.getByLabel("Zalecenia dla opiekuna")).toHaveValue(
+      "Nowa treść, opublikowana prosto z formularza.",
+    );
+  }
+  await page.evaluate(() => {
+    window.careDelay = 0;
+  });
+
   await page.goto(`${base}/?role=client`);
   await expect(
     page.getByRole("button", { name: "Opublikuj dla opiekuna" }),
   ).toHaveCount(0);
   await page
-    .getByLabel("Co udało się zrobić?", { exact: true })
+    .getByRole("textbox", { name: "Co udało się zrobić?", exact: true })
     .fill("Odpowiedź pozostaje po błędzie.");
   await page.evaluate(() => {
     window.careFail = true;
@@ -154,7 +187,7 @@ try {
     .click();
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(
-    page.getByLabel("Co udało się zrobić?", { exact: true }),
+    page.getByRole("textbox", { name: "Co udało się zrobić?", exact: true }),
   ).toHaveValue("Odpowiedź pozostaje po błędzie.");
   await page.evaluate(() => {
     window.careFail = false;
@@ -164,7 +197,7 @@ try {
     .click();
   await expect(page.getByRole("status")).toContainText("Zapisano");
   await expect(
-    page.getByLabel("Co udało się zrobić?", { exact: true }),
+    page.getByRole("textbox", { name: "Co udało się zrobić?", exact: true }),
   ).toHaveValue("");
   const progressCalls = await page.evaluate(() => window.careCalls);
   expect(progressCalls[0].id).toBe(progressCalls[1].id);
@@ -175,16 +208,16 @@ try {
     .getByLabel("Tytuł materiału", { exact: true })
     .fill("Nowy materiał testowy");
   await page
-    .getByLabel("Treść materiału", { exact: true })
+    .getByRole("textbox", { name: "Treść materiału", exact: true })
     .fill("Treść do zachowania w bibliotece.");
   await page.evaluate(() => {
     window.careFail = true;
   });
   await page.getByRole("button", { name: "Dodaj do biblioteki" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
-  await expect(page.getByLabel("Treść materiału", { exact: true })).toHaveValue(
-    "Treść do zachowania w bibliotece.",
-  );
+  await expect(
+    page.getByRole("textbox", { name: "Treść materiału", exact: true }),
+  ).toHaveValue("Treść do zachowania w bibliotece.");
   await page.evaluate(() => {
     window.careFail = false;
   });
@@ -197,7 +230,7 @@ try {
     .getByLabel("Tytuł materiału", { exact: true })
     .fill("Drugi materiał testowy");
   await page
-    .getByLabel("Treść materiału", { exact: true })
+    .getByRole("textbox", { name: "Treść materiału", exact: true })
     .fill("Treść drugiego materiału.");
   await page.getByRole("button", { name: "Dodaj do biblioteki" }).click();
   await expect
@@ -216,14 +249,14 @@ try {
     has: page.getByText("Materiał do wspólnego omówienia", { exact: true }),
   });
   await templateForm
-    .getByLabel("Treść materiału", { exact: true })
+    .getByRole("textbox", { name: "Treść materiału", exact: true })
     .fill("Zmieniony materiał.");
   await templateForm
     .getByRole("button", { name: "Zapisz materiał", exact: true })
     .click();
   await expect(templateForm.getByRole("status")).toContainText("Zapisano");
   await templateForm
-    .getByLabel("Treść materiału", { exact: true })
+    .getByRole("textbox", { name: "Treść materiału", exact: true })
     .fill("Kolejna zmiana materiału.");
   await templateForm
     .getByRole("button", { name: "Zapisz materiał", exact: true })
@@ -254,7 +287,7 @@ try {
       "fitness=whole",
       "fitness_package_id",
       "82000000-0000-4000-8000-000000000001",
-      "Plan całego pakietu",
+      "Cały pakiet fitness",
       "fitness_session_id",
       "",
       true,
@@ -281,7 +314,7 @@ try {
       "course=whole",
       "course_enrollment_id",
       "81000000-0000-4000-8000-000000000001",
-      "Plan całego kursu",
+      "Cały kurs",
       "course_session_id",
       "",
       true,
@@ -336,6 +369,7 @@ try {
     intent: "draft",
   });
   await body.fill("Niezapisana zmiana przed przejściem.");
+  await page.getByText("Zmień plan", { exact: true }).click();
   await page.getByText("Przygotuj plan innej usługi", { exact: true }).click();
   const anotherContext = page.getByRole("link", {
     name: /PSI FITNESS.*cały pakiet/,
@@ -345,7 +379,7 @@ try {
   await expect(body).toHaveValue("Niezapisana zmiana przed przejściem.");
   allowNavigation = true;
   await anotherContext.click();
-  await expect(context).toContainText("Plan całego pakietu");
+  await expect(context).toContainText("Cały pakiet fitness");
   await expect(body).toHaveValue("");
   await expect(binding("expected_version")).toHaveValue("0");
   for (const role of ["admin", "client"]) {
@@ -364,6 +398,109 @@ try {
     ).toHaveCount(0);
   }
 
+  // A busy dog still starts with one plan. Optional controls retain their DOM
+  // and values; native disclosures work with the keyboard.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${base}/?multi=1&fitness=whole`);
+  const picker = page.locator("details").filter({
+    has: page.locator(":scope > summary", { hasText: /^Zmień plan$/ }),
+  });
+  await expect(picker).not.toHaveAttribute("open", "");
+  await expect(
+    page.getByRole("heading", { name: "Kluska", exact: true }),
+  ).toBeVisible();
+  const bodyBounds = await body.boundingBox();
+  expect(bodyBounds?.y).toBeLessThan(650);
+  await page.screenshot({
+    path: resolve(output, "admin-simple-1440.png"),
+    fullPage: true,
+  });
+  await page.getByText("Zmień plan", { exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(picker).toHaveAttribute("open", "");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Wybierz plan psa" })
+      .getByRole("link"),
+  ).toHaveCount(4);
+  await page.keyboard.press("Enter");
+  await page.getByLabel("Tytuł planu").fill("Mój prosty plan");
+  await body.fill("Tekst pozostaje po zwinięciu opcji i edytora.");
+  await page.getByText("Kontrola i przypomnienia", { exact: true }).click();
+  await page.locator('input[name="follow_up_on"]').fill("2026-11-01");
+  await page.locator('input[name="control_invite_on"]').fill("2026-11-03");
+  await page
+    .locator("#szkic summary")
+    .filter({ hasText: /^Kontrola i przypomnienia/ })
+    .click();
+  await expect(page.locator('input[name="follow_up_on"]')).toBeHidden();
+  await expect(
+    page
+      .locator("#szkic summary")
+      .filter({ hasText: /^Kontrola i przypomnienia/ }),
+  ).toContainText("Kontakt prowadzącej:");
+  await expect(
+    page
+      .locator("#szkic summary")
+      .filter({ hasText: /^Kontrola i przypomnienia/ }),
+  ).toContainText("Zaproszenie opiekuna:");
+  await page.locator("#szkic > details > summary").click();
+  await expect(body).toBeHidden();
+  await page.locator("#szkic > details > summary").click();
+  await expect(body).toHaveValue(
+    "Tekst pozostaje po zwinięciu opcji i edytora.",
+  );
+  await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Zapisano");
+  expect(await page.evaluate(() => window.careCalls.at(-1))).toMatchObject({
+    follow_up_on: "2026-11-01",
+    control_invite_on: "2026-11-03",
+  });
+
+  await page.goto(`${base}/?multi=1#szkic`);
+  await expect(body).toBeVisible();
+  await page.locator("#szkic > details > summary").click();
+  await page.evaluate(() => {
+    location.hash = "historia";
+  });
+  await page.evaluate(() => {
+    location.hash = "szkic";
+  });
+  await expect(body).toBeVisible();
+  const settings = page.locator("details").filter({
+    has: page.locator(":scope > summary", {
+      hasText: /^Kontrola i ustawienia/,
+    }),
+  });
+  await expect(settings).not.toHaveAttribute("open", "");
+  await expect(settings.locator(":scope > summary")).toContainText(
+    "Kontakt prowadzącej: Do kontaktu",
+  );
+  await expect(settings.locator(":scope > summary")).toContainText(
+    "Zaproszenie opiekuna:",
+  );
+  await expect(settings.locator(":scope > summary")).toContainText(
+    "Raportowanie: aktywne",
+  );
+  await expect(page.locator("#postepy")).toContainText("Nowa odpowiedź");
+  await expect(
+    page
+      .locator("#postepy")
+      .getByRole("button", { name: "Oznacz jako przeczytaną" }),
+  ).toBeVisible();
+
+  // Clicking the already-current fragment emits no hashchange. Real links
+  // must still reopen the editor without recreating its form.
+  const samePath =
+    "/admin/dogs/20000000-0000-4000-8000-000000000001/care?context=general#szkic";
+  await page.goto(`${base}${samePath}`);
+  await expect(body).toBeVisible();
+  await page.locator("#szkic > details > summary").click();
+  await page.getByText("Zmień plan", { exact: true }).click();
+  await page.getByText("Przygotuj plan innej usługi", { exact: true }).click();
+  await page.locator(`a[href="${samePath}"]`).click();
+  await expect(body).toBeVisible();
+
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const [name, query] of [
@@ -378,6 +515,8 @@ try {
       ["library", "view=library"],
       ["empty", "role=client&empty=1"],
       ["long", "role=admin&long=1"],
+      ["multiple-plans", "multi=1&fitness=whole"],
+      ["multiple-controls", "multi=1"],
     ]) {
       await page.goto(`${base}/?${query}`);
       await page
@@ -398,8 +537,14 @@ try {
         );
         await expect(
           page
-            .getByRole("navigation", { name: "Wybierz plan psa" })
-            .getByRole("link", { name: /Nasz plan na najbliższe dni/ }),
+            .getByRole("navigation", {
+              name: "Wybierz plan psa",
+              includeHidden: true,
+            })
+            .getByRole("link", {
+              name: /Nasz plan na najbliższe dni/,
+              includeHidden: true,
+            }),
         ).toHaveAttribute(
           "href",
           `/admin/dogs/20000000-0000-4000-8000-000000000001/care?${
@@ -419,6 +564,8 @@ try {
           "fitness-context",
           "fitness-independent",
           "course-independent",
+          "multiple-plans",
+          "multiple-controls",
         ].includes(name) &&
         (width === 390 || width === 1440)
       )
@@ -461,7 +608,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Care UI: error recovery, publication versions, library, guardian response, independent consultation/course/fitness drafts, guarded context navigation and 44 responsive scenarios passed.",
+    "Care UI: error recovery, publication versions, library, guardian response, independent drafts, guarded context navigation, compact disclosures and 52 responsive scenarios passed.",
   );
   console.log(`Screenshots: ${output}`);
 } finally {

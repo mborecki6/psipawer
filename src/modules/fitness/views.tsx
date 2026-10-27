@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
+import {
+  DetailsNavigation,
+  ProgressiveDetails,
+} from "@/components/progressive-details";
 import { Activity } from "lucide-react";
 import { dateLabel, money } from "@/lib/domain";
 import type { getFitnessPackage } from "./queries";
@@ -206,8 +210,39 @@ export function FitnessDetailView({
     base = admin ? "/admin" : "/app",
     refreshHref = `${base}/fitness/${p.id}`;
   const progress = sessions.filter((s) => s.status === "completed").length;
+  const nowTime = Date.parse(now);
+  const overdue = sessions.filter(
+    (s) =>
+      s.status === "scheduled" &&
+      s.starts_at &&
+      Date.parse(s.starts_at) + s.duration_minutes * 60000 <= nowTime,
+  );
+  const upcoming = sessions
+    .filter((s) => s.status === "scheduled" && s.starts_at)
+    .filter(
+      (s) => Date.parse(s.starts_at!) + s.duration_minutes * 60000 > nowTime,
+    )
+    .sort((a, b) => Date.parse(a.starts_at!) - Date.parse(b.starts_at!));
+  const pending = sessions.filter((s) => s.status === "pending");
+  const cancelled = sessions.filter((s) => s.status === "cancelled");
+  const selected =
+    overdue[0] || upcoming[0] || pending[0] || cancelled[0] || sessions.at(-1);
+  const balanceLabel = balance.needs_settlement
+    ? "Kwota po rezygnacji do uzgodnienia"
+    : balance.refund_due_cents > 0
+      ? `Do zwrotu: ${money(balance.refund_due_cents)}`
+      : balance.due_cents > 0
+        ? `Do zapłaty: ${money(balance.due_cents)}`
+        : ["active", "completed"].includes(p.status)
+          ? "Opłacone"
+          : balance.charge_cents > 0
+            ? "Rozliczone"
+            : "Brak należności";
   return (
-    <div className="stack">
+    <DetailsNavigation
+      navigationKey={`${p.id}-${historyPage}-${plansPage}`}
+      className={`stack ${styles.detailRoot}`}
+    >
       <header className={styles.header}>
         <Link className="text-button" href={`${base}/fitness`}>
           ← Pakiety fitness
@@ -227,84 +262,138 @@ export function FitnessDetailView({
           )}
         </div>
       </header>
-      <div className={styles.detail}>
-        <div className="stack">
-          <section className="card pad">
-            <h3>Warunki pakietu</h3>
-            <dl className={styles.facts}>
-              <div>
-                <dt>Cena z chwili zgłoszenia</dt>
-                <dd>{money(p.agreed_price_cents)} za cały pakiet</dd>
-              </div>
-              <div>
-                <dt>Spotkania indywidualne</dt>
-                <dd>
-                  {p.sessions_count} × {p.duration_minutes} min · miejsce
-                  ustalane osobno
-                </dd>
-              </div>
-              <div>
-                <dt>Cel spotkań</dt>
-                <dd className={styles.location}>{p.topic}</dd>
-              </div>
-              {p.availability && (
-                <div>
-                  <dt>Dostępność opiekuna</dt>
-                  <dd className={styles.location}>{p.availability}</dd>
-                </div>
-              )}
-              <div>
-                <dt>Zgłoszenie</dt>
-                <dd>{dateLabel(p.created_at)}</dd>
-              </div>
-            </dl>
+      <section
+        className={`card pad ${styles.progress}`}
+        aria-label="Postęp pakietu"
+      >
+        <strong>
+          Zakończone: {progress} z {p.sessions_count}
+        </strong>
+        <p className="muted">
+          {money(p.agreed_price_cents)} za cały pakiet · {p.sessions_count} ×{" "}
+          {p.duration_minutes} min. Nieobecność nie zmienia automatycznie
+          opłaty.
+        </p>
+        <div className={styles.badges}>
+          {overdue.length > 0 && (
+            <span className="badge amber">
+              Oczekują na zakończenie: {overdue.length}
+            </span>
+          )}
+          {pending.length > 0 && (
+            <span className="badge neutral">
+              Do umówienia: {pending.length}
+            </span>
+          )}
+          {cancelled.length > 0 && (
+            <span className="badge neutral">Odwołane: {cancelled.length}</span>
+          )}
+        </div>
+      </section>
+      <div className={styles.packageControls}>
+        <ProgressiveDetails
+          id="obsluga-pakietu"
+          className={`card pad ${styles.disclosure}`}
+          bodyClassName="stack"
+          label={
+            admin
+              ? p.status === "requested"
+                ? "Decyzja w sprawie zgłoszenia"
+                : "Zakończenie lub zmiany pakietu"
+              : "Twoje zgłoszenie i rezygnacja"
+          }
+          initiallyOpen={admin && p.status === "requested"}
+        >
+          <FitnessCommandForm
+            pack={p}
+            admin={admin}
+            requestId={randomUUID()}
+            refreshHref={refreshHref}
+            now={now}
+            allSessionsCompleted={progress === p.sessions_count}
+          />
+        </ProgressiveDetails>
+        <ProgressiveDetails
+          id="rozliczenie-pakietu"
+          className={`card pad ${styles.disclosure}`}
+          label={
+            <span>
+              Rozliczenie pakietu · <strong>{balanceLabel}</strong>
+            </span>
+          }
+          initiallyOpen={
+            balance.needs_review ||
+            balance.needs_settlement ||
+            balance.refund_due_cents > 0
+          }
+        >
+          <FitnessBilling
+            balance={balance}
+            payments={payments}
+            refunds={refunds}
+            admin={admin}
+          />
+        </ProgressiveDetails>
+      </div>
+      <section className="stack" aria-labelledby="fitness-meetings">
+        <div>
+          <h3 id="fitness-meetings">Spotkania pakietu</h3>
+          <p className="muted">
+            Wybierz spotkanie, żeby zobaczyć{" "}
+            {admin ? "szczegóły i dostępne działania" : "termin i miejsce"}.
+          </p>
+        </div>
+        {!sessions.length && (
+          <div className="card pad">
             <p className="muted">
-              Zmiana cennika nie przepisuje tych warunków. Zalecenia dobiera
-              prowadząca po pracy z psem.
+              Spotkania pojawią się po przyjęciu zgłoszenia przez prowadzącą.
             </p>
-          </section>
-          <section className="stack" aria-labelledby="fitness-meetings">
-            <div>
-              <h3 id="fitness-meetings">Spotkania pakietu</h3>
-              <p className="muted">
-                Zakończone: {progress} z {p.sessions_count}. Nieobecność nie
-                zmienia automatycznie opłaty.
-              </p>
-            </div>
-            {!sessions.length && (
-              <div className="card pad">
-                <p className="muted">
-                  Spotkania pojawią się po przyjęciu zgłoszenia przez
-                  prowadzącą.
-                </p>
-              </div>
-            )}
-            {sessions.map((s) => (
-              <article
+          </div>
+        )}
+        <div className={styles.sessionList}>
+          {sessions.map((s) => {
+            const needsAttendance = overdue.some((item) => item.id === s.id);
+            return (
+              <ProgressiveDetails
                 key={s.id}
                 id={`spotkanie-${s.id}`}
-                className={`card pad ${styles.session}`}
-              >
-                <div className={styles.toolbar}>
-                  <h3>
-                    Spotkanie {s.ordinal} z {p.sessions_count}
-                  </h3>
-                  <span
-                    className={`badge ${s.status === "completed" ? "green" : "neutral"}`}
-                  >
-                    {fitnessSessionLabels[s.status]}
+                name={`fitness-sessions-${p.id}`}
+                className={`card pad ${styles.sessionChoice}`}
+                bodyClassName={`stack ${styles.sessionBody}`}
+                initiallyOpen={s.id === selected?.id}
+                primary
+                label={
+                  <span className={styles.sessionSummary}>
+                    <strong>
+                      Spotkanie {s.ordinal} z {p.sessions_count}
+                    </strong>
+                    <span className={styles.badges}>
+                      <span
+                        className={`badge ${s.status === "completed" ? "green" : "neutral"}`}
+                      >
+                        {fitnessSessionLabels[s.status]}
+                      </span>
+                      {needsAttendance && (
+                        <span className="badge amber">
+                          Czeka na zakończenie
+                        </span>
+                      )}
+                      {s.attendance && (
+                        <span className="badge neutral">
+                          {fitnessAttendanceLabels[s.attendance]}
+                        </span>
+                      )}
+                    </span>
+                    <span className={styles.sessionTime}>
+                      {s.starts_at
+                        ? dateLabel(s.starts_at)
+                        : "Termin do ustalenia"}{" "}
+                      · {s.duration_minutes} min
+                    </span>
                   </span>
-                </div>
-                <p>
-                  {s.starts_at ? dateLabel(s.starts_at) : "Termin do ustalenia"}{" "}
-                  · {s.duration_minutes} min
-                </p>
-                {s.attendance && (
-                  <p>
-                    Obecność:{" "}
-                    <strong>{fitnessAttendanceLabels[s.attendance]}</strong>
-                  </p>
-                )}
+                }
+              >
+                <span id={`spotkanie-${s.ordinal}`} className={styles.anchor} />
                 {s.fitness_session_private_details?.exact_location && (
                   <p className={styles.location}>
                     {s.fitness_session_private_details.exact_location}
@@ -318,8 +407,12 @@ export function FitnessDetailView({
                   )}
                 {admin && (
                   <>
-                    <details>
-                      <summary>Ustal lub zmień termin spotkania</summary>
+                    <ProgressiveDetails
+                      label="Ustal lub zmień termin spotkania"
+                      initiallyOpen={
+                        p.status === "active" && s.status === "pending"
+                      }
+                    >
                       <FitnessScheduleForm
                         session={s}
                         booking={data.booking}
@@ -330,9 +423,11 @@ export function FitnessDetailView({
                         requestId={randomUUID()}
                         refreshHref={refreshHref}
                       />
-                    </details>
-                    <details>
-                      <summary>Obecność, odwołanie lub korekta</summary>
+                    </ProgressiveDetails>
+                    <ProgressiveDetails
+                      label="Obecność, odwołanie lub korekta"
+                      initiallyOpen={p.status === "active" && needsAttendance}
+                    >
                       <FitnessCommandForm
                         pack={p}
                         session={s}
@@ -341,90 +436,109 @@ export function FitnessDetailView({
                         refreshHref={refreshHref}
                         now={now}
                       />
-                    </details>
+                    </ProgressiveDetails>
                   </>
                 )}
-              </article>
-            ))}
-          </section>
-          <FitnessCarePanel
-            care={care}
-            pack={p}
-            sessions={sessions}
-            admin={admin}
-            page={plansPage}
-            href={(n) =>
-              `${base}/fitness/${p.id}?${new URLSearchParams({ historyPage: String(historyPage), plans: String(n) })}#zalecenia`
-            }
-          />
-          <section className="card pad">
-            <h3>Historia pakietu</h3>
-            {history.length ? (
-              <ol className={styles.history}>
-                {history.map((h) => (
-                  <li key={h.id}>
-                    <strong>
-                      {historyLabels[h.action] || "Zapisana zmiana"}
-                      {h.session_id
-                        ? ` · spotkanie ${sessions.find((s) => s.id === h.session_id)?.ordinal || "pakietu"}`
-                        : ""}
-                    </strong>
-                    <small>{dateLabel(h.created_at)}</small>
-                    {h.note && <p>{h.note}</p>}
-                    <HistoryDetails row={h} />
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="muted">Brak wpisów w historii.</p>
-            )}
-            <nav
-              className={styles.toolbar}
-              aria-label="Strony historii fitness"
-            >
-              {historyPage > 1 && (
-                <Link
-                  className="ghost-button"
-                  href={`?historyPage=${historyPage - 1}`}
-                >
-                  ← Nowsze wpisy
-                </Link>
-              )}
-              <span className="muted">Strona {historyPage}</span>
-              {historyMore && (
-                <Link
-                  className="ghost-button"
-                  href={`?historyPage=${historyPage + 1}`}
-                >
-                  Starsze wpisy →
-                </Link>
-              )}
-            </nav>
-          </section>
+              </ProgressiveDetails>
+            );
+          })}
         </div>
-        <aside className="stack">
-          <section className="card pad">
-            <h3>{admin ? "Obsługa pakietu" : "Twoje zgłoszenie"}</h3>
-            <FitnessCommandForm
-              pack={p}
-              admin={admin}
-              requestId={randomUUID()}
-              refreshHref={refreshHref}
-              now={now}
-              allSessionsCompleted={progress === p.sessions_count}
-            />
-          </section>
-          <FitnessBilling
-            balance={balance}
-            payments={payments}
-            refunds={refunds}
-            admin={admin}
-          />
-          <Link className="ghost-button" href={`${base}/calendar`}>
-            Otwórz wspólny kalendarz →
-          </Link>
-        </aside>
-      </div>
-    </div>
+      </section>
+      <FitnessCarePanel
+        care={care}
+        pack={p}
+        sessions={sessions}
+        admin={admin}
+        page={plansPage}
+        href={(n) =>
+          `${base}/fitness/${p.id}?${new URLSearchParams({ historyPage: String(historyPage), plans: String(n) })}#zalecenia`
+        }
+      />
+      <ProgressiveDetails
+        id="warunki-pakietu"
+        className={`card pad ${styles.disclosure}`}
+        label="Warunki pakietu i treść zgłoszenia"
+      >
+        <dl className={styles.facts}>
+          <div>
+            <dt>Cena z chwili zgłoszenia</dt>
+            <dd>{money(p.agreed_price_cents)} za cały pakiet</dd>
+          </div>
+          <div>
+            <dt>Spotkania indywidualne</dt>
+            <dd>
+              {p.sessions_count} × {p.duration_minutes} min · miejsce ustalane
+              osobno
+            </dd>
+          </div>
+          <div>
+            <dt>Cel spotkań</dt>
+            <dd className={styles.location}>{p.topic}</dd>
+          </div>
+          {p.availability && (
+            <div>
+              <dt>Dostępność opiekuna</dt>
+              <dd className={styles.location}>{p.availability}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Zgłoszenie</dt>
+            <dd>{dateLabel(p.created_at)}</dd>
+          </div>
+        </dl>
+        <p className="muted">
+          Zmiana cennika nie przepisuje tych warunków. Zalecenia dobiera
+          prowadząca po pracy z psem.
+        </p>
+      </ProgressiveDetails>
+      <ProgressiveDetails
+        id="historia-pakietu"
+        className={`card pad ${styles.disclosure}`}
+        label="Historia pakietu"
+        initiallyOpen={historyPage > 1}
+      >
+        {history.length ? (
+          <ol className={styles.history}>
+            {history.map((h) => (
+              <li key={h.id}>
+                <strong>
+                  {historyLabels[h.action] || "Zapisana zmiana"}
+                  {h.session_id
+                    ? ` · spotkanie ${sessions.find((s) => s.id === h.session_id)?.ordinal || "pakietu"}`
+                    : ""}
+                </strong>
+                <small>{dateLabel(h.created_at)}</small>
+                {h.note && <p>{h.note}</p>}
+                <HistoryDetails row={h} />
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="muted">Brak wpisów w historii.</p>
+        )}
+        <nav className={styles.toolbar} aria-label="Strony historii fitness">
+          {historyPage > 1 && (
+            <Link
+              className="ghost-button"
+              href={`?historyPage=${historyPage - 1}&plans=${plansPage}#historia-pakietu`}
+            >
+              ← Nowsze wpisy
+            </Link>
+          )}
+          <span className="muted">Strona {historyPage}</span>
+          {historyMore && (
+            <Link
+              className="ghost-button"
+              href={`?historyPage=${historyPage + 1}&plans=${plansPage}#historia-pakietu`}
+            >
+              Starsze wpisy →
+            </Link>
+          )}
+        </nav>
+      </ProgressiveDetails>
+      <Link className="ghost-button" href={`${base}/calendar`}>
+        Otwórz wspólny kalendarz →
+      </Link>
+    </DetailsNavigation>
   );
 }

@@ -14,6 +14,8 @@ import { DogCreationRequest } from "./dog-creation-request";
 import { Badge, Empty } from "./ui";
 import { saveDog, saveBehavior, addNote } from "@/lib/data/actions";
 import type { Dog } from "@/lib/data/types";
+import { DetailsNavigation, ProgressiveDetails } from "./progressive-details";
+import styles from "./dogs.module.css";
 export function DogForm({ dog }: { dog?: Dog }) {
   return (
     <ActionForm
@@ -184,12 +186,13 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
     ["bite_history", "Historia pogryzień"],
     ["goals", "Wasze cele"],
   ];
+  const completedAnswers = questions.filter(([name]) =>
+    behavior.data?.[name]?.trim(),
+  ).length;
+  const base = role === "admin" ? "/admin" : "/app";
   return (
-    <div className="stack">
-      <Link
-        className="ghost-button"
-        href={`${role === "admin" ? "/admin" : "/app"}/dogs`}
-      >
+    <DetailsNavigation navigationKey={`dog-${id}`} className="stack">
+      <Link className="ghost-button" href={`${base}/dogs`}>
         ← Wszystkie psy
       </Link>
       {saved && (
@@ -198,26 +201,55 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
         </div>
       )}
       <div className="profile-layout">
-        <aside className="card pad profile-summary">
+        <aside className={`card pad profile-summary ${styles.summary}`}>
           {photo?.data?.signedUrl ? (
             <Image
               unoptimized
               width={320}
               height={320}
-              className="dog-avatar-photo"
+              className={`dog-avatar-photo ${styles.photo}`}
               src={photo.data.signedUrl}
               alt={dog.name}
             />
           ) : (
-            <div className="dog-monogram">
-              <PawPrint size={50} />
+            <div className={`dog-monogram ${styles.monogram}`}>
+              <PawPrint size={42} />
             </div>
           )}
           <h2>{dog.name}</h2>
           <Badge status={dog.status} />
-          <p>
-            {dog.breed} · {dog.approximate_age}
+          <dl className={styles.profileFacts}>
+            {[
+              ["Rasa / typ", dog.breed],
+              ["Przybliżony wiek", dog.approximate_age],
+              ["Płeć", dog.sex === "unknown" ? null : labels[dog.sex]],
+              ["Waga", dog.weight_kg == null ? null : `${dog.weight_kg} kg`],
+              ["Umaszczenie", dog.color],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value || "Nie podano"}</dd>
+              </div>
+            ))}
+          </dl>
+          <p
+            className={completedAnswers < questions.length ? "alert" : "muted"}
+          >
+            <span>
+              <strong>
+                Informacje o potrzebach: {completedAnswers} / {questions.length}
+              </strong>
+              <br />
+              {completedAnswers === 0
+                ? "Kwestionariusz psa nie został jeszcze uzupełniony."
+                : completedAnswers < questions.length
+                  ? "Część informacji czeka na uzupełnienie."
+                  : "Wszystkie pola są uzupełnione."}
+            </span>
           </p>
+          <a className="ghost-button" href="#dog-needs">
+            Potrzeby i bezpieczeństwo ↓
+          </a>
           <h3>Opiekun</h3>
           <p>
             {guardian.data?.full_name}
@@ -229,78 +261,52 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
               Zadzwoń do opiekuna
             </a>
           )}
-          <AvatarEditor
-            key={id}
-            scope="dog"
-            dogId={id}
-            initialPath={dog.avatar_path}
-          />
+          <ProgressiveDetails label="Zmień zdjęcie" className={styles.details}>
+            <AvatarEditor
+              key={id}
+              scope="dog"
+              dogId={id}
+              initialPath={dog.avatar_path}
+            />
+          </ProgressiveDetails>
         </aside>
         <div className="stack">
-          <article className="card pad">
-            <h3>Konsultacje indywidualne</h3>
-            <p className="muted">
-              Zgłoszenia, uzgodnione terminy i historia spotkań tego psa.
-            </p>
-            <Link
-              className="ghost-button"
-              href={`${role === "admin" ? "/admin" : "/app"}/consultations?dog=${id}`}
-            >
-              Otwórz konsultacje →
-            </Link>
-          </article>
-          <article className="card pad">
-            <h2>Plan pracy i postępy</h2>
-            <p className="muted">
-              {role === "admin"
-                ? "Przygotuj zalecenia dla tego psa i wróć do odpowiedzi opiekuna."
-                : "Przeczytaj wskazówki prowadzącej i opowiedz, jak Wam idzie."}
-            </p>
-            <Link
-              className="primary-button"
-              href={`${role === "admin" ? "/admin" : "/app"}/dogs/${id}/care`}
-            >
-              Otwórz plan i postępy →
-            </Link>
-          </article>
-          <article className="card pad">
-            <h2>Profil psa</h2>
-            <DogForm dog={dog as Dog} />
-          </article>
-          <article className="card pad">
-            <h2>Poznajmy psie potrzeby</h2>
+          {role === "admin" && (
+            <article className="card pad" id="kwalifikacja" data-detail-item>
+              <h2>Kwalifikacja do spacerów</h2>
+              <Badge status={dog.status} />
+              <ProgressiveDetails
+                label="Zmień kwalifikację"
+                primary
+                className={styles.details}
+              >
+                <DogQualificationForm
+                  key={id}
+                  dogId={id}
+                  requestId={randomUUID()}
+                  status={dog.status}
+                  version={dog.qualification_version}
+                />
+              </ProgressiveDetails>
+            </article>
+          )}
+          <article className="card pad" id="dog-needs">
+            <h2>Potrzeby i bezpieczeństwo</h2>
             <p className="muted">
               Kwestionariusz jest prywatny. Widzi go opiekun i behawiorysta.
               Zmiana reakcji lub historii pogryzień może wymagać ponownej oceny.
             </p>
-            <ActionForm action={saveBehavior} label="Zapisz kwestionariusz">
-              <input type="hidden" name="dog_id" value={id} />
-              <div className="form-grid">
-                {questions.map(([name, label]) => (
-                  <label className="field" key={name}>
-                    <span>{label}</span>
-                    <textarea
-                      name={name}
-                      maxLength={4000}
-                      defaultValue={behavior.data?.[name] || ""}
-                    />
-                  </label>
-                ))}
-              </div>
-            </ActionForm>
+            <dl className={styles.needs}>
+              {questions.map(([name, label]) => (
+                <div key={name}>
+                  <dt>{label}</dt>
+                  <dd className="preserve-lines">
+                    {behavior.data?.[name]?.trim() || "Nie uzupełniono"}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </article>
-          {role === "admin" && (
-            <article className="card pad">
-              <h2>Kwalifikacja do spacerów</h2>
-              <DogQualificationForm
-                key={id}
-                dogId={id}
-                requestId={randomUUID()}
-                status={dog.status}
-                version={dog.qualification_version}
-              />
-            </article>
-          )}
           <article className="card pad">
             <h2>
               {role === "admin"
@@ -322,28 +328,86 @@ export async function DogDetail({ id, saved }: { id: string; saved?: string }) {
               <p className="muted">Brak notatek do wyświetlenia.</p>
             )}
             {role === "admin" && (
-              <ActionForm action={addNote} label="Dodaj notatkę">
-                <input type="hidden" name="dog_id" value={id} />
-                <label className="field">
-                  <span>Treść notatki</span>
-                  <textarea name="body" required maxLength={8000} />
-                </label>
-                <label className="field">
-                  <span>Widoczność</span>
-                  <select name="visibility" defaultValue="admin_only">
-                    <option value="admin_only">
-                      Prywatna — tylko behawiorysta
-                    </option>
-                    <option value="client_visible">
-                      Udostępniona opiekunowi
-                    </option>
-                  </select>
-                </label>
-              </ActionForm>
+              <ProgressiveDetails
+                label="Dodaj notatkę"
+                className={styles.details}
+              >
+                <ActionForm action={addNote} label="Dodaj notatkę">
+                  <input type="hidden" name="dog_id" value={id} />
+                  <label className="field">
+                    <span>Treść notatki</span>
+                    <textarea name="body" required maxLength={8000} />
+                  </label>
+                  <label className="field">
+                    <span>Widoczność</span>
+                    <select name="visibility" defaultValue="admin_only">
+                      <option value="admin_only">
+                        Prywatna — tylko behawiorysta
+                      </option>
+                      <option value="client_visible">
+                        Udostępniona opiekunowi
+                      </option>
+                    </select>
+                  </label>
+                </ActionForm>
+              </ProgressiveDetails>
             )}
+          </article>
+          <article className="card pad">
+            <h2>Plan pracy i postępy</h2>
+            <p className="muted">
+              {role === "admin"
+                ? "Przygotuj zalecenia dla tego psa i wróć do odpowiedzi opiekuna."
+                : "Przeczytaj wskazówki prowadzącej i opowiedz, jak Wam idzie."}
+            </p>
+            <Link className="primary-button" href={`${base}/dogs/${id}/care`}>
+              Otwórz plan i postępy →
+            </Link>
+            <Link
+              className="ghost-button"
+              href={`${base}/consultations?dog=${id}`}
+            >
+              Konsultacje indywidualne →
+            </Link>
+          </article>
+          <article className="card pad">
+            <ProgressiveDetails
+              label="Edytuj profil"
+              className={styles.details}
+            >
+              <DogForm dog={dog as Dog} />
+            </ProgressiveDetails>
+            <ProgressiveDetails
+              label={
+                completedAnswers === 0
+                  ? "Uzupełnij informacje o psie"
+                  : "Zmień informacje o psie"
+              }
+              className={styles.details}
+            >
+              <p className="muted">
+                Informacje są prywatne dla opiekuna i behawiorysty. Zmiana
+                reakcji lub historii pogryzień może wymagać ponownej oceny.
+              </p>
+              <ActionForm action={saveBehavior} label="Zapisz kwestionariusz">
+                <input type="hidden" name="dog_id" value={id} />
+                <div className="form-grid">
+                  {questions.map(([name, label]) => (
+                    <label className="field" key={name}>
+                      <span>{label}</span>
+                      <textarea
+                        name={name}
+                        maxLength={4000}
+                        defaultValue={behavior.data?.[name] || ""}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </ActionForm>
+            </ProgressiveDetails>
           </article>
         </div>
       </div>
-    </div>
+    </DetailsNavigation>
   );
 }

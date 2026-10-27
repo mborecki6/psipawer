@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { revealFor } from "./details-ui";
 import { mkdirSync } from "node:fs";
 import { test, checked } from "./local-fixtures";
 import { walkJourney } from "./walk-journey";
@@ -129,7 +130,7 @@ test("all six staff queue filters keep global counts, paginate and open the corr
     await expect(
       j.staff.getByText("Po terminie", { exact: true }),
     ).toBeVisible();
-    const items = j.staff.locator("article.card.pad a");
+    const items = j.staff.locator('article.card.pad a[href*="returnTo="]');
     await expect(items).toHaveCount(20);
     await j.staff
       .getByRole("link", { name: "Następne →", exact: true })
@@ -149,7 +150,11 @@ test("all six staff queue filters keep global counts, paginate and open the corr
         a.map((link) => link.getAttribute("href")),
       );
       expect(paths).toEqual(
-        result.slice(0, 20).map((row: WorkItem) => workHref(row)),
+        result
+          .slice(0, 20)
+          .map((row: WorkItem) =>
+            workHref(row, `/admin/work?filter=${kind}&page=1`),
+          ),
       );
       expect(
         await j.staff.evaluate(
@@ -182,20 +187,31 @@ test("all six staff queue filters keep global counts, paginate and open the corr
     ).toEqual(firstPage);
     await j.staff.goto("/admin/work?filter=walks");
     await j.staff
-      .locator(`a[href="/admin/walks/${walk}#registration-${registration}"]`)
+      .locator(
+        `a[href="/admin/walks/${walk}?returnTo=${encodeURIComponent("/admin/work?filter=walks&page=1")}#registration-${registration}"]`,
+      )
       .click();
     await expect(
       j.staff.locator(`#registration-${registration}`),
     ).toBeVisible();
     await j.staff.goto("/admin/work?filter=consultations");
     await j.staff
-      .locator(`a[href="/admin/consultations/${consultation}"]`)
+      .locator(
+        `a[href="/admin/consultations/${consultation}?returnTo=${encodeURIComponent("/admin/work?filter=consultations&page=1")}"]`,
+      )
       .click();
     await expect(
       j.staff.getByText("Fikcyjne zgłoszenie z kolejki", { exact: true }),
     ).toBeVisible();
     await j.staff.goto("/admin/work?filter=fitness");
-    await j.staff.locator(`a[href="/admin/fitness/${pack}"]`).click();
+    await j.staff
+      .locator(
+        `a[href="/admin/fitness/${pack}?returnTo=${encodeURIComponent("/admin/work?filter=fitness&page=1")}"]`,
+      )
+      .click();
+    await revealFor(
+      j.staff.getByText("Fikcyjny pakiet z kolejki", { exact: true }),
+    );
     await expect(
       j.staff.getByText("Fikcyjny pakiet z kolejki", { exact: true }),
     ).toBeVisible();

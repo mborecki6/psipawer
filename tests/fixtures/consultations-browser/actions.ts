@@ -3,6 +3,7 @@ declare global {
   interface Window {
     consultationFail?: boolean;
     consultationWarn?: boolean;
+    consultationDelay?: number;
     consultationCalls: Record<string, FormDataEntryValue>[];
     refreshConsultation: () => void;
   }
@@ -11,6 +12,10 @@ async function record(_: ActionState, form: FormData) {
   window.consultationCalls ||= [];
   const input = Object.fromEntries(form);
   window.consultationCalls.push(input);
+  if (window.consultationDelay)
+    await new Promise((resolve) =>
+      setTimeout(resolve, window.consultationDelay),
+    );
   if (window.consultationFail)
     return { error: "Nie udało się zapisać. Spróbuj ponownie." };
   if (window.consultationWarn && input.confirm_short_break !== "true")
@@ -31,3 +36,10 @@ export const requestConsultation = record;
 export const scheduleConsultation = record;
 export const closeConsultation = record;
 export const agreeConsultationPrice = record;
+export const requestFitness = record;
+export const changeFitnessPackage = record;
+export const saveFitnessSession = record;
+export const changeFitnessSession = record;
+export const recordPayment = record;
+export const settleFitnessPackage = record;
+export const refundFitnessPayment = record;

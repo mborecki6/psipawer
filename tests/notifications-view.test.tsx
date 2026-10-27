@@ -186,7 +186,7 @@ it("identifies owner deep links inside their group and marks care rather than th
   expect(care.active("/app/care")).toBe(true);
   expect(care.active("/app/dogs")).toBe(false);
 });
-it("opens the owner's active group on a direct visit and keeps account and primary actions", () => {
+it("opens the owner's active group and keeps account access without competing walk actions", () => {
   for (const [path, group] of [
     ["/app/fitness/package", "Zajęcia"],
     ["/app/gifts/card", "Więcej"],
@@ -204,9 +204,18 @@ it("opens the owner's active group on a direct visit and keeps account and prima
     expect(html).toContain('href="/profile"');
     expect(html).toContain('href="/account/security"');
     expect(html).toContain("Wyloguj się");
-    expect(html).toContain('aria-label="Znajdź spacer"');
+    expect(html).not.toContain('aria-label="Znajdź spacer"');
+    expect(html).toContain('href="/app/walks"');
   }
 });
+it.each(["/app", "/app/walks", "/app/walks/example"])(
+  "keeps the quick walk action in its context at %s",
+  (path) => {
+    mocks.path.mockReturnValue(path);
+    const html = renderToStaticMarkup(<Shell role="client" name="Opiekun">Treść</Shell>);
+    expect(html).toContain('aria-label="Znajdź spacer"');
+  },
+);
 it("keeps staff activity and settings selection independent of the owner's groups", () => {
   const activities = getShellNavigation("admin", "/admin/fitness/package");
   expect(activities.active("/admin/activities")).toBe(true);

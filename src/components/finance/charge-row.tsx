@@ -30,11 +30,13 @@ export function ChargeRow({
   admin,
   onlinePaymentEnabled = false,
   onlinePaymentEnvironment = null,
+  onlinePaymentPreview = false,
 }: {
   charge: FinanceCharge;
   admin: boolean;
   onlinePaymentEnabled?: boolean;
   onlinePaymentEnvironment?: "sandbox" | "simulator" | "live" | null;
+  onlinePaymentPreview?: boolean;
 }) {
   return (
     <article className={styles.row} id={`charge-${charge.kind}-${charge.id}`}>
@@ -118,58 +120,88 @@ export function ChargeRow({
             </Link>
           </p>
         )}
-      {admin && charge.canPay && (
-        <Details title="Rozlicz należność" icon={<Wallet aria-hidden="true" />}>
-          <div
-            className={
-              charge.availablePackages.length ? styles.actionColumns : undefined
-            }
+      {!admin &&
+        onlinePaymentPreview &&
+        charge.onlinePaymentEligible &&
+        charge.canPay &&
+        !charge.reviewReason &&
+        charge.kind !== "package" &&
+        charge.dueCents > 0 && (
+          <p className={styles.rowNote}>
+            <Link
+              className="text-button"
+              href={`/app/payments/new?kind=${charge.kind}&target=${encodeURIComponent(charge.id)}`}
+            >
+              Podgląd płatności online →
+            </Link>
+          </p>
+        )}
+      {admin &&
+        charge.canPay &&
+        ["course", "fitness"].includes(charge.kind) && (
+          <p className={styles.rowNote}>
+            <PaymentForm charge={charge} />
+          </p>
+        )}
+      {admin &&
+        charge.canPay &&
+        !["course", "fitness"].includes(charge.kind) && (
+          <Details
+            title="Rozlicz należność"
+            icon={<Wallet aria-hidden="true" />}
           >
-            <div>
-              <h4 className={styles.actionHeading}>Otrzymana wpłata</h4>
-              <p className={styles.formHint}>
-                Wpisz kwotę, którą opiekun już zapłacił. Możesz odnotować także
-                część należności.
-              </p>
-              <PaymentForm charge={charge} />
-            </div>
-            {charge.availablePackages.length > 0 && (
+            <div
+              className={
+                charge.availablePackages.length
+                  ? styles.actionColumns
+                  : undefined
+              }
+            >
               <div>
-                <h4 className={styles.actionHeading}>Wejście z pakietu</h4>
+                <h4 className={styles.actionHeading}>Otrzymana wpłata</h4>
                 <p className={styles.formHint}>
-                  Zarezerwuj jedno dostępne wejście tego psa na ten spacer.
+                  Wpisz kwotę, którą opiekun już zapłacił. Możesz odnotować
+                  także część należności.
                 </p>
-                <ActionForm
-                  action={usePackage}
-                  label="Użyj wejścia z pakietu"
-                  pendingLabel="Rezerwuję wejście…"
-                >
-                  <input
-                    type="hidden"
-                    name="registration_id"
-                    value={charge.id}
-                  />
-                  <label className="field">
-                    <span>Pakiet psa {charge.dogName}</span>
-                    <select
-                      name="package_id"
-                      required
-                      defaultValue={charge.availablePackages[0].id}
-                    >
-                      {charge.availablePackages.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} · dostępne wejścia: {item.available}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <NoteField privateNote />
-                </ActionForm>
+                <PaymentForm charge={charge} />
               </div>
-            )}
-          </div>
-        </Details>
-      )}
+              {charge.availablePackages.length > 0 && (
+                <div>
+                  <h4 className={styles.actionHeading}>Wejście z pakietu</h4>
+                  <p className={styles.formHint}>
+                    Zarezerwuj jedno dostępne wejście tego psa na ten spacer.
+                  </p>
+                  <ActionForm
+                    action={usePackage}
+                    label="Użyj wejścia z pakietu"
+                    pendingLabel="Rezerwuję wejście…"
+                  >
+                    <input
+                      type="hidden"
+                      name="registration_id"
+                      value={charge.id}
+                    />
+                    <label className="field">
+                      <span>Pakiet psa {charge.dogName}</span>
+                      <select
+                        name="package_id"
+                        required
+                        defaultValue={charge.availablePackages[0].id}
+                      >
+                        {charge.availablePackages.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} · dostępne wejścia: {item.available}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <NoteField privateNote />
+                  </ActionForm>
+                </div>
+              )}
+            </div>
+          </Details>
+        )}
     </article>
   );
 }

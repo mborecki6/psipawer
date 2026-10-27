@@ -1,6 +1,7 @@
 "use client";
 import { useId, useState } from "react";
 import type { BookingChoices } from "./booking-queries";
+import { ProgressiveDetails } from "../../components/progressive-details";
 
 export function BookingChoice({
   data,
@@ -40,6 +41,50 @@ export function BookingChoice({
         (member) => member.user_id === assignment.assigned_staff_id,
       )
     : undefined;
+  const compactStaff =
+    activeStaff.length === 1 &&
+    initialStaff === original.defaultStaffId &&
+    (!assignment ||
+      freshRequest ||
+      assignment.assigned_staff_id === original.defaultStaffId);
+  const staffField = (
+    <div className="field">
+      <label htmlFor={`${prefix}-staff`}>Prowadzący</label>
+      <select
+        id={`${prefix}-staff`}
+        name="calendar_staff_id"
+        value={staff}
+        onChange={(e) => setStaff(e.target.value)}
+        required={!assignment}
+      >
+        <option value="">
+          {assignment
+            ? "Do przypisania — wspólna rezerwacja"
+            : "Wybierz prowadzącego"}
+        </option>
+        {assignment?.assigned_staff_id &&
+          assignment.assigned_staff_id !== original.defaultStaffId && (
+            <option value={assignment.assigned_staff_id}>
+              {historicalStaff?.full_name || "Dotychczasowy prowadzący"}
+              {" · dotychczasowe przypisanie"}
+            </option>
+          )}
+        {activeStaff.map((s) => (
+          <option key={s.user_id} value={s.user_id}>
+            {s.full_name || "Prowadząca"}
+          </option>
+        ))}
+      </select>
+      {!original.defaultStaffId && (
+        <small className="field-hint" role="status">
+          Brak aktywnej prowadzącej w ustawieniach kalendarza.
+          {assignment
+            ? " Dotychczasowe przypisanie pozostaje zachowane."
+            : " Nie można jeszcze zaplanować nowego spotkania."}
+        </small>
+      )}
+    </div>
+  );
   return (
     <fieldset
       disabled={pending || saved}
@@ -52,42 +97,22 @@ export function BookingChoice({
         value={assignment?.version || 0}
       />
       <div className="form-grid" style={{ alignItems: "start" }}>
-        <div className="field">
-          <label htmlFor={`${prefix}-staff`}>Prowadzący</label>
-          <select
-            id={`${prefix}-staff`}
-            name="calendar_staff_id"
-            value={staff}
-            onChange={(e) => setStaff(e.target.value)}
-            required={!assignment}
-          >
-            <option value="">
-              {assignment
-                ? "Do przypisania — wspólna rezerwacja"
-                : "Wybierz prowadzącego"}
-            </option>
-            {assignment?.assigned_staff_id &&
-              assignment.assigned_staff_id !== original.defaultStaffId && (
-                <option value={assignment.assigned_staff_id}>
-                  {historicalStaff?.full_name || "Dotychczasowy prowadzący"}
-                  {" · dotychczasowe przypisanie"}
-                </option>
-              )}
-            {activeStaff.map((s) => (
-              <option key={s.user_id} value={s.user_id}>
-                {s.full_name || "Prowadząca"}
-              </option>
-            ))}
-          </select>
-          {!original.defaultStaffId && (
-            <small className="field-hint" role="status">
-              Brak aktywnej prowadzącej w ustawieniach kalendarza.
-              {assignment
-                ? " Dotychczasowe przypisanie pozostaje zachowane."
-                : " Nie można jeszcze zaplanować nowego spotkania."}
-            </small>
-          )}
-        </div>
+        {compactStaff ? (
+          <div className="stack-sm">
+            <p className="muted">
+              Prowadząca:{" "}
+              <strong>
+                {activeStaff.find((s) => s.user_id === staff)?.full_name ||
+                  "Do przypisania"}
+              </strong>
+            </p>
+            <ProgressiveDetails label="Zmień przypisanie">
+              {staffField}
+            </ProgressiveDetails>
+          </div>
+        ) : (
+          staffField
+        )}
         {resources.length ? (
           <div className="field">
             <label htmlFor={`${prefix}-resource`}>

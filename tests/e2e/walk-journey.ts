@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Browser, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { completeServerAction } from "./action-completion";
@@ -115,11 +116,21 @@ export async function walkJourney(
     await login(staff, leader, "admin");
     await login(guardian, owner, "client");
     await staff.goto(`/admin/dogs/${dogs[0]}`);
+    await revealFor(staff.getByLabel("Status"));
     await staff.getByLabel("Status").selectOption("approved");
+    await revealFor(staff.getByLabel("Powód / zalecenia"));
     await staff
       .getByLabel("Powód / zalecenia")
       .fill("Fikcyjna kwalifikacja do lokalnej próby spaceru.");
-    await staff.getByRole("button", { name: "Zapisz kwalifikację" }).click();
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+      }),
+    );
+    await staff
+      .getByRole("button", { includeHidden: true, name: "Zapisz kwalifikację" })
+      .click();
     await expect(staff.getByRole("status")).toContainText("Status psa");
 
     async function freeStart(phase: "future" | "late" | "past") {
@@ -146,19 +157,37 @@ export async function walkJourney(
     ) {
       const start = await freeStart("future");
       await staff.goto("/admin/walks/new");
+      await revealFor(staff.getByLabel("Termin (czas polski)"));
       await staff.getByLabel("Termin (czas polski)").fill(dateInput(start));
+      await revealFor(staff.getByLabel("Ogólna lokalizacja"));
       await staff.getByLabel("Ogólna lokalizacja").fill(`${label} ${suffix}`);
+      await revealFor(staff.getByLabel("Dokładne miejsce zbiórki"));
       await staff
         .getByLabel("Dokładne miejsce zbiórki")
         .fill(`Prywatna zbiórka ${label} ${suffix}`);
-      if (options.capacity !== undefined)
+      if (options.capacity !== undefined) {
+        await revealFor(staff.getByLabel("Liczba miejsc"));
         await staff.getByLabel("Liczba miejsc").fill(String(options.capacity));
-      if (options.bookingMode)
+      }
+      if (options.bookingMode) {
+        await revealFor(staff.getByLabel("Tryb zapisów"));
         await staff
           .getByLabel("Tryb zapisów")
           .selectOption(options.bookingMode);
+      }
+      await revealFor(
+        staff.getByRole("button", {
+          includeHidden: true,
+          name: "Utwórz spacer",
+          exact: true,
+        }),
+      );
       await staff
-        .getByRole("button", { name: "Utwórz spacer", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Utwórz spacer",
+          exact: true,
+        })
         .click();
       await expect(staff).toHaveURL(/\/admin\/walks\/[a-f0-9-]+\?saved=1$/);
       const id = new URL(staff.url()).pathname.split("/").at(-1)!;
@@ -172,12 +201,24 @@ export async function walkJourney(
       api = ownerDb,
     ) {
       await page.goto(`/app/walks/${id}`);
+      await revealFor(page.getByLabel("Wybierz swojego psa"));
       await page.getByLabel("Wybierz swojego psa").selectOption(dog);
       const cards = page.locator(".registration-card");
       await expect(cards).toHaveCount(0);
+      await revealFor(
+        page.getByRole("button", {
+          includeHidden: true,
+          name: "Zgłoś psa",
+          exact: true,
+        }),
+      );
       await completeServerAction(
         page,
-        page.getByRole("button", { name: "Zgłoś psa", exact: true }),
+        page.getByRole("button", {
+          includeHidden: true,
+          name: "Zgłoś psa",
+          exact: true,
+        }),
         async (remaining) => {
           await expect(page).toHaveURL(`/app/walks/${id}`, {
             timeout: remaining(),
@@ -212,14 +253,28 @@ export async function walkJourney(
     async function accept(id: string, reg: string) {
       await staff.goto(`/admin/walks/${id}`);
       const card = staff.locator(`#registration-${reg}`);
+      await revealFor(card.getByLabel("Decyzja"));
       await card.getByLabel("Decyzja").selectOption("accepted");
       staff.once("dialog", (dialog) => dialog.accept());
+      await revealFor(
+        card.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz decyzję",
+          exact: true,
+        }),
+      );
       await card
-        .getByRole("button", { name: "Zapisz decyzję", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz decyzję",
+          exact: true,
+        })
         .click();
       await expect(card.getByRole("status")).toContainText("Decyzja zapisana");
       await expect(
-        card.getByText("Zaakceptowany", { exact: true }),
+        card
+          .locator(":scope > details > summary")
+          .getByText("Zaakceptowany", { exact: true }),
       ).toBeVisible();
     }
     async function registration(id: string) {
@@ -239,15 +294,34 @@ export async function walkJourney(
       await staff.goto(`/admin/finance?charge=${kind}-${id}`);
       const charge = staff.locator(`#charge-${kind}-${id}`);
       await expect(charge).toBeVisible();
+      await revealFor(
+        charge
+          .locator("summary")
+          .getByText("Rozlicz należność", { exact: true }),
+      );
       await charge
         .locator("summary")
         .getByText("Rozlicz należność", { exact: true })
         .click();
+      await revealFor(
+        charge.getByLabel("Otrzymana kwota (zł)", { exact: true }),
+      );
       await charge
         .getByLabel("Otrzymana kwota (zł)", { exact: true })
         .fill(amount);
+      await revealFor(
+        charge.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        }),
+      );
       await charge
-        .getByRole("button", { name: "Zapisz wpłatę", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        })
         .click();
       await expect
         .poll(async () => {
@@ -260,22 +334,44 @@ export async function walkJourney(
     }
     async function createPackage(entries: number) {
       await staff.goto("/admin/finance");
+      await revealFor(
+        staff
+          .locator("summary")
+          .getByText("Dodaj pakiet dla psa", { exact: true }),
+      );
       await staff
         .locator("summary")
         .getByText("Dodaj pakiet dla psa", { exact: true })
         .click();
+      await revealFor(staff.getByLabel("Pies i opiekun"));
       await staff.getByLabel("Pies i opiekun").selectOption(dogs[0]);
+      await revealFor(staff.getByLabel("Nazwa pakietu", { exact: true }));
       await staff
         .getByLabel("Nazwa pakietu", { exact: true })
         .fill(`Pakiet próby ${suffix}`);
+      await revealFor(staff.getByLabel("Liczba wejść", { exact: true }));
       await staff
         .getByLabel("Liczba wejść", { exact: true })
         .fill(String(entries));
+      await revealFor(
+        staff.getByLabel("Cena całego pakietu (zł)", { exact: true }),
+      );
       await staff
         .getByLabel("Cena całego pakietu (zł)", { exact: true })
         .fill("100,00");
+      await revealFor(
+        staff.getByRole("button", {
+          includeHidden: true,
+          name: "Utwórz pakiet",
+          exact: true,
+        }),
+      );
       await staff
-        .getByRole("button", { name: "Utwórz pakiet", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Utwórz pakiet",
+          exact: true,
+        })
         .click();
       await expect(staff.getByRole("status")).toContainText("Pakiet dodany");
       const row = await checked(
@@ -287,13 +383,30 @@ export async function walkJourney(
     async function usePackage(reg: string, pkg: string) {
       await staff.goto(`/admin/finance?charge=registration-${reg}`);
       const charge = staff.locator(`#charge-registration-${reg}`);
+      await revealFor(
+        charge
+          .locator("summary")
+          .getByText("Rozlicz należność", { exact: true }),
+      );
       await charge
         .locator("summary")
         .getByText("Rozlicz należność", { exact: true })
         .click();
+      await revealFor(charge.getByLabel(/^Pakiet psa/));
       await charge.getByLabel(/^Pakiet psa/).selectOption(pkg);
+      await revealFor(
+        charge.getByRole("button", {
+          includeHidden: true,
+          name: "Użyj wejścia z pakietu",
+          exact: true,
+        }),
+      );
       await charge
-        .getByRole("button", { name: "Użyj wejścia z pakietu", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Użyj wejścia z pakietu",
+          exact: true,
+        })
         .click();
       await expect
         .poll(() => registration(reg))
@@ -311,14 +424,31 @@ export async function walkJourney(
     async function refund(payment: string, note: string) {
       await staff.goto("/admin/finance");
       const row = staff.locator(`#payment-${payment}`);
+      await revealFor(
+        row
+          .locator("summary")
+          .getByText("Zapisz zwrot lub popraw błędną wpłatę", { exact: true }),
+      );
       await row
         .locator("summary")
         .getByText("Zapisz zwrot lub popraw błędną wpłatę", { exact: true })
         .click();
+      await revealFor(row.getByLabel("Powód zwrotu lub korekty"));
       await row.getByLabel("Powód zwrotu lub korekty").fill(note);
       staff.once("dialog", (dialog) => dialog.accept());
+      await revealFor(
+        row.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz zwrot / korektę",
+          exact: true,
+        }),
+      );
       await row
-        .getByRole("button", { name: "Zapisz zwrot / korektę", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz zwrot / korektę",
+          exact: true,
+        })
         .click();
       await expect(
         row.getByText("Zwrot / korekta", { exact: true }).first(),
@@ -328,8 +458,19 @@ export async function walkJourney(
       await guardian.goto(`/app/walks/${id}`);
       const card = guardian.locator(`#registration-${reg}`);
       guardian.once("dialog", (dialog) => dialog.accept());
+      await revealFor(
+        card.getByRole("button", {
+          includeHidden: true,
+          name: "Odwołaj zgłoszenie",
+          exact: true,
+        }),
+      );
       await card
-        .getByRole("button", { name: "Odwołaj zgłoszenie", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Odwołaj zgłoszenie",
+          exact: true,
+        })
         .click();
       await expect(
         card.getByText(late ? "Późne odwołanie" : "Odwołany w terminie", {
@@ -340,9 +481,21 @@ export async function walkJourney(
     async function attendance(id: string, reg: string, value: string) {
       await staff.goto(`/admin/walks/${id}`);
       const card = staff.locator(`#registration-${reg}`);
+      await revealFor(card.getByLabel("Obecność"));
       await card.getByLabel("Obecność").selectOption(value);
+      await revealFor(
+        card.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz obecność",
+          exact: true,
+        }),
+      );
       await card
-        .getByRole("button", { name: "Zapisz obecność", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz obecność",
+          exact: true,
+        })
         .click();
       await expect(card.getByRole("status")).toContainText("Obecność zapisana");
       await expect

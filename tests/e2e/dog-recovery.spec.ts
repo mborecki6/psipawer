@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect } from "@playwright/test";
 import {
   test,
@@ -46,8 +47,13 @@ for (const committed of [false, true]) {
       await page.goto("/app/dogs/new");
       for (const [key, value] of Object.entries(fields)) {
         const input = page.locator(`[name="${key}"]`);
-        if (key === "sex") await input.selectOption(value);
-        else await input.fill(value);
+        if (key === "sex") {
+          await revealFor(input);
+          await input.selectOption(value);
+        } else {
+          await revealFor(input);
+          await input.fill(value);
+        }
       }
       const requestId = await page
         .locator('[name="creation_request_id"]')
@@ -68,8 +74,19 @@ for (const committed of [false, true]) {
         }
         await route.abort("failed");
       });
+      await revealFor(
+        page.getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        }),
+      );
       await page
-        .getByRole("button", { name: "Dodaj psa", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        })
         .click();
       await expect(page.locator("form").getByRole("alert")).toContainText(
         "Nie udało się potwierdzić zapisu",
@@ -82,17 +99,35 @@ for (const committed of [false, true]) {
         requestId,
       );
       await expect(page.locator("form").getByRole("alert")).toBeFocused();
-      await page.screenshot({ path: test.info().outputPath("retained-form.png") });
+      await page.screenshot({
+        path: test.info().outputPath("retained-form.png"),
+      });
       await expect(
-        page.getByRole("button", { name: "Spróbuj ponownie", exact: true }),
+        page.getByRole("button", {
+          includeHidden: true,
+          name: "Spróbuj ponownie",
+          exact: true,
+        }),
       ).toHaveCount(0);
 
       if (committed) {
+        await revealFor(page.getByLabel("Rasa / typ", { exact: true }));
         await page
           .getByLabel("Rasa / typ", { exact: true })
           .fill("Zmienione po utracie odpowiedzi");
+        await revealFor(
+          page.getByRole("button", {
+            includeHidden: true,
+            name: "Dodaj psa",
+            exact: true,
+          }),
+        );
         await page
-          .getByRole("button", { name: "Dodaj psa", exact: true })
+          .getByRole("button", {
+            includeHidden: true,
+            name: "Dodaj psa",
+            exact: true,
+          })
           .click();
         await expect(page.locator("form").getByRole("alert")).toContainText(
           "już zapisany z innymi danymi",
@@ -101,28 +136,52 @@ for (const committed of [false, true]) {
         await expect(page.locator('[name="creation_request_id"]')).toHaveValue(
           requestId,
         );
+        await revealFor(page.getByLabel("Rasa / typ", { exact: true }));
         await page.getByLabel("Rasa / typ", { exact: true }).fill(fields.breed);
       }
+      await revealFor(
+        page.getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        }),
+      );
       await page
-        .getByRole("button", { name: "Dodaj psa", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        })
         .click();
       await expect(page).toHaveURL(/\/app\/dogs\/[a-f0-9-]+\?saved=1$/);
       const rows = await saved();
       expect(rows).toHaveLength(1);
       if (!dogs.includes(rows![0].id)) dogs.push(rows![0].id);
       if (committed) {
+        await revealFor(page.getByLabel("Rasa / typ", { exact: true }));
         await page
           .getByLabel("Rasa / typ", { exact: true })
           .fill("Zapisana edycja");
+        await revealFor(
+          page.getByRole("button", {
+            includeHidden: true,
+            name: "Zapisz profil",
+            exact: true,
+          }),
+        );
         await page
-          .getByRole("button", { name: "Zapisz profil", exact: true })
+          .getByRole("button", {
+            includeHidden: true,
+            name: "Zapisz profil",
+            exact: true,
+          })
           .click();
         await expect(
           page.getByLabel("Rasa / typ", { exact: true }),
         ).toHaveValue("Zapisana edycja");
-        await expect.poll(saved).toEqual([
-          { id: dogs[0], breed: "Zapisana edycja" },
-        ]);
+        await expect
+          .poll(saved)
+          .toEqual([{ id: dogs[0], breed: "Zapisana edycja" }]);
       }
     } finally {
       await cleanupSteps(

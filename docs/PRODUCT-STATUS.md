@@ -1,6 +1,6 @@
 # Stan prac nad uzgodnionym produktem
 
-Aktualizacja: 26.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login).
+Aktualizacja: 27.10.2026. MVP działa na [psipawer.vercel.app](https://psipawer.vercel.app/login).
 Po akceptacji wizualizacji opublikowano obowiązkowy start nowych opiekunów
 (kod `d22ffd9`, migracja 66). **Lokalnie i na produkcji 66 migracji.**
 Trzy kroki, różne zdjęcia i karta startu; zapis, pauza i ukończenie działają
@@ -13,6 +13,50 @@ endpointów PASS**, bez błędów JavaScript i zapisów biznesowych na hostingu.
 Przed migracją wykonano świeżą kopię, odtworzenie i próbę zachowania danych.
 Rzeczywistych klientów nie zaproszono. Tpay, SMTP i zaproszenia pozostają
 wyłączone; plan Supabase nadal Free.
+
+Lokalnie przygotowano i sprawdzono uproszczenie adminowego widoku zaleceń przy psie: jeden
+widoczny plan, zwijany wybór pozostałych, materiały i daty jako opcje oraz
+pomocnicza sekcja kontroli po edytorze. Reguły zapisu i publikacji pozostają
+bez zmian. [Zakres i odbiór](iterations/2026-10-26-prostsze-zalecenia.md).
+Odbiór: 127 testów reguł/DB, 52 warianty UI, 11 E2E Chromium i 3 WebKit PASS;
+niezależny przegląd bez nierozwiązanych uwag w sprawdzonym zakresie.
+Ta iteracja nie została opublikowana; nie zmienia migracji ani integracji.
+
+Kolejna sprawdzona lokalna iteracja upraszcza administracyjny szczegół kursu: zwarta lista
+terminów z jednym rozwiniętym spotkaniem, osobne obecności i opcje oraz warunki,
+ustawienia i historia poniżej głównej pracy. Zgłoszenia i rozliczenia zachowują
+dotychczasowe dane i ostrzeżenia. [Zakres i odbiór](iterations/2026-10-26-prostszy-kurs.md).
+Odbiór: 112 testów reguł, 64 warianty UI, 11 scenariuszy Next/API Chromium
+i 3 WebKit PASS; niezależna recenzja źródłowa bez potwierdzonych uwag.
+Bez publikacji i zmian DB; w tamtej iteracji nie przebudowywano jeszcze
+podobnych widoków fitness/konsultacji. Dalszą realizację z 27.10 opisano poniżej.
+
+Przeprowadzono odczytowy [audyt prostoty całej aplikacji](iterations/2026-10-26-audyt-prostoty.md):
+niezależne oceny biznesu, techniki i recenzenta oraz 31 lokalnych widoków i sześć
+wariantów mobilnych. Najważniejsze propozycje dotyczą karty psa, konsultacji,
+fitnessu, bieżących spraw opiekuna i przejść do konkretnego spotkania. Wykryto
+także zbyt szeroki pusty komunikat kolejki pracy; rozszerzenie jej faktycznego
+zakresu jest osobnym zadaniem. Sam audyt był odczytowy; ograniczenia jego danych
+testowych opisano w raporcie. Użytkownik następnie zatwierdził lokalną realizację.
+
+Po zgodzie z 27.10 wdrożono lokalnie [uproszczenia po audycie](iterations/2026-10-27-uproszczenia-po-audycie.md):
+podgląd i edycję na żądanie przy psie, zwięzły skład spaceru, konsultacje zależne
+od stanu, kompaktowy fitness i kurs opiekuna, bieżące zgłoszenia wszystkich pięciu
+rodzajów na starcie, dokładne spotkanie z kalendarza, lżejsze raportowanie/cennik
+i mniej pustych rozliczeń. Formularze zachowują szkice i odsłaniają wynik zapisu.
+Kwoty, wersje, kwalifikacja i prywatność zachowują dotychczasowe zasady.
+Pełne 2040 unit, build, TypeScript i ESLint PASS; 28 różnych scenariuszy Next/Supabase
+w Chromium oraz pięć WebKit PASS. Wcześniejsze dane biznesowe zachowano; jedyną
+różnicą 93-tabelowego porównania jest diagnostyczny stan lokalnego procesora
+przypomnień. **Ta partia nadal jest wyłącznie lokalna**, wraz z wcześniejszymi
+lokalnymi uproszczeniami zaleceń i kursu. Bez migracji i aktywacji integracji.
+
+Użytkownik następnie zatwierdził publikację uproszczeń oraz rozszerzył wydanie
+o [klikalny podgląd płatności online](iterations/2026-10-27-podglad-platnosci.md).
+Podgląd jest odczytowy, pokazuje rzeczywistą pozostałą kwotę i jasno informuje,
+że operator jeszcze nie działa. Nie tworzy prób ani wpłat. Pełne 2057 testów,
+lokalny build i dodatkowy przeklik Chromium/WebKit PASS. Publikacja w toku;
+Tpay/PayU, symulator w chmurze, SMTP i zaproszenia pozostają wyłączone.
 
 Wcześniejsze poprawki z 18 i 23.10 opublikowano po osobnej zgodzie użytkownika;
 kod `50a0543` obejmował dodatkową aktualizację bezpieczeństwa Zod 4.6.6.

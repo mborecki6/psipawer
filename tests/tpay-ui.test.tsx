@@ -65,6 +65,7 @@ import { FinanceView } from "../src/components/finance";
 import { PaymentRow } from "../src/components/finance/payment-row";
 import {
   NewOnlinePaymentView,
+  OnlinePaymentPreviewView,
   OnlinePaymentAttemptView,
   OnlinePaymentAttempts,
 } from "../src/modules/payments/views";
@@ -85,6 +86,7 @@ const charge: FinanceCharge = {
   paidCents: 4000,
   dueCents: 6000,
   canPay: true,
+  onlinePaymentEligible: true,
   availablePackages: [],
 };
 const attempt: OnlinePaymentAttempt = {
@@ -188,7 +190,7 @@ beforeEach(() => {
   mocks.attempt.mockResolvedValue(attempt);
 });
 
-it("keeps the existing finance UI when online payment is omitted or disabled", () => {
+it("keeps checkout off and labels the preview when online payment is disabled", () => {
   for (const onlinePayments of [undefined, { ...context, enabled: false }]) {
     const html = renderToStaticMarkup(
       createElement(FinanceView, {
@@ -201,7 +203,88 @@ it("keeps the existing finance UI when online payment is omitted or disabled", (
     expect(html).not.toContain("Próby płatności BLIK");
     expect(html).not.toContain("Symulacja lokalna");
     expect(html).toContain("Sposób płatności lub zwrotu ustal z prowadzącą");
+    expect(html.includes("Podgląd płatności online")).toBe(
+      onlinePayments !== undefined,
+    );
   }
+});
+
+it("offers a clearly named preview of eligible services only to the guardian", () => {
+  const charges = (
+    ["registration", "consultation", "course", "fitness", "package"] as const
+  ).map((kind) => ({ ...charge, kind, id: kind }));
+  for (const admin of [false, true]) {
+    const html = renderToStaticMarkup(
+      createElement(FinanceView, {
+        data: data(charges),
+        admin,
+        onlinePayments: { ...context, enabled: false, environment: null },
+      }),
+    );
+    expect(html.match(/Podgląd płatności online/g) || []).toHaveLength(
+      admin ? 0 : 4,
+    );
+    expect(html).not.toContain("kind=package");
+    expect(html).not.toContain("Zapłać BLIKIEM");
+  }
+});
+
+it("does not preview unaccepted, settled or reviewed charges", () => {
+  for (const changes of [
+    { onlinePaymentEligible: false },
+    { onlinePaymentEligible: undefined },
+    { canPay: false },
+    { dueCents: 0 },
+    { reviewReason: "settlement" as const },
+    { reviewReason: "refund" as const },
+  ]) {
+    const html = renderToStaticMarkup(
+      createElement(FinanceView, {
+        data: data([{ ...charge, ...changes }]),
+        admin: false,
+        onlinePayments: { ...context, enabled: false },
+      }),
+    );
+    expect(html).not.toContain("Podgląd płatności online");
+  }
+});
+
+it.each(["creating", "pending", "uncertain", "requires_review"] as const)(
+  "keeps the %s attempt ahead of a preview for its charge",
+  (status) => {
+    const html = renderToStaticMarkup(
+      createElement(FinanceView, {
+        data: data([charge, { ...charge, id: "another-charge" }]),
+        admin: false,
+        onlinePayments: {
+          ...context,
+          enabled: false,
+          environment: null,
+          attempts: [{ ...attempt, status }],
+        },
+      }),
+    );
+    expect(html).toContain("Przed kolejną wpłatą sprawdź");
+    expect(html).toContain(`/app/payments/${attempt.id}`);
+    expect(html).not.toContain(`target=${charge.id}`);
+    expect(html).toContain("target=another-charge");
+  },
+);
+
+it("shows the actual balance in a provider-neutral preview without a payment form", () => {
+  const html = renderToStaticMarkup(
+    createElement(OnlinePaymentPreviewView, { charge }),
+  );
+  expect(html).toContain("Podgląd płatności online");
+  expect(html).toContain("Płatności online jeszcze niedostępne");
+  expect(html).toContain("Figa");
+  expect(html).toContain(charge.title);
+  expect(html).toContain("100,00");
+  expect(html).toContain("40,00");
+  expect(html).toContain("60,00");
+  expect(html).toContain('href="/app/finance"');
+  expect(html).toContain(`href="${charge.href}"`);
+  expect(html).not.toMatch(/<form|<input|<button|BLIK|Tpay|PayU|Opłacona/);
 });
 
 it.each([false, true])(
@@ -478,7 +561,7 @@ it("requires the client before a read-only confirmation GET", async () => {
   expect(mocks.start).not.toHaveBeenCalled();
 });
 
-it("distinguishes disabled, unavailable and failed charge reads without creating a payment", async () => {
+it("previews a disabled checkout but distinguishes unavailable and failed charge reads", async () => {
   mocks.context.mockResolvedValueOnce({
     ...context,
     enabled: false,
@@ -490,9 +573,11 @@ it("distinguishes disabled, unavailable and failed charge reads without creating
       searchParams: Promise.resolve({ kind: "course", target: charge.id }),
     }),
   );
-  expect(off).toContain("Płatności BLIK są wyłączone");
-  expect(off).toContain("Brak lokalnej konfiguracji testowej.");
-  expect(mocks.charge).not.toHaveBeenCalled();
+  expect(off).toContain("Płatności online jeszcze niedostępne");
+  expect(off).toContain("Podsumowanie płatności");
+  expect(off).not.toContain("Brak lokalnej konfiguracji testowej.");
+  expect(off).not.toContain("<form");
+  expect(mocks.charge).toHaveBeenCalledWith("course", charge.id);
   mocks.charge.mockResolvedValueOnce(null);
   expect(
     renderToStaticMarkup(
@@ -510,6 +595,73 @@ it("distinguishes disabled, unavailable and failed charge reads without creating
   expect(failed).toContain("Nie udało się odczytać należności");
   expect(failed).not.toContain("PRIVATE DB error");
   expect(mocks.start).not.toHaveBeenCalled();
+});
+
+it("keeps repeated preview reads free of all payment actions", async () => {
+  mocks.context.mockResolvedValue({
+    ...context,
+    enabled: false,
+    environment: null,
+    attempts: [{ ...attempt, status: "uncertain" }],
+  });
+  for (let visit = 0; visit < 3; visit++) {
+    const html = renderToStaticMarkup(
+      await NewPage({
+        searchParams: Promise.resolve({ kind: "course", target: charge.id }),
+      }),
+    );
+    expect(html).toContain("Płatności online jeszcze niedostępne");
+    expect(html).toContain("wcześniejszą próbę płatności");
+    expect(html).toContain(`/app/payments/${attempt.id}`);
+    expect(html).not.toMatch(/<form|<input|<button/);
+  }
+  for (const action of [
+    mocks.start,
+    mocks.continue,
+    mocks.check,
+    mocks.simulate,
+    mocks.recover,
+  ])
+    expect(action).not.toHaveBeenCalled();
+});
+
+it("requires the guardian role before reading a preview", async () => {
+  mocks.session.mockRejectedValueOnce(new Error("FORBIDDEN"));
+  await expect(
+    NewPage({
+      searchParams: Promise.resolve({ kind: "course", target: charge.id }),
+    }),
+  ).rejects.toThrow("FORBIDDEN");
+  expect(mocks.context).not.toHaveBeenCalled();
+  expect(mocks.charge).not.toHaveBeenCalled();
+});
+
+it("does not reveal a missing or foreign charge and rejects ineligible preview targets", async () => {
+  mocks.context.mockResolvedValue({
+    ...context,
+    enabled: false,
+    environment: null,
+  });
+  for (const inaccessible of [
+    null,
+    { ...charge, onlinePaymentEligible: false },
+    { ...charge, canPay: false },
+    { ...charge, dueCents: 0 },
+    { ...charge, kind: "package" },
+    { ...charge, reviewReason: "settlement" },
+    { ...charge, reviewReason: "refund" },
+  ]) {
+    mocks.charge.mockResolvedValueOnce(inaccessible);
+    const html = renderToStaticMarkup(
+      await NewPage({
+        searchParams: Promise.resolve({ kind: "course", target: charge.id }),
+      }),
+    );
+    expect(html).toContain("Ta należność nie jest dostępna w podglądzie");
+    expect(html).not.toContain(charge.dogName);
+    expect(html).not.toContain(charge.title);
+    expect(html).not.toContain("<form");
+  }
 });
 
 it("requires the appropriate role for either attempt page and never checks or mutates on GET", async () => {

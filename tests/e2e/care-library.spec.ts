@@ -5,6 +5,7 @@ import {
   careEditor,
   careDay,
   careScreenshot,
+  openCareSection,
 } from "./care-journey";
 
 async function materialForm(page: Page, id: string) {
@@ -109,12 +110,14 @@ test("library material → personal plan → later material edits and stale card
     await staff.goto(`/admin/dogs/${dog}/care`);
     const planForm = await careEditor(staff);
     await expect(
-      planForm.getByRole("region", { name: "Powiązanie planu", exact: true }),
+      staff.getByRole("region", { name: "Powiązanie planu", exact: true }),
     ).toContainText("Ogólny plan pracy");
     const followUp = careDay(14);
+    await openCareSection(planForm, "Kontrola i przypomnienia");
     await planForm
       .getByLabel("Termin kontaktu kontrolnego (opcjonalnie)")
       .fill(followUp);
+    await openCareSection(planForm, "Wstaw materiał z biblioteki");
     await planForm
       .getByLabel("Zacznij od materiału z biblioteki")
       .selectOption(templateId);
@@ -292,6 +295,7 @@ test("library material → personal plan → later material edits and stale card
     ).toHaveCount(0);
     await staff.goto(`/admin/dogs/${dog}/care`);
     const updatedPlan = await careEditor(staff);
+    await openCareSection(updatedPlan, "Wstaw materiał z biblioteki");
     await updatedPlan
       .getByLabel("Zacznij od materiału z biblioteki")
       .selectOption(templateId);

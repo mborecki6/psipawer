@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import {
@@ -11,10 +12,20 @@ import {
   freeCalendarStart,
 } from "./local-fixtures";
 import { dateInput } from "./walk-journey";
+import {
+  openCourseCommand,
+  openCourseMeeting,
+  openCourseMeetingOptions,
+  openCourseSection,
+} from "./course-ui";
 test.use({ trace: "off" });
 const serviceId = "60000000-0000-4000-8000-000000000001";
 const courseForm = (page: Page) =>
-  page.getByRole("form", { name: "Zmiana kursu", exact: true });
+  page.getByRole("form", {
+    includeHidden: true,
+    name: "Zmiana kursu",
+    exact: true,
+  });
 async function screenshot(page: Page, path: string, width: number) {
   await expect(
     page
@@ -115,6 +126,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
       await staff.unrouteAll({ behavior: "wait" });
     }
     const create = staff.getByRole("form", {
+      includeHidden: true,
       name: "Nowy cykl kursu",
       exact: true,
     });
@@ -163,6 +175,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await expect(
       ownerPage.getByRole("heading", { name: "Ten trop się urwał." }),
     ).toBeVisible();
+    await openCourseCommand(staff);
     await courseForm(staff)
       .getByLabel("Zmiana kursu", { exact: true })
       .selectOption("publish");
@@ -178,9 +191,17 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
         page.getByText("PRYWATNY PUNKT PANELU", { exact: false }),
       ).toHaveCount(0);
       const request = page.getByRole("form", {
+        includeHidden: true,
         name: "Zgłoszenie na kurs",
         exact: true,
       });
+      await revealFor(
+        request.getByRole("button", {
+          name: "Zgłoś psa na kurs",
+          exact: true,
+          includeHidden: true,
+        }),
+      );
       await request
         .getByRole("button", { name: "Zgłoś psa na kurs", exact: true })
         .click();
@@ -196,12 +217,14 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
         name: `Zgłoszenie: ${name}`,
         exact: true,
       });
-      await card.getByText("Decyzja o zgłoszeniu", { exact: true }).click();
       const form = card.getByRole("form", {
+        includeHidden: true,
         name: `Decyzja: ${name}`,
         exact: true,
       });
-      await form.getByRole("combobox").selectOption(intent);
+      const choice = form.getByRole("combobox", { includeHidden: true });
+      await revealFor(choice);
+      await choice.selectOption(intent);
       await form
         .getByRole("button", { name: "Zapisz zmianę", exact: true })
         .click();
@@ -217,8 +240,17 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await expect(reserve.getByRole("alert")).toHaveText(
       "Brak wolnych miejsc na kursie.",
     );
-    await reserve.getByRole("combobox").selectOption("waitlist");
-    await reserve
+    const reserveDecision = reserve.getByRole("form", {
+      name: `Decyzja: ${names[1]}`,
+      exact: true,
+      includeHidden: true,
+    });
+    const reserveChoice = reserveDecision.getByRole("combobox", {
+      includeHidden: true,
+    });
+    await revealFor(reserveChoice);
+    await reserveChoice.selectOption("waitlist");
+    await reserveDecision
       .getByRole("button", { name: "Zapisz zmianę", exact: true })
       .click();
     await expect(reserve.getByRole("status")).toHaveText("Decyzja zapisana.");
@@ -242,17 +274,18 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     const staleRequest = await ownContext.newPage();
     await staleRequest.goto(`/app/courses/${id}`);
     const staleEnrollment = staleRequest.getByRole("form", {
+      includeHidden: true,
       name: "Zgłoszenie na kurs",
       exact: true,
     });
+    await revealFor(staleEnrollment.getByLabel("Pies", { exact: true }));
     await staleEnrollment
       .getByLabel("Pies", { exact: true })
       .selectOption(extraDog!.id);
-    const staleMeeting = stale.locator("#spotkanie-1");
-    await staleMeeting
-      .getByText("Zmień termin lub miejsce", { exact: true })
-      .click();
+    const staleMeeting = await openCourseMeetingOptions(stale, 1);
+    await openCourseSection(staleMeeting, "Zmień termin lub miejsce");
     const staleForm = stale.getByRole("form", {
+      includeHidden: true,
       name: "Termin spotkania 1",
       exact: true,
     });
@@ -262,14 +295,14 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await staleForm
       .getByLabel("Powód zmiany dla opiekuna")
       .fill("Wpis w starej karcie");
-    const meeting = staff.locator("#spotkanie-1");
-    await meeting
-      .getByText("Zmień termin lub miejsce", { exact: true })
-      .click();
+    const meeting = await openCourseMeetingOptions(staff, 1);
+    await openCourseSection(meeting, "Zmień termin lub miejsce");
     const edit = staff.getByRole("form", {
+      includeHidden: true,
       name: "Termin spotkania 1",
       exact: true,
     });
+    const firstMeetingId = await edit.locator('[name="id"]').inputValue();
     const moved = dateInput(
       new Date(Date.parse(firstIso) + 86400000).toISOString(),
     );
@@ -326,7 +359,7 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
       ownerPage
         .getByRole("link", { name: "Otwórz szczegóły", exact: true })
         .first(),
-    ).toHaveAttribute("href", `/app/courses/${id}`);
+    ).toHaveAttribute("href", `/app/courses/${id}#spotkanie-${firstMeetingId}`);
     await otherPage.goto(`/app/calendar?date=${moved.slice(0, 10)}`);
     await expect(otherPage.getByText(title, { exact: false })).toHaveCount(0);
     await ownerPage.goto(`/app/courses/${id}`);
@@ -338,7 +371,12 @@ test("course panels: create → requests → acceptance/reserve → stale meetin
     await staff
       .getByRole("link", { name: "Odśwież dane →", exact: true })
       .click();
-    await courseForm(staff).getByRole("combobox").selectOption("cancel");
+    await openCourseCommand(staff);
+    const cancelCourse = courseForm(staff).getByRole("combobox", {
+      includeHidden: true,
+    });
+    await revealFor(cancelCourse);
+    await cancelCourse.selectOption("cancel");
     await courseForm(staff)
       .getByLabel("Powód dla opiekuna")
       .fill("Uzgodnione odwołanie próbnego cyklu");
@@ -503,9 +541,14 @@ test("course attendance panels: started meeting → recorded attendance → comp
       name: "Szczegóły spotkania →",
       exact: true,
     });
-    await expect(next).toHaveAttribute("href", `/app/courses/${id}`);
+    await expect(next).toHaveAttribute(
+      "href",
+      `/app/courses/${id}#spotkanie-${sessions![0].id}`,
+    );
     await next.click();
-    await expect(ownPage).toHaveURL(`/app/courses/${id}`);
+    await expect(ownPage).toHaveURL(
+      `/app/courses/${id}#spotkanie-${sessions![0].id}`,
+    );
     // Move only this fixture's first meeting into the past to test its clock gate
     // without changing the database/server clock or any existing appointments.
     await checked(
@@ -515,9 +558,10 @@ test("course attendance panels: started meeting → recorded attendance → comp
         .eq("id", sessions![0].id),
     );
     await staff.goto(`/admin/courses/${id}`);
-    const firstCard = staff.locator("#spotkanie-1");
-    await firstCard.getByText("Obecności uczestników", { exact: true }).click();
+    const firstCard = await openCourseMeeting(staff, 1);
+    await openCourseSection(firstCard, "Obecności uczestników");
     const attendance = firstCard.getByRole("form", {
+      includeHidden: true,
       name: `Obecność: ${dogName}`,
       exact: true,
     });
@@ -528,10 +572,10 @@ test("course attendance panels: started meeting → recorded attendance → comp
     await expect(attendance.getByRole("status")).toHaveText(
       "Obecność zapisana.",
     );
-    await firstCard
-      .getByText("Zakończ lub odwołaj spotkanie", { exact: true })
-      .click();
+    await openCourseMeetingOptions(staff, 1);
+    await openCourseSection(firstCard, "Zakończ lub odwołaj spotkanie");
     const end = firstCard.getByRole("form", {
+      includeHidden: true,
       name: "Zmiana spotkania 1",
       exact: true,
     });
@@ -546,11 +590,10 @@ test("course attendance panels: started meeting → recorded attendance → comp
       firstCard.getByText("Zakończone", { exact: true }),
     ).toBeVisible();
     for (let n = 2; n <= 5; n++) {
-      const card = staff.locator(`#spotkanie-${n}`);
-      await card
-        .getByText("Zakończ lub odwołaj spotkanie", { exact: true })
-        .click();
+      const card = await openCourseMeetingOptions(staff, n);
+      await openCourseSection(card, "Zakończ lub odwołaj spotkanie");
       const end = card.getByRole("form", {
+        includeHidden: true,
         name: `Zmiana spotkania ${n}`,
         exact: true,
       });
@@ -568,6 +611,7 @@ test("course attendance panels: started meeting → recorded attendance → comp
     await staff
       .getByRole("link", { name: "Odśwież dane →", exact: true })
       .click();
+    await openCourseCommand(staff);
     await courseForm(staff).getByRole("combobox").selectOption("complete");
     await courseForm(staff)
       .getByRole("button", { name: "Zapisz zmianę", exact: true })
@@ -576,6 +620,7 @@ test("course attendance panels: started meeting → recorded attendance → comp
       "Zmiana kursu zapisana.",
     );
     await ownPage.goto(`/app/courses/${id}`);
+    await openCourseMeeting(ownPage, 1);
     await expect(ownPage.locator("#spotkanie-1")).toContainText("Obecny");
     await expect(ownPage.locator("#spotkanie-1")).toContainText("Zakończone");
     await screenshot(ownPage, "output/courses/attendance-390.png", 390);

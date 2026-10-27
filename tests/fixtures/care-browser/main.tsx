@@ -50,6 +50,11 @@ const search = new URLSearchParams(location.search);
 const role = search.get("role") === "client" ? "client" : "admin";
 const view = search.get("view") || "dog";
 const empty = search.get("empty") === "1";
+const multiple = search.get("multi") === "1";
+if (multiple) {
+  plan.follow_up_on = "2026-11-01";
+  plan.control_invite_on = "2026-11-03";
+}
 if (search.get("long") === "1") {
   dog.name = "Bardzo długie imię psa ".repeat(5);
   plan.title = "Długi tytuł planu ".repeat(8);
@@ -202,15 +207,50 @@ createRoot(document.getElementById("root")!).render(
           contexts={
             empty
               ? []
-              : [
-                  {
-                    ...plan,
-                    context_key: careContextKey(plan),
-                    title: plan.title,
-                    published_id: plan.id,
-                    has_draft: role === "admin",
-                  },
-                ]
+              : multiple
+                ? [
+                    {
+                      ...plan,
+                      context_key: "general",
+                      published_id: plan.id,
+                      has_draft: true,
+                    },
+                    {
+                      consultation_id: meetings[0].id,
+                      context_key: `consultation:${meetings[0].id}`,
+                      title: "Plan po konsultacji",
+                      published_id: null,
+                      revision: null,
+                      has_draft: true,
+                    },
+                    {
+                      consultation_id: null,
+                      course_enrollment_id: course.id,
+                      context_key: `course:${course.id}:all`,
+                      title: "Zalecenia do kursu",
+                      published_id: null,
+                      revision: null,
+                      has_draft: true,
+                    },
+                    {
+                      consultation_id: null,
+                      fitness_package_id: fitness.id,
+                      context_key: `fitness:${fitness.id}:all`,
+                      title: "Plan treningów fitness",
+                      published_id: null,
+                      revision: null,
+                      has_draft: true,
+                    },
+                  ]
+                : [
+                    {
+                      ...plan,
+                      context_key: careContextKey(plan),
+                      title: plan.title,
+                      published_id: plan.id,
+                      has_draft: role === "admin",
+                    },
+                  ]
           }
           consultations={meetings}
           requestedConsultation={requested}
@@ -254,6 +294,49 @@ createRoot(document.getElementById("root")!).render(
           moreHistory={false}
           progress={empty || !sameContext ? [] : [response]}
           moreProgress={false}
+          followUp={
+            multiple && sameContext
+              ? {
+                  id: "60000000-0000-4000-8000-000000000001",
+                  plan_id: plan.id,
+                  dog_id: dog.id,
+                  due_on: "2026-11-01",
+                  status: "open",
+                  version: 1,
+                  created_at: plan.published_at,
+                  closed_at: null,
+                }
+              : null
+          }
+          controlInvitation={
+            multiple && sameContext
+              ? {
+                  id: "60000000-0000-4000-8000-000000000002",
+                  plan_id: plan.id,
+                  dog_id: dog.id,
+                  guardian_id: "10000000-0000-4000-8000-000000000001",
+                  due_on: "2026-11-03",
+                  status: "open",
+                  version: 1,
+                  consultation_id: null,
+                }
+              : undefined
+          }
+          reporting={
+            multiple
+              ? {
+                  id: null,
+                  included: true,
+                  allowed: true,
+                  starts_at: null,
+                  expires_at: null,
+                  version: 0,
+                  overridden: false,
+                  snapshot_days: null,
+                  service_id: null,
+                }
+              : undefined
+          }
           historyPage={1}
           progressPage={1}
           responseId="40000000-0000-4000-8000-000000000002"

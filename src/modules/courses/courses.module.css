@@ -261,6 +261,138 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.adminHeader {
+  max-width: 1040px;
+}
+.adminHeader h2 {
+  font-size: clamp(24px, 2.5vw, 32px);
+  margin: 8px 0;
+}
+.adminHeader > p {
+  margin: 8px 0 12px;
+}
+.adminDetail {
+  display: grid;
+  gap: 20px;
+  max-width: 1040px;
+}
+.adminDetail > *,
+.adminDetail :global(.stack) > * {
+  min-width: 0;
+}
+.adminMeetings {
+  display: grid;
+  gap: 10px;
+}
+.adminMeetings > .sectionHead h3 {
+  margin: 0;
+}
+.compactSession {
+  scroll-margin-top: 24px;
+}
+.compactSession .anchor {
+  scroll-margin-top: 24px;
+}
+.sessionDisclosure > summary,
+.supportDisclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 16px 20px;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+.sessionDisclosure > summary::-webkit-details-marker,
+.supportDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.sessionDisclosure > summary::before,
+.supportDisclosure > summary::before {
+  content: "›";
+  flex: 0 0 10px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--ink-soft);
+  transform-origin: center;
+}
+.sessionDisclosure[open] > summary::before,
+.supportDisclosure[open] > summary::before {
+  transform: rotate(90deg);
+}
+.sessionDisclosure > summary:focus-visible,
+.supportDisclosure > summary:focus-visible {
+  outline: 3px solid var(--brand-accent);
+  outline-offset: -3px;
+  border-radius: var(--radius-lg);
+}
+.sessionSummary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  min-width: 0;
+}
+.sessionIdentity {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.sessionIdentity strong {
+  font-size: 16px;
+}
+.sessionIdentity > span {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.sessionBody {
+  border-top: 1px solid var(--line);
+  padding: 0 20px 16px;
+}
+.sessionBody > details,
+.supportSection > details {
+  border-top: 1px solid var(--line);
+}
+.sessionBody > details > summary,
+.supportSection > details > summary {
+  padding: 12px 0;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.sessionOptions > details {
+  padding-left: 14px;
+  border-left: 2px solid var(--line);
+}
+.supportDisclosure {
+  scroll-margin-top: 24px;
+  overflow-wrap: anywhere;
+}
+.supportDisclosure > summary {
+  font-size: 15px;
+  font-weight: 600;
+}
+.supportBody {
+  display: grid;
+  gap: 24px;
+  border-top: 1px solid var(--line);
+  padding: 20px;
+  min-width: 0;
+}
+.supportSection {
+  min-width: 0;
+}
+.supportSection + .supportSection {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.supportSection h3 {
+  margin: 0 0 12px;
+}
 .confirmation {
   display: flex;
   align-items: flex-start;
@@ -304,4 +436,76 @@
   .billing {
     padding: 16px;
   }
+  .sessionDisclosure > summary,
+  .supportDisclosure > summary {
+    padding: 14px;
+    gap: 8px;
+  }
+  .sessionBody {
+    padding: 0 14px 14px;
+  }
+  .supportBody {
+    padding: 14px;
+  }
+}
+
+.enrollmentDisclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 56px;
+}
+.enrollmentDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.enrollmentDisclosure > summary::before {
+  content: "›";
+  flex: 0 0 10px;
+  font-size: 24px;
+  color: var(--ink-soft);
+}
+.enrollmentDisclosure[open] > summary::before {
+  transform: rotate(90deg);
+}
+.enrollmentDisclosure > summary:focus-visible {
+  outline: 3px solid var(--brand-accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.enrollmentSummary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 18px;
+  flex: 1;
+  min-width: 0;
+}
+.enrollmentIdentity {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.enrollmentIdentity strong {
+  overflow-wrap: anywhere;
+}
+.enrollmentIdentity > span,
+.enrollmentPrompt {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.balanceSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.enrollmentBody {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
 }

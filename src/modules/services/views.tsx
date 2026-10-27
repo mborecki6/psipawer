@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  DetailsNavigation,
+  ProgressiveDetails,
+} from "@/components/progressive-details";
 import { Tags, Clock3, ArrowRight } from "lucide-react";
 import { money } from "@/lib/domain";
 import { ServiceEditor } from "./editor";
@@ -286,7 +290,7 @@ export function ServiceDetailView({
   more: boolean;
 }) {
   return (
-    <div className="stack">
+    <DetailsNavigation navigationKey={`${s.id}-${page}`} className="stack">
       <Link className="ghost-button" href="/admin/services">
         ← Usługi i cennik
       </Link>
@@ -306,7 +310,7 @@ export function ServiceDetailView({
       </header>
       <div className={styles.detail}>
         <article className="card pad">
-          <h3>Edytuj ofertę</h3>
+          <h3>Cena i dostępność</h3>
           <p className="muted">
             Zaktualizuj warunki w katalogu. Aby zakończyć testowanie ceny,
             wybierz „Docelowa”.
@@ -314,28 +318,7 @@ export function ServiceDetailView({
           <ServiceEditor service={s} />
         </article>
         <aside className="stack">
-          <article className={`card pad ${styles.explainer}`}>
-            <h3>Co stanie się po zmianie ceny?</h3>
-            <p>
-              {s.booking_flow === "fitness"
-                ? "Nowe zgłoszenia zachowają nową cenę, liczbę spotkań i czas każdego spotkania. Wcześniejsze pakiety zachowają wszystkie warunki z chwili zgłoszenia. Cena dotyczy całego pakietu."
-                : s.booking_flow === "consultation"
-                  ? "Nowe zgłoszenia przyjmą nową kwotę. Zgłoszenia już zapisane zachowają wcześniejszą cenę i nazwę usługi."
-                  : s.booking_flow === "walk"
-                    ? "Nowa cena uzupełni formularz podczas tworzenia nowego terminu. Istniejące terminy spacerów zachowają swoje ceny, również dla kolejnych zapisujących się osób."
-                    : s.kind === "course"
-                      ? "Nowa cena zostanie zapisana przy tworzeniu kolejnego cyklu. Istniejące cykle i wszystkie ich zgłoszenia zachowają cenę za całość."
-                      : "Nowa kwota pojawi się w ofercie. Warunki już uzgodnionych pakietów i kart pozostają do obsługi przez prowadzącą."}
-            </p>
-            <p>
-              {s.booking_flow === "fitness"
-                ? "Ukrycie zatrzymuje nowe zgłoszenia. Wcześniejsze pakiety, terminy i rozliczenia pozostają dostępne."
-                : s.booking_flow === "consultation"
-                  ? "Ukrycie oferty zatrzymuje nowe zgłoszenia, ale pozostawia wcześniejsze spotkania i ich historię."
-                  : s.booking_flow === "walk"
-                    ? "Ukrycie usuwa tę usługę z katalogu i wyboru przy tworzeniu terminu. Zapisy na istniejące spacery pozostają dostępne."
-                    : "Ukrycie usuwa pozycję z oferty dla opiekunów."}
-            </p>
+          <article className="card pad stack">
             <a
               className="ghost-button"
               href={s.source_url}
@@ -359,8 +342,37 @@ export function ServiceDetailView({
               </Link>
             )}
           </article>
-          <article className="card pad">
-            <h3>Historia cennika</h3>
+          <ProgressiveDetails
+            className={`card pad ${styles.explainer} ${styles.disclosure}`}
+            label="Co stanie się po zmianie ceny?"
+          >
+            <p>
+              {s.booking_flow === "fitness"
+                ? "Nowe zgłoszenia zachowają nową cenę, liczbę spotkań i czas każdego spotkania. Wcześniejsze pakiety zachowają wszystkie warunki z chwili zgłoszenia. Cena dotyczy całego pakietu."
+                : s.booking_flow === "consultation"
+                  ? "Nowe zgłoszenia przyjmą nową kwotę. Zgłoszenia już zapisane zachowają wcześniejszą cenę i nazwę usługi."
+                  : s.booking_flow === "walk"
+                    ? "Nowa cena uzupełni formularz podczas tworzenia nowego terminu. Istniejące terminy spacerów zachowają swoje ceny, również dla kolejnych zapisujących się osób."
+                    : s.kind === "course"
+                      ? "Nowa cena zostanie zapisana przy tworzeniu kolejnego cyklu. Istniejące cykle i wszystkie ich zgłoszenia zachowają cenę za całość."
+                      : "Nowa kwota pojawi się w ofercie. Warunki już uzgodnionych pakietów i kart pozostają do obsługi przez prowadzącą."}
+            </p>
+            <p>
+              {s.booking_flow === "fitness"
+                ? "Ukrycie zatrzymuje nowe zgłoszenia. Wcześniejsze pakiety, terminy i rozliczenia pozostają dostępne."
+                : s.booking_flow === "consultation"
+                  ? "Ukrycie oferty zatrzymuje nowe zgłoszenia, ale pozostawia wcześniejsze spotkania i ich historię."
+                  : s.booking_flow === "walk"
+                    ? "Ukrycie usuwa tę usługę z katalogu i wyboru przy tworzeniu terminu. Zapisy na istniejące spacery pozostają dostępne."
+                    : "Ukrycie usuwa pozycję z oferty dla opiekunów."}
+            </p>
+          </ProgressiveDetails>
+          <ProgressiveDetails
+            id="historia-cennika"
+            className={`card pad ${styles.disclosure}`}
+            label="Historia cennika"
+            initiallyOpen={page > 1}
+          >
             <ol className={styles.history}>
               {history.map((h) => (
                 <li key={h.version}>
@@ -385,19 +397,25 @@ export function ServiceDetailView({
             </ol>
             <nav className={styles.badges} aria-label="Historia cennika">
               {page > 1 && (
-                <Link className="ghost-button" href={`?page=${page - 1}`}>
+                <Link
+                  className="ghost-button"
+                  href={`?page=${page - 1}#historia-cennika`}
+                >
                   ← Nowsze
                 </Link>
               )}
               {more && (
-                <Link className="ghost-button" href={`?page=${page + 1}`}>
+                <Link
+                  className="ghost-button"
+                  href={`?page=${page + 1}#historia-cennika`}
+                >
                   Starsze →
                 </Link>
               )}
             </nav>
-          </article>
+          </ProgressiveDetails>
         </aside>
       </div>
-    </div>
+    </DetailsNavigation>
   );
 }

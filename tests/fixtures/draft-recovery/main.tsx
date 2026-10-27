@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { ProgressForm } from "../../../src/modules/care/progress-form";
 import { PaymentEntryForm } from "../../../src/components/finance/payment-entry-form";
+import { DetailsNavigation, ProgressiveDetails } from "../../../src/components/progressive-details";
 
 type Result = "reject" | "defer" | { error: string } | { success: string };
 type Props =
@@ -44,12 +45,16 @@ if (!crypto.randomUUID) {
 const root = createRoot(document.getElementById("root")!);
 window.renderDraft = (kind, props) => {
   root.render(
-    kind === "care" ? (
+    <DetailsNavigation navigationKey={kind}>
+    <ProgressiveDetails key={kind} id="draft-editor" initiallyOpen label="Otwórz formularz">
+    {kind === "care" ? (
       <ProgressForm {...(props as Parameters<typeof ProgressForm>[0])} />
     ) : (
       <PaymentEntryForm
         {...(props as Parameters<typeof PaymentEntryForm>[0])}
       />
-    ),
+    )}
+    </ProgressiveDetails>
+    </DetailsNavigation>,
   );
 };

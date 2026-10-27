@@ -3,6 +3,10 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
+import {
+  ProgressiveDetails,
+  revealFormFeedback,
+} from "@/components/progressive-details";
 import { money } from "@/lib/domain";
 import { warsawDateTimeInput } from "@/lib/time";
 import type { Service } from "@/modules/services/types";
@@ -29,10 +33,15 @@ function Feedback({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (state.error) ref.current?.focus();
+    if (state.error || state.success || state.calendarWarning) {
+      if (ref.current) revealFormFeedback(ref.current);
+      if (state.error || state.calendarWarning)
+        ref.current?.querySelector<HTMLElement>('[role="alert"]')?.focus();
+    }
   }, [state]);
+  if (!state.error && !state.success && !state.calendarWarning) return null;
   return (
-    <>
+    <div ref={ref}>
       <CalendarWarning warning={state.calendarWarning} pending={pending} />
       <div aria-live="polite" aria-atomic="true">
         {state.success && (
@@ -42,11 +51,11 @@ function Feedback({
         )}
       </div>
       {state.error && (
-        <div ref={ref} role="alert" tabIndex={-1} className="alert red">
+        <div role="alert" tabIndex={-1} className="alert red">
           {state.error}
         </div>
       )}
-    </>
+    </div>
   );
 }
 function CommandInputs({
@@ -86,7 +95,12 @@ export function FitnessRequestForm({
   requestId: string;
   serviceId?: string;
 }) {
-  const [original] = useState({ services, requestId });
+  const [original] = useState({
+    services,
+    requestId,
+    serviceChosen: services.some((s) => s.id === serviceId),
+    singleDog: dogs.filter((d) => !d.unavailable).length === 1,
+  });
   const [service, setService] = useState(
     services.some((s) => s.id === serviceId)
       ? serviceId!
@@ -112,21 +126,31 @@ export function FitnessRequestForm({
           name="service_version"
           value={selected?.version || ""}
         />
-        <label className="field">
-          <span>Pakiet</span>
-          <select
-            name="service_id"
-            value={service}
-            onChange={(e) => setService(e.target.value)}
-            required
-          >
-            {original.services.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ProgressiveDetails
+          label={
+            original.serviceChosen && selected
+              ? `Pakiet: ${selected.name} — zmień`
+              : "Wybierz pakiet"
+          }
+          initiallyOpen={!original.serviceChosen}
+          className={styles.choiceDisclosure}
+        >
+          <label className="field">
+            <span>Pakiet</span>
+            <select
+              name="service_id"
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              required
+            >
+              {original.services.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </ProgressiveDetails>
         {selected && (
           <div className={styles.quote}>
             <strong>{money(selected.price_cents)} za cały pakiet</strong>
@@ -141,23 +165,33 @@ export function FitnessRequestForm({
             </span>
           </div>
         )}
-        <label className="field">
-          <span>Pies</span>
-          <select
-            name="dog_id"
-            value={dog}
-            onChange={(e) => setDog(e.target.value)}
-            required
-          >
-            <option value="">Wybierz psa</option>
-            {dogs.map((d) => (
-              <option key={d.id} value={d.id} disabled={d.unavailable}>
-                {d.name}
-                {d.unavailable ? " — ma otwarty pakiet" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ProgressiveDetails
+          label={
+            original.singleDog && dog
+              ? `Pies: ${dogs.find((d) => d.id === dog)?.name || "Wybrany pies"} — zmień`
+              : "Wybierz psa"
+          }
+          initiallyOpen={!original.singleDog || !dog}
+          className={styles.choiceDisclosure}
+        >
+          <label className="field">
+            <span>Pies</span>
+            <select
+              name="dog_id"
+              value={dog}
+              onChange={(e) => setDog(e.target.value)}
+              required
+            >
+              <option value="">Wybierz psa</option>
+              {dogs.map((d) => (
+                <option key={d.id} value={d.id} disabled={d.unavailable}>
+                  {d.name}
+                  {d.unavailable ? " — ma otwarty pakiet" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </ProgressiveDetails>
         <label className="field">
           <span>Cel spotkań</span>
           <textarea

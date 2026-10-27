@@ -1,12 +1,17 @@
 import { DogDetail } from "@/components/dogs";
+import { WorkReturnLink } from "@/modules/work/return-link";
 export default async function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; returnTo?: string }>;
 }) {
+  const search = await searchParams;
   return (
-    <DogDetail id={(await params).id} saved={(await searchParams).saved} />
+    <>
+      <WorkReturnLink target={search.returnTo} />
+      <DogDetail id={(await params).id} saved={search.saved} />
+    </>
   );
 }

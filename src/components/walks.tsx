@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { warsawDateTimeInput } from "@/lib/time";
-import type { Walk } from "@/lib/data/types";
+import type { Registration, Walk } from "@/lib/data/types";
 import { filterWalks } from "@/lib/walk-filters";
 import Link from "next/link";
 import { WalkServiceFields } from "@/modules/services/selection";
@@ -30,6 +31,8 @@ import { uuid } from "@/lib/validation/schemas";
 import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "./qualification-alert";
 import { ReopenRegistration } from "./reopen-registration";
+import { DetailsNavigation, ProgressiveDetails } from "./progressive-details";
+import styles from "./walks.module.css";
 export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
   const { walks, registrations, role } = await getSnapshot();
   const base = role === "admin" ? "/admin" : "/app";
@@ -151,25 +154,448 @@ export async function WalkDetail({ id }: { id: string }) {
     regs.filter((r) => r.status === "accepted").map((r) => r.dog_id),
   );
   const conflicts = getWalkRelationWarnings(relations, regs);
+  const currentTime = new Date().getTime();
+  const registrationGroups = [
+    { status: "pending", title: "Oczekujące decyzje" },
+    { status: "accepted", title: "Bieżący skład" },
+    { status: "waitlisted", title: "Lista rezerwowa" },
+  ] as const;
+  const closedRegistrations = regs.filter((registration) =>
+    ["rejected", "withdrawn", "cancelled_on_time", "cancelled_late"].includes(
+      registration.status,
+    ),
+  );
+  const settlementReview = regs.filter(
+    (registration) =>
+      !registration.package_id &&
+      (walk.status === "cancelled" ||
+        closedRegistrations.includes(registration)) &&
+      ["due", "paid"].includes(registration.payment_status),
+  );
+  const registrationContent = (r: Registration) => (
+    <>
+      <div className="section-title">
+        <Link href={`${base}/dogs/${r.dog_id}`}>
+          <strong>
+            {snapshot.dogs.find((d) => d.id === r.dog_id)?.name || "Profil psa"}{" "}
+            →
+          </strong>
+        </Link>
+        <Badge status={r.status} />
+      </div>
+      <p className="muted">
+        {r.package_id
+          ? "Rozliczenie: pakiet"
+          : `Płatność: ${labels[r.payment_status]}`}
+        {r.status === "accepted"
+          ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
+          : ""}
+      </p>
+      {role === "client" &&
+        !["cancelled", "completed"].includes(walk.status) &&
+        new Date(walk.starts_at) > new Date() &&
+        ["pending", "waitlisted", "rejected"].includes(r.status) && (
+          <p className="alert">
+            {r.status === "pending"
+              ? "Zgłoszenie czeka na decyzję prowadzącej. Miejsce będzie potwierdzone po akceptacji."
+              : r.status === "waitlisted"
+                ? "Twój pies jest na liście rezerwowej. Zwolnienie miejsca nie oznacza automatycznego przyjęcia. Prowadząca potwierdzi zmianę osobno."
+                : "To zgłoszenie nie zostało przyjęte. Sprawdź wiadomość prowadzącej lub skontaktuj się z nią, aby uzgodnić inny termin."}
+          </p>
+        )}
+      {r.status === "accepted" && r.cancellation_free_until && (
+        <p className="alert">
+          Termin bezpłatnego odwołania po zmianie spaceru:{" "}
+          {dateLabel(
+            new Date(
+              Math.min(
+                Date.parse(r.cancellation_free_until),
+                Date.parse(walk.starts_at),
+              ),
+            ).toISOString(),
+          )}
+          .
+        </p>
+      )}
+      {role === "admin" &&
+        settlementReview.some((item) => item.id === r.id) && (
+          <p className="alert">
+            <span>
+              Rozliczenie zakończonego zgłoszenia do sprawdzenia.{" "}
+              <Link href="/admin/finance">Otwórz rozliczenia →</Link>
+            </span>
+          </p>
+        )}
+      {r.decision_note && <p className="preserve-lines">{r.decision_note}</p>}
+      {["withdrawn", "cancelled_on_time"].includes(r.status) &&
+        ["open", "full"].includes(walk.status) &&
+        Date.parse(walk.starts_at) > currentTime && (
+          <ReopenRegistration id={r.id} admin={role === "admin"} />
+        )}
+      {role === "admin" &&
+        !["cancelled", "completed"].includes(walk.status) &&
+        new Date(walk.starts_at) > new Date() &&
+        transitions[r.status].filter((s) => s !== "withdrawn").length > 0 && (
+          <ProgressiveDetails
+            label={
+              r.status === "pending" ? "Przejdź do decyzji" : "Zmień decyzję"
+            }
+            className={styles.action}
+            primary
+          >
+            <ActionForm
+              action={decideRegistration}
+              label="Zapisz decyzję"
+              confirm="Zapisać decyzję? Opiekun zobaczy nowy status zgłoszenia."
+            >
+              <input type="hidden" name="id" value={r.id} />
+              <label className="field">
+                <span>Decyzja</span>
+                <select name="status">
+                  {transitions[r.status]
+                    .filter((s) => s !== "withdrawn")
+                    .map((s) => (
+                      <option key={s} value={s}>
+                        {labels[s]}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <Field
+                label="Wiadomość dla opiekuna (opcjonalna)"
+                name="note"
+                maxLength={2000}
+              />
+            </ActionForm>
+          </ProgressiveDetails>
+        )}
+      {role === "admin" &&
+        r.status === "accepted" &&
+        new Date(walk.starts_at) <= new Date() && (
+          <ProgressiveDetails
+            label={
+              r.attendance === "pending" ? "Oznacz obecność" : "Zmień obecność"
+            }
+            className={styles.action}
+            primary
+          >
+            <ActionForm action={markAttendance} label="Zapisz obecność">
+              <input type="hidden" name="id" value={r.id} />
+              <label className="field">
+                <span>Obecność</span>
+                <select name="attendance" defaultValue={r.attendance}>
+                  {["pending", "present", "absent", "no_show"].map((s) => (
+                    <option key={s} value={s}>
+                      {s === "pending" ? "Do oznaczenia" : labels[s]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="muted">
+                {r.package_id
+                  ? "Do oznaczenia rezerwuje wejście. Obecność lub nieobecność płatna je zużywa. Usprawiedliwienie oddaje wejście do pakietu."
+                  : "Usprawiedliwienie zwalnia z opłaty. Otrzymaną wcześniej wpłatę rozlicz osobno w finansach."}
+              </p>
+            </ActionForm>
+          </ProgressiveDetails>
+        )}
+      {role === "client" &&
+        ["pending", "accepted", "waitlisted"].includes(r.status) &&
+        new Date(walk.starts_at) > new Date() && (
+          <ActionForm
+            action={cancelRegistration}
+            label="Odwołaj zgłoszenie"
+            confirm={
+              r.cancellation_free_until
+                ? "Odwołać zgłoszenie? Przy rozliczeniu uwzględnimy Twój termin bezpłatnej rezygnacji po zmianie spaceru."
+                : `Odwołać zgłoszenie? Jeśli do spaceru zostało mniej niż ${walk.cancellation_deadline_hours} godz., zaakceptowane miejsce będzie podlegać opłacie.`
+            }
+          >
+            <input type="hidden" name="id" value={r.id} />
+          </ActionForm>
+        )}
+    </>
+  );
+  const renderRegistration = (r: Registration) => (
+    <section
+      className="registration-card"
+      data-detail-item
+      id={`registration-${r.id}`}
+      key={r.id}
+    >
+      {role === "admin" ? (
+        <ProgressiveDetails
+          initiallyOpen={["pending", "accepted", "waitlisted"].includes(
+            r.status,
+          )}
+          className={styles.registrationDetails}
+          label={
+            <span className={styles.registrationSummary}>
+              <strong>
+                {snapshot.dogs.find((dog) => dog.id === r.dog_id)?.name ||
+                  "Profil psa"}
+              </strong>
+              <Badge status={r.status} />
+            </span>
+          }
+        >
+          {registrationContent(r)}
+        </ProgressiveDetails>
+      ) : (
+        registrationContent(r)
+      )}
+    </section>
+  );
+  const meetingLocation = (
+    <>
+      {location ? (
+        <>
+          <p className="preserve-lines">{location.exact_location}</p>
+          <p className="preserve-lines">{location.instructions}</p>
+          {/^https:\/\//.test(location.map_url) && (
+            <a
+              className="secondary-button"
+              href={location.map_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Otwórz mapę ↗
+            </a>
+          )}
+        </>
+      ) : (
+        <div className="alert">
+          Dokładną lokalizację zobaczysz po zaakceptowaniu Twojego psa.
+        </div>
+      )}
+    </>
+  );
+  // Every registration remains a keyed child of this single flat list when
+  // a decision changes its group. Moving it to a different parent unmounts
+  // ActionForm and can lose an in-flight acknowledgement.
+  const adminRegistrationRows: ReactNode[] = [];
+  for (const { status, title } of registrationGroups) {
+    const group = regs.filter((registration) => registration.status === status);
+    adminRegistrationRows.push(
+      <h3
+        key={`heading-${status}`}
+        id={`walk-${status}`}
+        className={styles.groupTitle}
+      >
+        {title} <span className="muted">({group.length})</span>
+      </h3>,
+      ...group.map(renderRegistration),
+    );
+    if (!group.length)
+      adminRegistrationRows.push(
+        <p key={`empty-${status}`} className="muted">
+          {status === "pending"
+            ? "Nie ma zgłoszeń czekających na decyzję."
+            : status === "accepted"
+              ? "Jeszcze bez zaakceptowanych psów."
+              : "Lista rezerwowa jest pusta."}
+        </p>,
+      );
+  }
+  adminRegistrationRows.push(
+    <div key="settlement-review">
+      {settlementReview.length > 0 && (
+        <div className="alert" role="status">
+          <div className={styles.notice}>
+            <strong>Zakończone zgłoszenia: sprawdź rozliczenie</strong>
+            <ul>
+              {settlementReview.map((registration) => (
+                <li key={registration.id}>
+                  <a href={`#registration-${registration.id}`}>
+                    {snapshot.dogs.find((dog) => dog.id === registration.dog_id)
+                      ?.name || "Profil psa"}
+                    {" — "}
+                    {labels[registration.payment_status]}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <Link href="/admin/finance">Otwórz rozliczenia →</Link>
+          </div>
+        </div>
+      )}
+    </div>,
+    <div key="add-dog">
+      {role === "admin" &&
+        new Date(walk.starts_at) > new Date() &&
+        ["open", "full"].includes(walk.status) &&
+        snapshot.dogs.some((d) => !regs.some((r) => r.dog_id === d.id)) && (
+          <ProgressiveDetails
+            label="Dodaj psa do spaceru"
+            className={styles.secondaryDetails}
+          >
+            <ActionForm action={inviteDog} label="Dodaj zgłoszenie">
+              <input type="hidden" name="walk_id" value={id} />
+              <label className="field">
+                <span>Zaproś psa / dodaj zgłoszenie</span>
+                <select name="dog_id">
+                  {snapshot.dogs
+                    .filter((d) => !regs.some((r) => r.dog_id === d.id))
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </ActionForm>
+          </ProgressiveDetails>
+        )}
+    </div>,
+  );
+  if (closedRegistrations.length)
+    adminRegistrationRows.push(
+      <h3
+        key="closed-heading"
+        id="closed-registrations"
+        className={styles.groupTitle}
+      >
+        Zakończone zgłoszenia ({closedRegistrations.length})
+      </h3>,
+      ...(
+        [
+          "rejected",
+          "withdrawn",
+          "cancelled_on_time",
+          "cancelled_late",
+        ] as const
+      ).flatMap((status) =>
+        closedRegistrations
+          .filter((registration) => registration.status === status)
+          .map(renderRegistration),
+      ),
+    );
+  const registrations = (
+    <article className="card pad">
+      <h2>{role === "admin" ? "Zgłoszenia i skład" : "Twoje zgłoszenia"}</h2>
+      {role === "client" &&
+        walk.status === "open" &&
+        walk.booking_mode !== "invite" &&
+        new Date(walk.starts_at) > new Date() &&
+        (eligible.length ? (
+          <ActionForm action={registerDog} label="Zgłoś psa">
+            <input type="hidden" name="walk_id" value={id} />
+            <label className="field">
+              <span>Wybierz swojego psa</span>
+              <select name="dog_id">
+                {eligible.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="muted">
+              {walk.booking_mode === "automatic"
+                ? "Przy wolnym miejscu zgłoszenie zostanie zaakceptowane automatycznie."
+                : "Prowadząca sprawdzi profil psa i dobierze skład grupy."}
+            </p>
+          </ActionForm>
+        ) : (
+          <p className="muted">
+            Wszystkie dostępne psy mają już zgłoszenie lub wymagają konsultacji.{" "}
+            <Link href="/app/dogs">Przejdź do profili psów →</Link>
+          </p>
+        ))}
+      {role === "client" && walk.booking_mode === "invite" && (
+        <p>Ten spacer jest dostępny wyłącznie na zaproszenie prowadzącej.</p>
+      )}
+
+      {role === "admin" ? (
+        <div className="stack registration-list">{adminRegistrationRows}</div>
+      ) : (
+        <div className="stack registration-list">
+          {(
+            [
+              "pending",
+              "accepted",
+              "waitlisted",
+              "rejected",
+              "withdrawn",
+              "cancelled_on_time",
+              "cancelled_late",
+            ] as const
+          ).flatMap((status) =>
+            regs
+              .filter((registration) => registration.status === status)
+              .map(renderRegistration),
+          )}
+        </div>
+      )}
+      {!regs.length && <p className="muted">Jeszcze bez zgłoszeń.</p>}
+    </article>
+  );
+  const beforeWalk = (
+    <article className="card pad">
+      <h2>Przed spacerem</h2>
+      <p className="preserve-lines">
+        {walk.info || "Prowadząca uzupełni informacje organizacyjne."}
+      </p>
+      <p className="muted">
+        Bezpłatne odwołanie najpóźniej {walk.cancellation_deadline_hours} godz.
+        przed rozpoczęciem. Zgłoszenie w trybie akceptacji nie jest jeszcze
+        rezerwacją.
+      </p>
+    </article>
+  );
   return (
-    <div className="stack">
+    <DetailsNavigation navigationKey={`walk-${id}`} className="stack">
       <Link className="ghost-button" href={`${base}/walks`}>
         ← Wszystkie spacery
       </Link>
-      {role === "admin" && (
-        <div className="walk-meta">
-          {!["cancelled", "completed"].includes(walk.status) &&
-            new Date(walk.starts_at) > new Date() && (
-              <Link
-                className="secondary-button"
-                href={`/admin/walks/${id}/edit`}
-              >
-                Edytuj spacer
-              </Link>
+      <article className={`card pad ${styles.heading}`}>
+        <div>
+          <span className="muted">{walk.type}</span>
+          <h2>{dateLabel(walk.starts_at)}</h2>
+          <p>
+            {walk.public_location} · {walk.duration_minutes} min ·{" "}
+            {money(walk.price_cents)}
+          </p>
+          <div className="walk-meta">
+            <Badge status={walk.status} />
+            <Badge status={walk.booking_mode} />
+            {role === "admin" && (
+              <span>
+                {acceptedIds.size} / {walk.capacity} miejsc
+              </span>
             )}
-          <Link className="ghost-button" href={`/admin/walks/new?copy=${id}`}>
-            Utwórz podobny termin →
-          </Link>
+          </div>
+        </div>
+        {role === "admin" && (
+          <div className={styles.headerTools}>
+            {!["cancelled", "completed"].includes(walk.status) &&
+              new Date(walk.starts_at) > new Date() && (
+                <Link
+                  className="secondary-button"
+                  href={`/admin/walks/${id}/edit`}
+                >
+                  Edytuj spacer
+                </Link>
+              )}
+            <ProgressiveDetails
+              label="Miejsce spotkania"
+              className={styles.location}
+            >
+              {meetingLocation}
+            </ProgressiveDetails>
+          </div>
+        )}
+      </article>
+      {walk.status === "cancelled" && (
+        <div className="alert red" role="status">
+          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            <strong>Spacer został odwołany przez organizatora.</strong>
+            <p className="preserve-lines">{walk.cancellation_reason}</p>
+            <p>
+              Jeśli spacer był już opłacony, skontaktuj się z prowadzącą w
+              sprawie rozliczenia.
+            </p>
+          </div>
         </div>
       )}
       {walk.change_note && walk.status !== "cancelled" && (
@@ -194,42 +620,50 @@ export async function WalkDetail({ id }: { id: string }) {
         })}
         role={role}
       />
-      <article className="card hero-card">
-        <div className="hero-content">
-          <span className="hero-eyebrow">{walk.type}</span>
-          <h2>{dateLabel(walk.starts_at)}</h2>
-          <p>
-            {walk.public_location} · {walk.duration_minutes} min ·{" "}
-            {money(walk.price_cents)}
-          </p>
-          <div className="walk-meta">
-            <Badge status={walk.status} />
-            <Badge status={walk.booking_mode} />
-            {role === "admin" && (
-              <span>
-                {acceptedIds.size} / {walk.capacity} miejsc
-              </span>
-            )}
+      {role === "admin" && conflicts.length > 0 && (
+        <article className="card pad">
+          <h3>Uwaga na skład</h3>
+          {conflicts.map((r) => (
+            <div className="alert red" key={r.id}>
+              <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                <strong>
+                  {snapshot.dogs.find((d) => d.id === r.dog_a)?.name} +{" "}
+                  {snapshot.dogs.find((d) => d.id === r.dog_b)?.name}:{" "}
+                  {r.level === "block" ? "nie łączyć" : "ostrożnie"}
+                </strong>
+                <p>{r.note}</p>
+              </div>
+            </div>
+          ))}
+        </article>
+      )}
+
+      {role === "admin" ? (
+        <>
+          {registrations}
+          <ProgressiveDetails
+            label="Informacje przed spacerem"
+            className={styles.secondaryDetails}
+          >
+            {beforeWalk}
+          </ProgressiveDetails>
+        </>
+      ) : (
+        <div className="dashboard-grid">
+          <div className="stack">
+            {beforeWalk}
+            <article className="card pad">
+              <h2>Miejsce spotkania</h2>
+              {meetingLocation}
+            </article>
           </div>
-        </div>
-      </article>
-      {walk.status === "cancelled" && (
-        <div className="alert red" role="status">
-          <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-            <strong>Spacer został odwołany przez organizatora.</strong>
-            <p className="preserve-lines">{walk.cancellation_reason}</p>
-            <p>
-              Jeśli spacer był już opłacony, skontaktuj się z prowadzącą w
-              sprawie rozliczenia.
-            </p>
-          </div>
+          {registrations}
         </div>
       )}
       {role === "admin" &&
         !["cancelled", "completed"].includes(walk.status) &&
         new Date(walk.starts_at) > new Date() && (
-          <details className="card pad">
-            <summary>Odwołaj cały spacer</summary>
+          <ProgressiveDetails label="Odwołaj cały spacer" className="card pad">
             <p>
               Wszystkie aktywne zgłoszenia zostaną odwołane bez opłaty za późną
               rezygnację. Opiekunowie zobaczą powód i powiadomienie w aplikacji.
@@ -247,285 +681,15 @@ export async function WalkDetail({ id }: { id: string }) {
                 Potwierdzam odwołanie wszystkich aktywnych zgłoszeń.
               </label>
             </ActionForm>
-          </details>
+          </ProgressiveDetails>
         )}
-      <div className="dashboard-grid">
-        <div className="stack">
-          <article className="card pad">
-            <h2>Przed spacerem</h2>
-            <p className="preserve-lines">
-              {walk.info || "Prowadząca uzupełni informacje organizacyjne."}
-            </p>
-            <p className="muted">
-              Bezpłatne odwołanie najpóźniej {walk.cancellation_deadline_hours}{" "}
-              godz. przed rozpoczęciem. Zgłoszenie w trybie akceptacji nie jest
-              jeszcze rezerwacją.
-            </p>
-          </article>
-          <article className="card pad">
-            <h2>Miejsce spotkania</h2>
-            {location ? (
-              <>
-                <p className="preserve-lines">{location.exact_location}</p>
-                <p className="preserve-lines">{location.instructions}</p>
-                {/^https:\/\//.test(location.map_url) && (
-                  <a
-                    className="secondary-button"
-                    href={location.map_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Otwórz mapę ↗
-                  </a>
-                )}
-              </>
-            ) : (
-              <div className="alert">
-                Dokładną lokalizację zobaczysz po zaakceptowaniu Twojego psa.
-              </div>
-            )}
-          </article>
-          {role === "admin" && conflicts.length > 0 && (
-            <article className="card pad">
-              <h3>Uwaga na skład</h3>
-              {conflicts.map((r) => (
-                <div className="alert red" key={r.id}>
-                  <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-                    <strong>
-                      {snapshot.dogs.find((d) => d.id === r.dog_a)?.name} +{" "}
-                      {snapshot.dogs.find((d) => d.id === r.dog_b)?.name}:{" "}
-                      {r.level === "block" ? "nie łączyć" : "ostrożnie"}
-                    </strong>
-                    <p>{r.note}</p>
-                  </div>
-                </div>
-              ))}
-            </article>
-          )}
-        </div>
-        <article className="card pad">
-          <h2>
-            {role === "admin" ? "Zgłoszenia i skład" : "Twoje zgłoszenia"}
-          </h2>
-          {role === "client" &&
-            walk.status === "open" &&
-            walk.booking_mode !== "invite" &&
-            new Date(walk.starts_at) > new Date() &&
-            (eligible.length ? (
-              <ActionForm action={registerDog} label="Zgłoś psa">
-                <input type="hidden" name="walk_id" value={id} />
-                <label className="field">
-                  <span>Wybierz swojego psa</span>
-                  <select name="dog_id">
-                    {eligible.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <p className="muted">
-                  {walk.booking_mode === "automatic"
-                    ? "Przy wolnym miejscu zgłoszenie zostanie zaakceptowane automatycznie."
-                    : "Prowadząca sprawdzi profil psa i dobierze skład grupy."}
-                </p>
-              </ActionForm>
-            ) : (
-              <p className="muted">
-                Wszystkie dostępne psy mają już zgłoszenie lub wymagają
-                konsultacji.{" "}
-                <Link href="/app/dogs">Przejdź do profili psów →</Link>
-              </p>
-            ))}
-          {role === "client" && walk.booking_mode === "invite" && (
-            <p>
-              Ten spacer jest dostępny wyłącznie na zaproszenie prowadzącej.
-            </p>
-          )}
-          {role === "admin" &&
-            new Date(walk.starts_at) > new Date() &&
-            ["open", "full"].includes(walk.status) &&
-            snapshot.dogs.some((d) => !regs.some((r) => r.dog_id === d.id)) && (
-              <ActionForm action={inviteDog} label="Dodaj zgłoszenie">
-                <input type="hidden" name="walk_id" value={id} />
-                <label className="field">
-                  <span>Zaproś psa / dodaj zgłoszenie</span>
-                  <select name="dog_id">
-                    {snapshot.dogs
-                      .filter((d) => !regs.some((r) => r.dog_id === d.id))
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              </ActionForm>
-            )}
-          <div className="stack registration-list">
-            {(
-              [
-                "pending",
-                "accepted",
-                "waitlisted",
-                "rejected",
-                "withdrawn",
-                "cancelled_on_time",
-                "cancelled_late",
-              ] as const
-            ).flatMap((status) =>
-              regs
-                .filter((r) => r.status === status)
-                .map((r) => (
-                  <section
-                    className="registration-card"
-                    id={`registration-${r.id}`}
-                    key={r.id}
-                  >
-                    <div className="section-title">
-                      <Link href={`${base}/dogs/${r.dog_id}`}>
-                        <strong>
-                          {snapshot.dogs.find((d) => d.id === r.dog_id)?.name ||
-                            "Profil psa"}{" "}
-                          →
-                        </strong>
-                      </Link>
-                      <Badge status={r.status} />
-                    </div>
-                    <p className="muted">
-                      {r.package_id
-                        ? "Rozliczenie: pakiet"
-                        : `Płatność: ${labels[r.payment_status]}`}
-                      {r.status === "accepted"
-                        ? ` · Obecność: ${r.attendance === "pending" ? "do oznaczenia" : labels[r.attendance]}`
-                        : ""}
-                    </p>
-                    {role === "client" &&
-                      !["cancelled", "completed"].includes(walk.status) &&
-                      new Date(walk.starts_at) > new Date() &&
-                      ["pending", "waitlisted", "rejected"].includes(
-                        r.status,
-                      ) && (
-                        <p className="alert">
-                          {r.status === "pending"
-                            ? "Zgłoszenie czeka na decyzję prowadzącej. Miejsce będzie potwierdzone po akceptacji."
-                            : r.status === "waitlisted"
-                              ? "Twój pies jest na liście rezerwowej. Zwolnienie miejsca nie oznacza automatycznego przyjęcia. Prowadząca potwierdzi zmianę osobno."
-                              : "To zgłoszenie nie zostało przyjęte. Sprawdź wiadomość prowadzącej lub skontaktuj się z nią, aby uzgodnić inny termin."}
-                        </p>
-                      )}
-                    {r.status === "accepted" && r.cancellation_free_until && (
-                      <p className="alert">
-                        Termin bezpłatnego odwołania po zmianie spaceru:{" "}
-                        {dateLabel(
-                          new Date(
-                            Math.min(
-                              Date.parse(r.cancellation_free_until),
-                              Date.parse(walk.starts_at),
-                            ),
-                          ).toISOString(),
-                        )}
-                        .
-                      </p>
-                    )}
-                    {r.decision_note && (
-                      <p className="preserve-lines">{r.decision_note}</p>
-                    )}
-                    {["withdrawn", "cancelled_on_time"].includes(r.status) &&
-                      ["open", "full"].includes(walk.status) &&
-                      Date.parse(walk.starts_at) > Date.now() && (
-                        <ReopenRegistration
-                          id={r.id}
-                          admin={role === "admin"}
-                        />
-                      )}
-                    {role === "admin" &&
-                      !["cancelled", "completed"].includes(walk.status) &&
-                      new Date(walk.starts_at) > new Date() &&
-                      transitions[r.status].filter((s) => s !== "withdrawn")
-                        .length > 0 && (
-                        <ActionForm
-                          action={decideRegistration}
-                          label="Zapisz decyzję"
-                          confirm="Zapisać decyzję? Opiekun zobaczy nowy status zgłoszenia."
-                        >
-                          <input type="hidden" name="id" value={r.id} />
-                          <label className="field">
-                            <span>Decyzja</span>
-                            <select name="status">
-                              {transitions[r.status]
-                                .filter((s) => s !== "withdrawn")
-                                .map((s) => (
-                                  <option key={s} value={s}>
-                                    {labels[s]}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-                          <Field
-                            label="Wiadomość dla opiekuna (opcjonalna)"
-                            name="note"
-                            maxLength={2000}
-                          />
-                        </ActionForm>
-                      )}
-                    {role === "admin" &&
-                      r.status === "accepted" &&
-                      new Date(walk.starts_at) <= new Date() && (
-                        <ActionForm
-                          action={markAttendance}
-                          label="Zapisz obecność"
-                        >
-                          <input type="hidden" name="id" value={r.id} />
-                          <label className="field">
-                            <span>Obecność</span>
-                            <select
-                              name="attendance"
-                              defaultValue={r.attendance}
-                            >
-                              {["pending", "present", "absent", "no_show"].map(
-                                (s) => (
-                                  <option key={s} value={s}>
-                                    {s === "pending"
-                                      ? "Do oznaczenia"
-                                      : labels[s]}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          </label>
-                          <p className="muted">
-                            {r.package_id
-                              ? "Do oznaczenia rezerwuje wejście. Obecność lub nieobecność płatna je zużywa. Usprawiedliwienie oddaje wejście do pakietu."
-                              : "Usprawiedliwienie zwalnia z opłaty. Otrzymaną wcześniej wpłatę rozlicz osobno w finansach."}
-                          </p>
-                        </ActionForm>
-                      )}
-                    {role === "client" &&
-                      ["pending", "accepted", "waitlisted"].includes(
-                        r.status,
-                      ) &&
-                      new Date(walk.starts_at) > new Date() && (
-                        <ActionForm
-                          action={cancelRegistration}
-                          label="Odwołaj zgłoszenie"
-                          confirm={
-                            r.cancellation_free_until
-                              ? "Odwołać zgłoszenie? Przy rozliczeniu uwzględnimy Twój termin bezpłatnej rezygnacji po zmianie spaceru."
-                              : `Odwołać zgłoszenie? Jeśli do spaceru zostało mniej niż ${walk.cancellation_deadline_hours} godz., zaakceptowane miejsce będzie podlegać opłacie.`
-                          }
-                        >
-                          <input type="hidden" name="id" value={r.id} />
-                        </ActionForm>
-                      )}
-                  </section>
-                )),
-            )}
-          </div>
-          {!regs.length && <p className="muted">Jeszcze bez zgłoszeń.</p>}
-        </article>
-      </div>
-    </div>
+
+      {role === "admin" && (
+        <Link className="ghost-button" href={`/admin/walks/new?copy=${id}`}>
+          Utwórz podobny termin →
+        </Link>
+      )}
+    </DetailsNavigation>
   );
 }
 export type WalkFormValues = Partial<Walk> & {

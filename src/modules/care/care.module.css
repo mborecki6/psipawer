@@ -276,3 +276,191 @@
   background: var(--sage-2);
   box-shadow: inset 3px 0 var(--forest);
 }
+
+.adminPage {
+  gap: 16px;
+}
+.adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  min-width: 0;
+  padding: 2px 0 4px;
+}
+.adminHeader > div {
+  min-width: 0;
+}
+.adminHeader h2 {
+  margin: 4px 0 0;
+  font-size: 28px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.adminHeaderLinks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  min-width: 0;
+}
+.adminHeaderLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.adminHeaderLinks a:hover {
+  color: var(--forest);
+}
+.adminHeaderLinks svg {
+  flex-shrink: 0;
+}
+.adminContext {
+  padding: 16px 20px;
+}
+.adminSelectedContext {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-width: 0;
+}
+.adminSelectedContext > div {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.adminContext .adminSelectedContext h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.adminSelectedContext p {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.adminPlanStatus {
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--sage-2);
+  color: var(--ink-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.adminPlanPicker {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  min-width: 0;
+}
+.adminPlanPicker > summary,
+.adminNewPlan > summary,
+.adminEditorOptions > summary {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.adminPlanChoices {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+  min-width: 0;
+}
+.adminNewPlan {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  min-width: 0;
+}
+.adminNewPlan[open] > summary {
+  margin-bottom: 12px;
+}
+.adminEditorCard {
+  padding: 18px 20px 20px;
+}
+.adminEditorDisclosure[open] > summary {
+  margin-bottom: 14px;
+}
+.adminEditor {
+  margin-top: 0;
+}
+.adminEditor .fields {
+  gap: 16px;
+}
+.adminEditorOptions {
+  min-width: 0;
+}
+.adminEditorOptions[open] > summary {
+  margin-bottom: 12px;
+}
+.adminDateSummary {
+  display: grid;
+  gap: 3px;
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 400;
+}
+.adminDateFields {
+  display: grid;
+  gap: 16px;
+}
+.adminSettings {
+  padding: 16px 20px;
+}
+.adminSettings > summary {
+  padding: 3px 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.adminSettingsSummary {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 400;
+}
+.adminSettingsSummary:empty {
+  display: none;
+}
+.adminSettingsContent {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  min-width: 0;
+}
+.adminSettingsContent > a {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+}
+@media (max-width: 480px) {
+  .adminHeader h2 {
+    font-size: 24px;
+  }
+  .adminHeaderLinks {
+    gap: 2px 14px;
+  }
+  .adminContext,
+  .adminEditorCard,
+  .adminSettings {
+    padding: 14px;
+  }
+  .adminPlanStatus {
+    max-width: 100%;
+  }
+}

@@ -5,6 +5,10 @@ import type { Role } from "@/lib/auth/session";
 import type { ConsultationBalance } from "@/lib/finance";
 import { ConsultationBilling } from "./billing";
 import { ActionForm } from "@/components/action-form";
+import {
+  DetailsNavigation,
+  ProgressiveDetails,
+} from "@/components/progressive-details";
 import { dateLabel, money } from "@/lib/domain";
 import { ConsultationServicePicker } from "@/modules/services/selection";
 import type { Service } from "@/modules/services/types";
@@ -247,22 +251,31 @@ export function ConsultationRequestView({
                 services={services}
                 serviceId={serviceId}
               />
-              <label className="field">
-                Twój pies
-                <select
-                  name="dog_id"
-                  defaultValue={
-                    dogs.some((d) => d.id === dogId) ? dogId : dogs[0].id
-                  }
-                  required
-                >
-                  {dogs.map((d) => (
-                    <option value={d.id} key={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {dogs.length === 1 ? (
+                <>
+                  <p className="muted">
+                    Twój pies: <strong>{dogs[0].name}</strong>
+                  </p>
+                  <input type="hidden" name="dog_id" value={dogs[0].id} />
+                </>
+              ) : (
+                <label className="field">
+                  Twój pies
+                  <select
+                    name="dog_id"
+                    defaultValue={
+                      dogs.some((d) => d.id === dogId) ? dogId : dogs[0].id
+                    }
+                    required
+                  >
+                    {dogs.map((d) => (
+                      <option value={d.id} key={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="field">
                 Co chcesz omówić?
                 <textarea
@@ -369,7 +382,10 @@ export function ConsultationView({
     active &&
     (role === "admin" || !c.starts_at || new Date(c.starts_at) > new Date(now));
   return (
-    <div className="stack">
+    <DetailsNavigation
+      navigationKey={`${c.id}-${page}-${plansPage}`}
+      className="stack"
+    >
       <Link className="ghost-button" href={`${base}/consultations`}>
         ← Konsultacje
       </Link>
@@ -440,6 +456,16 @@ export function ConsultationView({
               </p>
             )}
           </article>
+          {role === "admin" &&
+            c.agreed_price_cents === null &&
+            c.status !== "cancelled" &&
+            priceRequestId && (
+              <ConsultationPriceEditor
+                id={c.id}
+                version={c.version}
+                requestId={priceRequestId}
+              />
+            )}
           <article className="card pad">
             <h3>O czym porozmawiamy</h3>
             <p className={styles.preserve}>{c.topic}</p>
@@ -451,12 +477,17 @@ export function ConsultationView({
             )}
           </article>
           {role === "admin" && active && (
-            <article className="card pad">
-              <h3>
-                {c.status === "scheduled"
-                  ? "Zmiana szczegółów"
-                  : "Ustal termin"}
-              </h3>
+            <ProgressiveDetails
+              id={`termin-${c.id}`}
+              className={`card pad ${styles.editorDisclosure}`}
+              bodyClassName="form-stack"
+              label={
+                c.status === "scheduled"
+                  ? "Zmień termin spotkania"
+                  : "Ustal termin"
+              }
+              initiallyOpen={c.status === "requested"}
+            >
               <p className="muted">
                 Zapisz termin uzgodniony z opiekunem. Termin, miejsce i
                 wiadomość są widoczne dla opiekuna. Wiadomości e-mail nie są
@@ -481,68 +512,30 @@ export function ConsultationView({
               >
                 Sprawdź kalendarz w nowej karcie ↗
               </Link>
+            </ProgressiveDetails>
+          )}
+          {canComplete && (
+            <article className="card pad">
+              <h3>Po spotkaniu</h3>
+              <ActionForm
+                action={closeConsultation}
+                label="Oznacz jako zakończoną"
+                key={`complete-${c.version}`}
+              >
+                <input type="hidden" name="id" value={c.id} />
+                <input
+                  type="hidden"
+                  name="expected_version"
+                  value={c.version}
+                />
+                <input type="hidden" name="intent" value="complete" />
+                <label className="field">
+                  Podsumowanie dla opiekuna (opcjonalnie)
+                  <textarea name="note" rows={4} maxLength={3000} />
+                </label>
+              </ActionForm>
             </article>
           )}
-          <article className="card pad">
-            <h3>Historia konsultacji</h3>
-            <ol className={styles.timeline}>
-              {history.map((h) => (
-                <li key={h.id}>
-                  <span className={styles.dot} aria-hidden="true" />
-                  <div>
-                    <strong>{historyLabels[h.action]}</strong>
-                    <small>{dateLabel(h.created_at)}</small>
-                    {h.action === "price_agreed" &&
-                      h.agreed_price_cents != null && (
-                        <p>
-                          <strong>{money(h.agreed_price_cents)}</strong>
-                          {h.is_test_price
-                            ? " · cena robocza do testów"
-                            : " · kwota uzgodniona z opiekunem"}
-                        </p>
-                      )}
-                    {h.starts_at && (
-                      <p>
-                        {dateLabel(h.starts_at)} · {h.duration_minutes} min ·{" "}
-                        {h.meeting_mode === "online" ? "Online" : "Na miejscu"}
-                      </p>
-                    )}
-                    {h.location && (
-                      <p className={styles.preserve}>{h.location}</p>
-                    )}
-                    {h.note && <p className={styles.preserve}>{h.note}</p>}
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <Paging
-              page={page}
-              more={more}
-              href={(n) =>
-                `${base}/consultations/${c.id}?page=${n}&plans=${plansPage}`
-              }
-            />
-          </article>
-        </div>
-        <aside className="stack">
-          {role === "admin" && priceSaved && c.agreed_price_cents !== null && (
-            <div role="status" className="alert green">
-              Uzgodniona kwota zapisana. Rozliczenie i historia są aktualne.
-            </div>
-          )}
-          {balance && (
-            <ConsultationBilling balance={balance} admin={role === "admin"} />
-          )}
-          {role === "admin" &&
-            c.agreed_price_cents === null &&
-            c.status !== "cancelled" &&
-            priceRequestId && (
-              <ConsultationPriceEditor
-                id={c.id}
-                version={c.version}
-                requestId={priceRequestId}
-              />
-            )}
           <article className={`card pad ${styles.aside}`}>
             <span className={styles.eyebrow}>Zalecenia ze spotkania</span>
             <h3>Wasz plan po konsultacji</h3>
@@ -615,27 +608,15 @@ export function ConsultationView({
               </p>
             )}
           </article>
-          {canComplete && (
-            <article className="card pad">
-              <h3>Po spotkaniu</h3>
-              <ActionForm
-                action={closeConsultation}
-                label="Oznacz jako zakończoną"
-                key={`complete-${c.version}`}
-              >
-                <input type="hidden" name="id" value={c.id} />
-                <input
-                  type="hidden"
-                  name="expected_version"
-                  value={c.version}
-                />
-                <input type="hidden" name="intent" value="complete" />
-                <label className="field">
-                  Podsumowanie dla opiekuna (opcjonalnie)
-                  <textarea name="note" rows={4} maxLength={3000} />
-                </label>
-              </ActionForm>
-            </article>
+        </div>
+        <aside className="stack">
+          {role === "admin" && priceSaved && c.agreed_price_cents !== null && (
+            <div role="status" className="alert green">
+              Uzgodniona kwota zapisana. Rozliczenie i historia są aktualne.
+            </div>
+          )}
+          {balance && (
+            <ConsultationBilling balance={balance} admin={role === "admin"} />
           )}
           {canCancel && (
             <article className="card pad">
@@ -677,6 +658,48 @@ export function ConsultationView({
           )}
         </aside>
       </div>
-    </div>
+      <ProgressiveDetails
+        id="historia-konsultacji"
+        className={`card pad ${styles.editorDisclosure}`}
+        label="Historia konsultacji"
+        initiallyOpen={page > 1}
+      >
+        <ol className={styles.timeline}>
+          {history.map((h) => (
+            <li key={h.id}>
+              <span className={styles.dot} aria-hidden="true" />
+              <div>
+                <strong>{historyLabels[h.action]}</strong>
+                <small>{dateLabel(h.created_at)}</small>
+                {h.action === "price_agreed" &&
+                  h.agreed_price_cents != null && (
+                    <p>
+                      <strong>{money(h.agreed_price_cents)}</strong>
+                      {h.is_test_price
+                        ? " · cena robocza do testów"
+                        : " · kwota uzgodniona z opiekunem"}
+                    </p>
+                  )}
+                {h.starts_at && (
+                  <p>
+                    {dateLabel(h.starts_at)} · {h.duration_minutes} min ·{" "}
+                    {h.meeting_mode === "online" ? "Online" : "Na miejscu"}
+                  </p>
+                )}
+                {h.location && <p className={styles.preserve}>{h.location}</p>}
+                {h.note && <p className={styles.preserve}>{h.note}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+        <Paging
+          page={page}
+          more={more}
+          href={(n) =>
+            `${base}/consultations/${c.id}?page=${n}&plans=${plansPage}#historia-konsultacji`
+          }
+        />
+      </ProgressiveDetails>
+    </DetailsNavigation>
   );
 }

@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -29,29 +30,75 @@ export async function consultationJourney({
 }) {
   const suffix = crypto.randomUUID().slice(0, 8);
   stage("care-dog-and-consultation-request");
+  await revealFor(
+    guardian.getByRole("link", {
+      includeHidden: true,
+      name: "Dodaj psa +",
+      exact: true,
+    }),
+  );
   await guardian
     .getByRole("link", { name: "Dodaj psa +", exact: true })
     .click();
   await guardian.waitForURL("**/app/dogs/new");
+  await revealFor(guardian.getByLabel("Imię psa"));
   await guardian.getByLabel("Imię psa").fill(`Figa ${suffix}`);
+  await revealFor(
+    guardian.getByRole("button", {
+      includeHidden: true,
+      name: "Dodaj psa",
+      exact: true,
+    }),
+  );
   await guardian
-    .getByRole("button", { name: "Dodaj psa", exact: true })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Dodaj psa",
+      exact: true,
+    })
     .click();
   await expect(guardian).toHaveURL(/\/app\/dogs\/[a-f0-9-]+/);
   const dog = new URL(guardian.url()).pathname.split("/").at(-1)!;
   dogs.push(dog);
 
-  await guardian.getByRole("link", { name: "Otwórz konsultacje →" }).click();
+  await revealFor(
+    guardian.getByRole("link", {
+      includeHidden: true,
+      name: "Konsultacje indywidualne →",
+    }),
+  );
+  await guardian
+    .getByRole("link", { name: "Konsultacje indywidualne →" })
+    .click();
+  await revealFor(
+    guardian.getByRole("link", {
+      includeHidden: true,
+      name: "Poproś o konsultację",
+    }),
+  );
   await guardian.getByRole("link", { name: "Poproś o konsultację" }).click();
-  await expect(guardian.getByLabel("Twój pies")).toHaveValue(dog);
+  await expect(guardian.locator('[name="dog_id"]')).toHaveValue(dog);
+  await revealFor(guardian.getByLabel("Wybierz usługę"));
   await guardian
     .getByLabel("Wybierz usługę")
     .selectOption("60000000-0000-4000-8000-000000000011");
+  await revealFor(guardian.getByLabel("Co chcesz omówić?"));
   await guardian
     .getByLabel("Co chcesz omówić?")
     .fill(`Fikcyjne zgłoszenie ${suffix}`);
+  await revealFor(
+    guardian.getByRole("button", {
+      includeHidden: true,
+      name: "Przekaż zgłoszenie",
+      exact: true,
+    }),
+  );
   await guardian
-    .getByRole("button", { name: "Przekaż zgłoszenie", exact: true })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Przekaż zgłoszenie",
+      exact: true,
+    })
     .click();
   await expect(guardian).toHaveURL(/\/app\/consultations\/[a-f0-9-]+$/);
   const consultation = new URL(guardian.url()).pathname.split("/").at(-1)!;
@@ -141,10 +188,12 @@ export async function consultationJourney({
   }
   await expect(staff.getByLabel("Termin (czas polski)")).toBeVisible();
   await expect(staff.getByLabel("Termin (czas polski)")).toBeEnabled();
-  await expect(staff.getByLabel("Prowadzący", { exact: true })).toBeVisible();
+  await expect(staff.getByLabel("Prowadzący", { exact: true })).toBeHidden();
+  await expect(staff.getByText(/^Prowadząca:/)).toBeVisible();
   await expect(staff.getByLabel("Prowadzący", { exact: true })).toBeEnabled();
   await expect(
     staff.getByRole("button", {
+      includeHidden: true,
       name: "Potwierdź uzgodniony termin",
       exact: true,
     }),
@@ -155,17 +204,29 @@ export async function consultationJourney({
   // A guardian's request does not choose the lead. Assign this disposable
   // appointment explicitly after hydration; the required picker must never
   // cause the test to mistake browser validation for a scheduling failure.
+  await revealFor(staff.getByLabel("Prowadzący", { exact: true }));
   await staff.getByLabel("Prowadzący", { exact: true }).selectOption(staffId);
   await expect(staff.getByLabel("Prowadzący", { exact: true })).toHaveValue(
     staffId,
   );
+  await revealFor(staff.getByLabel("Termin (czas polski)"));
   await staff.getByLabel("Termin (czas polski)").fill(start);
+  await revealFor(staff.getByLabel("Miejsce lub instrukcja połączenia"));
   await staff
     .getByLabel("Miejsce lub instrukcja połączenia")
     .fill("Testowa wideorozmowa — instrukcja dla opiekuna.");
   await expect(staff.getByLabel("Termin (czas polski)")).toHaveValue(start);
+  await revealFor(
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Potwierdź uzgodniony termin",
+    }),
+  );
   await staff
-    .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Potwierdź uzgodniony termin",
+    })
     .click();
   await expect(staff.getByRole("status")).toContainText("Termin zapisany");
   const assignment = await checked(
@@ -178,16 +239,25 @@ export async function consultationJourney({
   );
   expect(assignment).toEqual({ assigned_staff_id: staffId, resource_id: null });
   await expect(
-    staff.getByRole("button", { name: "Oznacz jako zakończoną" }),
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Oznacz jako zakończoną",
+    }),
   ).toHaveCount(0);
   await guardian.reload();
   await expect(guardian.getByText("Umówiona", { exact: true })).toBeVisible();
 
   stage("care-private-draft");
+  await revealFor(
+    staff.getByRole("link", {
+      includeHidden: true,
+      name: "Przygotuj zalecenia →",
+    }),
+  );
   await staff.getByRole("link", { name: "Przygotuj zalecenia →" }).click();
   const careForm = await careEditor(staff);
   await expect(
-    careForm.getByRole("region", { name: "Powiązanie planu", exact: true }),
+    staff.getByRole("region", { name: "Powiązanie planu", exact: true }),
   ).toContainText("Konsultacja");
   await expect(careForm.locator('input[name="consultation_id"]')).toBeHidden();
   await expect(staff.locator('input[name="consultation_id"]')).toHaveValue(
@@ -195,13 +265,29 @@ export async function consultationJourney({
   );
   const title = `Plan testowy ${suffix}`;
   const draft = `Prywatny szkic ${suffix}, jeszcze niegotowy do przekazania.`;
+  await revealFor(staff.getByLabel("Tytuł planu", { exact: true }));
   await staff.getByLabel("Tytuł planu", { exact: true }).fill(title);
+  await revealFor(staff.getByLabel("Zalecenia dla opiekuna", { exact: true }));
   await staff.getByLabel("Zalecenia dla opiekuna", { exact: true }).fill(draft);
   await expect(
-    staff.getByRole("button", { name: "Opublikuj dla opiekuna" }),
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Opublikuj dla opiekuna",
+    }),
   ).toBeDisabled();
+  await revealFor(
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz szkic",
+      exact: true,
+    }),
+  );
   await staff
-    .getByRole("button", { name: "Zapisz szkic", exact: true })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz szkic",
+      exact: true,
+    })
     .click();
   await expect(staff.getByRole("status")).toContainText("Szkic zapisany");
   await guardian.goto(`/app/dogs/${dog}/care`);
@@ -226,17 +312,46 @@ export async function consultationJourney({
       .eq("dog_id", dog),
   );
   await staff.goto(`/admin/consultations/${consultation}`);
-  await staff.getByRole("button", { name: "Oznacz jako zakończoną" }).click();
+  await revealFor(
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Oznacz jako zakończoną",
+    }),
+  );
+  await staff
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Oznacz jako zakończoną",
+    })
+    .click();
   await expect(staff.getByText("Zakończona", { exact: true })).toBeVisible();
+  await revealFor(
+    staff.getByRole("link", {
+      includeHidden: true,
+      name: "Otwórz szkic zaleceń →",
+    }),
+  );
   await staff.getByRole("link", { name: "Otwórz szkic zaleceń →" }).click();
   await expect(
     staff.getByLabel("Zalecenia dla opiekuna", { exact: true }),
   ).toHaveValue(draft);
   const published = `Treść demonstracyjna ${suffix}. Tu pojawią się wskazówki przygotowane przez prowadzącą.`;
+  await revealFor(staff.getByLabel("Zalecenia dla opiekuna", { exact: true }));
   await staff
     .getByLabel("Zalecenia dla opiekuna", { exact: true })
     .fill(published);
-  await staff.getByRole("button", { name: "Opublikuj dla opiekuna" }).click();
+  await revealFor(
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Opublikuj dla opiekuna",
+    }),
+  );
+  await staff
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Opublikuj dla opiekuna",
+    })
+    .click();
   await expect(staff.getByRole("status")).toContainText("Plan opublikowany");
   const plan = await checked(
     db
@@ -266,25 +381,58 @@ export async function consultationJourney({
 
   stage("care-read-and-respond");
   await guardian.goto(`/app/consultations/${consultation}`);
+  await revealFor(
+    guardian.getByRole("link", {
+      includeHidden: true,
+      name: `${title} · wersja 1 →`,
+    }),
+  );
   await guardian.getByRole("link", { name: `${title} · wersja 1 →` }).click();
   await expect(guardian).toHaveURL(`/app/care/plans/${plan!.id}`);
   await expect(guardian.getByText(published, { exact: true })).toBeVisible();
+  await revealFor(
+    guardian.getByRole("link", {
+      includeHidden: true,
+      name: "← Aktualny plan i postępy tej usługi",
+    }),
+  );
   await guardian
     .getByRole("link", { name: "← Aktualny plan i postępy tej usługi" })
     .click();
   const response = `Testowa odpowiedź opiekuna ${suffix}. Udało się otworzyć i przeczytać plan.`;
+  await revealFor(guardian.getByLabel("Co udało się zrobić?", { exact: true }));
   await guardian
     .getByLabel("Co udało się zrobić?", { exact: true })
     .fill(response);
+  await revealFor(
+    guardian.getByRole("button", {
+      includeHidden: true,
+      name: "Przekaż odpowiedź prowadzącej",
+    }),
+  );
   await guardian
-    .getByRole("button", { name: "Przekaż odpowiedź prowadzącej" })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Przekaż odpowiedź prowadzącej",
+    })
     .click();
   await expect(guardian.getByRole("status")).toContainText(
     "Odpowiedź zapisana",
   );
   await staff.goto(`/admin/dogs/${dog}/care`);
   await expect(staff.getByText(response, { exact: true })).toBeVisible();
-  await staff.getByRole("button", { name: "Oznacz jako przeczytaną" }).click();
+  await revealFor(
+    staff.getByRole("button", {
+      includeHidden: true,
+      name: "Oznacz jako przeczytaną",
+    }),
+  );
+  await staff
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Oznacz jako przeczytaną",
+    })
+    .click();
   await expect(staff.getByText("Przeczytana", { exact: true })).toBeVisible();
   const progress = await checked(
     db

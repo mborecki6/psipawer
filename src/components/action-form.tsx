@@ -11,6 +11,7 @@ import {
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
 import { withFormActionRecovery } from "./form-action-recovery";
 import { CalendarWarning } from "@/modules/calendar/warning";
+import { revealFormFeedback } from "./progressive-details";
 const FieldErrors = createContext<Record<string, string[]>>({});
 export type ActionState = {
   error?: string;
@@ -80,6 +81,14 @@ export function ActionForm({
   }, []);
 
   useEffect(() => {
+    if (
+      state.error ||
+      state.success ||
+      Object.values(state.fields || {}).some((errors) => errors.length) ||
+      state.calendarWarning
+    ) {
+      revealFormFeedback(formElement.current);
+    }
     if (
       state.error ||
       Object.values(state.fields || {}).some((errors) => errors.length)

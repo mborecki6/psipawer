@@ -231,6 +231,14 @@
   cursor: pointer;
   font-weight: 650;
 }
+.editorDisclosure > summary {
+  cursor: pointer;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.editorDisclosure[open] > summary {
+  margin-bottom: 20px;
+}
 @media (max-width: 1000px) {
   .detailGrid {
     grid-template-columns: minmax(0, 1fr);

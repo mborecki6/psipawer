@@ -1,4 +1,9 @@
-import { expect, type Browser, type Page } from "@playwright/test";
+import {
+  expect,
+  type Browser,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import { completeServerAction } from "./action-completion";
 import {
   account,
@@ -107,7 +112,7 @@ export async function careFixture(
     await expect(staff).toHaveURL(carePath);
     await expect(
       staff.getByRole("heading", {
-        name: `${dogName} · małe kroki, wspólny plan`,
+        name: dogName,
         exact: true,
       }),
     ).toBeVisible();
@@ -150,6 +155,29 @@ export async function careEditor(page: Page) {
   return page.locator("#szkic form");
 }
 
+// Open only the secondary section required by the current user action. Keep
+// default-collapse assertions independent from helpers that edit hidden fields.
+export async function openCareSection(
+  container: Page | Locator,
+  name:
+    | "Wstaw materiał z biblioteki"
+    | "Kontrola i przypomnienia"
+    | "Kontrola i ustawienia",
+) {
+  const summary = container.locator("summary").filter({
+    hasText: new RegExp(`^${name}`),
+  });
+  await expect(summary).toHaveCount(1);
+  const disclosure = summary.locator("..");
+  if (
+    !(await disclosure.evaluate(
+      (element) => (element as HTMLDetailsElement).open,
+    ))
+  )
+    await summary.click();
+  return disclosure;
+}
+
 export async function publishCarePlan(
   page: Page,
   title: string,
@@ -159,6 +187,7 @@ export async function publishCarePlan(
   const form = await careEditor(page);
   await form.getByLabel("Tytuł planu", { exact: true }).fill(title);
   await form.getByLabel("Zalecenia dla opiekuna", { exact: true }).fill(body);
+  await openCareSection(form, "Kontrola i przypomnienia");
   await form.getByLabel("Termin kontaktu kontrolnego (opcjonalnie)").fill(due);
   const version = form.locator('[name="expected_version"]');
   const before = Number(await version.inputValue());

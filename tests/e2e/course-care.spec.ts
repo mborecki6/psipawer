@@ -17,6 +17,11 @@ import {
 } from "./local-fixtures";
 
 import { courseFixture, removeCourseCare } from "./course-fixtures";
+import {
+  openCourseMeeting,
+  openCourseMeetingOptions,
+  openCourseSection,
+} from "./course-ui";
 
 test.use({ trace: "off" });
 
@@ -48,8 +53,8 @@ test("course → private draft → whole-cycle plan → completed meeting advice
       .click();
     const form = await careEditor(f.staff);
     await expect(
-      form.getByRole("region", { name: "Powiązanie planu", exact: true }),
-    ).toContainText("Plan całego kursu");
+      f.staff.getByRole("region", { name: "Powiązanie planu", exact: true }),
+    ).toContainText("Cały kurs");
     await expect(
       form.locator('input[name="course_enrollment_id"]'),
     ).toBeHidden();
@@ -131,7 +136,7 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     const meetingForm = await careEditor(f.staff);
     // The meeting has its own blank draft and starts its own version count.
     await expect(
-      meetingForm.getByRole("region", {
+      f.staff.getByRole("region", {
         name: "Powiązanie planu",
         exact: true,
       }),
@@ -182,8 +187,8 @@ test("course → private draft → whole-cycle plan → completed meeting advice
         .eq("id", cycle.sessions[0].id),
     );
     await f.staff.goto(staffUrl);
-    const firstCard = f.staff.locator("#spotkanie-1");
-    await firstCard.getByText("Obecności uczestników", { exact: true }).click();
+    const firstCard = await openCourseMeeting(f.staff, 1);
+    await openCourseSection(firstCard, "Obecności uczestników");
     const attendance = firstCard.getByRole("form", {
       name: `Obecność: ${f.dogName}`,
       exact: true,
@@ -195,9 +200,8 @@ test("course → private draft → whole-cycle plan → completed meeting advice
     await expect(attendance.getByRole("status")).toHaveText(
       "Obecność zapisana.",
     );
-    await firstCard
-      .getByText("Zakończ lub odwołaj spotkanie", { exact: true })
-      .click();
+    await openCourseMeetingOptions(f.staff, 1);
+    await openCourseSection(firstCard, "Zakończ lub odwołaj spotkanie");
     const end = firstCard.getByRole("form", {
       name: "Zmiana spotkania 1",
       exact: true,

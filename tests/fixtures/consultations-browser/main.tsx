@@ -12,6 +12,9 @@ import type {
 } from "@/modules/consultations/types";
 import "@/app/globals.css";
 import { testServices } from "../services-data";
+import { FitnessDetailView } from "@/modules/fitness/views";
+import { FitnessRequestForm } from "@/modules/fitness/forms";
+import { fitnessData, fitnessService } from "./fitness";
 const search = new URLSearchParams(location.search);
 const role = search.get("role") === "client" ? "client" : "admin";
 const view = search.get("view") || "list";
@@ -45,6 +48,7 @@ if (consultation.status === "requested")
     location: "",
     version: 1,
   });
+if (search.has("legacy")) consultation.agreed_price_cents = null;
 if (search.has("long")) {
   consultation.dogs.name = "DługieImięBezPrzerw".repeat(9);
   consultation.topic = "DługiOpisDoSprawdzeniaUkładu".repeat(45);
@@ -109,7 +113,40 @@ function Fixture() {
           </div>
           <span className="badge">Dane testowe</span>
         </header>
-        {view === "request" ? (
+        {view === "fitness" ? (
+          <>
+            <nav className="toolbar" aria-label="Testowe kotwice">
+              <a href="#spotkanie-4">Spotkanie po numerze</a>
+              <a href="#spotkanie-71000000-0000-4000-8000-000000000005">
+                Spotkanie po identyfikatorze
+              </a>
+              <a href="#rozliczenie-72000000-0000-4000-8000-000000000001">
+                Saldo po identyfikatorze
+              </a>
+            </nav>
+            <FitnessDetailView
+              data={fitnessData(role, search)}
+              historyPage={1}
+              plansPage={1}
+              care={{
+                plans: [],
+                more: false,
+                hasDraft: false,
+                canPrepare: false,
+              }}
+              now="2026-10-27T10:00:00Z"
+            />
+          </>
+        ) : view === "fitness-request" ? (
+          <article className="card pad">
+            <FitnessRequestForm
+              services={[fitnessService]}
+              dogs={[{ ...dog, unavailable: false }]}
+              requestId="72000000-0000-4000-8000-000000000009"
+              serviceId={search.get("service") || undefined}
+            />
+          </article>
+        ) : view === "request" ? (
           <ConsultationRequestView
             services={testServices.filter(
               (s) => s.booking_flow === "consultation",
@@ -172,9 +209,18 @@ function Fixture() {
                 : [],
             }}
             history={history}
+            priceRequestId={
+              search.has("legacy")
+                ? "31000000-0000-4000-8000-000000000001"
+                : undefined
+            }
             page={1}
             more={false}
-            now="2026-09-20T10:00:00Z"
+            now={
+              search.has("past")
+                ? "2026-10-27T10:00:00Z"
+                : "2026-09-20T10:00:00Z"
+            }
           />
         ) : (
           <ConsultationListView

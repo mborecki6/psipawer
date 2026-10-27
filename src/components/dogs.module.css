@@ -1,0 +1,75 @@
+.summary {
+  min-width: 0;
+}
+
+.summary .photo {
+  width: 112px;
+  height: 112px;
+  border-radius: 20px;
+}
+
+.summary .monogram {
+  width: 96px;
+  height: 96px;
+}
+
+.profileFacts,
+.needs {
+  display: grid;
+  gap: 14px 22px;
+  margin: 20px 0;
+}
+
+.profileFacts div,
+.needs div {
+  min-width: 0;
+}
+
+.profileFacts dt,
+.needs dt {
+  margin-bottom: 4px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.profileFacts dd,
+.needs dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.needs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.details {
+  min-width: 0;
+  margin-top: 16px;
+}
+
+.details > summary {
+  padding: 10px 0;
+  font-weight: 650;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.details > summary:focus-visible {
+  outline: 2px solid var(--ink-soft);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.details[open] > summary {
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .needs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profileFacts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

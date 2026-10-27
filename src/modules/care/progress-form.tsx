@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { ActionForm, type ActionState } from "@/components/action-form";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
+import { ProgressiveDetails } from "@/components/progressive-details";
 import { submitProgress } from "./actions";
 import { careDate, type CarePlan } from "./types";
 import styles from "./care.module.css";
@@ -113,26 +114,31 @@ export function ProgressForm({
             rows={4}
           />
         </label>
-        <label className="field">
-          <span>Co poszło dobrze? (opcjonalnie)</span>
-          <textarea
-            name="went_well"
-            value={values.went_well}
-            onChange={(event) => change("went_well", event.target.value)}
-            maxLength={3000}
-            rows={3}
-          />
-        </label>
-        <label className="field">
-          <span>Co było trudne lub wymaga wyjaśnienia? (opcjonalnie)</span>
-          <textarea
-            name="difficult"
-            value={values.difficult}
-            onChange={(event) => change("difficult", event.target.value)}
-            maxLength={3000}
-            rows={3}
-          />
-        </label>
+        <ProgressiveDetails
+          label="Dodaj więcej szczegółów (opcjonalnie)"
+          bodyClassName="form-stack"
+        >
+          <label className="field">
+            <span>Co poszło dobrze? (opcjonalnie)</span>
+            <textarea
+              name="went_well"
+              value={values.went_well}
+              onChange={(event) => change("went_well", event.target.value)}
+              maxLength={3000}
+              rows={3}
+            />
+          </label>
+          <label className="field">
+            <span>Co było trudne lub wymaga wyjaśnienia? (opcjonalnie)</span>
+            <textarea
+              name="difficult"
+              value={values.difficult}
+              onChange={(event) => change("difficult", event.target.value)}
+              maxLength={3000}
+              rows={3}
+            />
+          </label>
+        </ProgressiveDetails>
       </ProgressFields>
     </ActionForm>
   );

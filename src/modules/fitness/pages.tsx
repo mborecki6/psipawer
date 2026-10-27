@@ -11,6 +11,7 @@ import { FitnessDetailView, FitnessListView } from "./views";
 import { FitnessRequestForm } from "./forms";
 import { getFitnessCare } from "@/modules/care/queries";
 import styles from "./fitness.module.css";
+import { WorkReturnLink } from "@/modules/work/return-link";
 export async function FitnessListPage({
   searchParams,
 }: {
@@ -33,7 +34,11 @@ export async function FitnessPackagePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ historyPage?: string; plans?: string }>;
+  searchParams: Promise<{
+    historyPage?: string;
+    plans?: string;
+    returnTo?: string;
+  }>;
 }) {
   await requireSession();
   const [{ id }, q] = await Promise.all([params, searchParams]),
@@ -42,13 +47,16 @@ export async function FitnessPackagePage({
   const data = await getFitnessPackage(id, historyPage);
   const care = await getFitnessCare(id, plansPage);
   return (
-    <FitnessDetailView
-      data={data}
-      care={care}
-      plansPage={plansPage}
-      historyPage={historyPage}
-      now={new Date().toISOString()}
-    />
+    <>
+      {data.role === "admin" && <WorkReturnLink target={q.returnTo} />}
+      <FitnessDetailView
+        data={data}
+        care={care}
+        plansPage={plansPage}
+        historyPage={historyPage}
+        now={new Date().toISOString()}
+      />
+    </>
   );
 }
 export async function FitnessRequestPage({

@@ -3,6 +3,7 @@ import { ControlInvitationCard, ReportingPanel } from "./access-panels";
 import type { ControlInvitation, ReportingAccess } from "./types";
 import { BookOpen, ClipboardList, MessageCircle } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
+import { ProgressiveDetails } from "@/components/progressive-details";
 import type { Role } from "@/lib/auth/session";
 import { reviewProgress } from "./actions";
 import { ProgressForm } from "./progress-form";
@@ -25,7 +26,8 @@ import {
 } from "./types";
 import styles from "./care.module.css";
 import { ContactCard } from "@/modules/work/contact-card";
-import type { FollowUp } from "@/modules/work/types";
+import { followUpStates, type FollowUp } from "@/modules/work/types";
+import { dateLabel } from "@/lib/domain";
 
 function PlanDocument({
   plan,
@@ -287,177 +289,245 @@ export function DogCareView({
     latest || { consultation_id: null };
   const selectedKey = careContextKey(selectedContext);
   const contextSearch = careContextSearch(selectedContext);
-  return (
-    <div className="stack">
-      <Link className="ghost-button" href={`${base}/dogs/${dog.id}`}>
-        ← Karta psa
-      </Link>
-      <header className={`card pad ${styles.header}`}>
-        <div>
-          <span className={styles.eyebrow}>
-            <ClipboardList aria-hidden="true" /> Zalecenia i postępy
-          </span>
-          <h2>{dog.name} · małe kroki, wspólny plan</h2>
-          <p className="muted">
-            {role === "admin"
-              ? "Dostosuj zalecenia, udostępnij plan i wracaj do odpowiedzi opiekuna."
-              : "Tutaj znajdziesz wskazówki od prowadzącej i opowiesz, jak Wam idzie."}
-          </p>
-        </div>
-        {role === "admin" && (
-          <div className="stack">
-            <Link className="secondary-button" href="/admin/care/library">
-              <BookOpen aria-hidden="true" size={18} /> Biblioteka materiałów
-            </Link>
+  const selectedConsultation = consultations.find(
+    (item) => item.id === selectedContext.consultation_id,
+  );
+  const selectedCourse = courses.find(
+    (item) => item.id === selectedContext.course_enrollment_id,
+  );
+  const selectedCourseSession = selectedCourse?.sessions.find(
+    (item) => item.id === selectedContext.course_session_id,
+  );
+  const selectedFitness = fitness.find(
+    (item) => item.id === selectedContext.fitness_package_id,
+  );
+  const selectedFitnessSession = selectedFitness?.sessions.find(
+    (item) => item.id === selectedContext.fitness_session_id,
+  );
+  const serviceTitle = selectedContext.consultation_id
+    ? selectedConsultation?.service_name || "Konsultacja"
+    : selectedContext.course_enrollment_id
+      ? selectedCourse
+        ? `Kurs · ${selectedCourse.title}`
+        : "Kurs"
+      : selectedContext.fitness_package_id
+        ? selectedFitness
+          ? `Fitness · ${selectedFitness.title}`
+          : "Fitness"
+        : "Ogólny plan pracy";
+  const serviceScope = selectedContext.consultation_id
+    ? selectedConsultation?.starts_at
+      ? dateLabel(selectedConsultation.starts_at)
+      : "Zalecenia po konsultacji"
+    : selectedContext.course_enrollment_id
+      ? selectedContext.course_session_id
+        ? selectedCourseSession
+          ? `Spotkanie ${selectedCourseSession.ordinal} · ${dateLabel(selectedCourseSession.starts_at)}`
+          : "Zalecenia po spotkaniu kursu"
+        : "Cały kurs"
+      : selectedContext.fitness_package_id
+        ? selectedContext.fitness_session_id
+          ? selectedFitnessSession
+            ? `Spotkanie ${selectedFitnessSession.ordinal}${selectedFitnessSession.starts_at ? ` · ${dateLabel(selectedFitnessSession.starts_at)}` : ""}`
+            : "Zalecenia po spotkaniu fitness"
+          : "Cały pakiet fitness"
+        : null;
+  const planChoices = (
+    <>
+      <nav className={styles.contexts} aria-label="Wybierz plan psa">
+        {contexts.map((item) => (
+          <Link
+            key={item.context_key}
+            className="ghost-button"
+            aria-current={item.context_key === selectedKey ? "page" : undefined}
+            href={`${path}?${careContextSearch(item)}`}
+          >
+            {item.title} · {careContextLabel(item)}
+            {role === "admin" && item.has_draft ? " · szkic" : ""}
+          </Link>
+        ))}
+        {!contexts.some((item) => item.context_key === "general") &&
+          role === "admin" && (
             <Link
               className="ghost-button"
-              href={`/admin/work/follow-ups?dog=${dog.id}`}
+              aria-current={selectedKey === "general" ? "page" : undefined}
+              href={`${path}?context=general`}
             >
-              Kontakty kontrolne i historia
+              Ogólny plan pracy
             </Link>
-          </div>
-        )}
-      </header>
-      <section className="card pad stack" aria-label="Plany według usługi">
-        <h2>Plany według usługi</h2>
-        <p className="muted">
-          Każda usługa i każde spotkanie mają osobny plan, historię i
-          odpowiedzi.
-        </p>
-        <nav className={styles.contexts} aria-label="Wybierz plan psa">
-          {contexts.map((item) => (
-            <Link
-              key={item.context_key}
-              className="ghost-button"
-              aria-current={
-                item.context_key === selectedKey ? "page" : undefined
-              }
-              href={`${path}?${careContextSearch(item)}`}
-            >
-              {item.title} · {careContextLabel(item)}
-              {role === "admin" && item.has_draft ? " · szkic" : ""}
-            </Link>
-          ))}
-          {!contexts.some((item) => item.context_key === "general") &&
-            role === "admin" && (
-              <Link
-                className="ghost-button"
-                aria-current={selectedKey === "general" ? "page" : undefined}
-                href={`${path}?context=general`}
-              >
-                Ogólny plan pracy
-              </Link>
-            )}
-          {!contexts.length && role === "client" && (
-            <p className="muted">Opublikowane plany pojawią się tutaj.</p>
           )}
-        </nav>
-        {role === "admin" && (
-          <details className={styles.disclosure}>
-            <summary>Przygotuj plan innej usługi</summary>
-            <div className={styles.contexts}>
-              <Link
-                className="ghost-button"
-                href={`${path}?context=general#szkic`}
-              >
-                Ogólny plan pracy
-              </Link>
-              {consultations
-                .filter((item) =>
-                  ["scheduled", "completed"].includes(item.status),
-                )
-                .map((item) => (
-                  <Link
-                    key={item.id}
-                    className="ghost-button"
-                    href={`${path}?consultation=${item.id}#szkic`}
-                  >
-                    {item.service_name || "Konsultacja"}
-                    {item.starts_at ? ` · ${careDate(item.starts_at)}` : ""}
-                  </Link>
-                ))}
-              {courses.map((item) => (
-                <div className="stack" key={item.id}>
-                  <Link
-                    className="ghost-button"
-                    href={`${path}?enrollment=${item.id}#szkic`}
-                  >
-                    {item.title} · cały kurs
-                  </Link>
-                  {item.sessions
-                    .filter((session) => session.status !== "cancelled")
-                    .map((session) => (
-                      <Link
-                        key={session.id}
-                        className="ghost-button"
-                        href={`${path}?enrollment=${item.id}&session=${session.id}#szkic`}
-                      >
-                        {item.title} · spotkanie {session.ordinal} ·{" "}
-                        {careDate(session.starts_at)}
-                      </Link>
-                    ))}
-                </div>
-              ))}
-              {fitness.map((item) => (
-                <div className="stack" key={item.id}>
-                  <Link
-                    className="ghost-button"
-                    href={`${path}?fitness=${item.id}#szkic`}
-                  >
-                    {item.title} · cały pakiet
-                  </Link>
-                  {item.sessions
-                    .filter((session) =>
-                      ["scheduled", "completed"].includes(session.status),
-                    )
-                    .map((session) => (
-                      <Link
-                        key={session.id}
-                        className="ghost-button"
-                        href={`${path}?fitness=${item.id}&fitness_session=${session.id}#szkic`}
-                      >
-                        {item.title} · spotkanie {session.ordinal}
-                        {session.starts_at
-                          ? ` · ${careDate(session.starts_at)}`
-                          : ""}
-                      </Link>
-                    ))}
-                </div>
-              ))}
-            </div>
-          </details>
+        {!contexts.length && role === "client" && (
+          <p className="muted">Opublikowane plany pojawią się tutaj.</p>
         )}
-        <p>
-          <strong>Otwarty plan: {careContextLabel(selectedContext)}</strong>
-        </p>
-      </section>
-      {followUp && <ContactCard item={followUp} admin={role === "admin"} />}
-      {controlInvitation && (
-        <ControlInvitationCard
-          invitation={controlInvitation}
-          admin={role === "admin"}
-        />
+      </nav>
+      {role === "admin" && (
+        <details className={styles.adminNewPlan}>
+          <summary>Przygotuj plan innej usługi</summary>
+          <div className={styles.contexts}>
+            <Link
+              className="ghost-button"
+              href={`${path}?context=general#szkic`}
+            >
+              Ogólny plan pracy
+            </Link>
+            {consultations
+              .filter((item) =>
+                ["scheduled", "completed"].includes(item.status),
+              )
+              .map((item) => (
+                <Link
+                  key={item.id}
+                  className="ghost-button"
+                  href={`${path}?consultation=${item.id}#szkic`}
+                >
+                  {item.service_name || "Konsultacja"}
+                  {item.starts_at ? ` · ${careDate(item.starts_at)}` : ""}
+                </Link>
+              ))}
+            {courses.map((item) => (
+              <div className="stack" key={item.id}>
+                <Link
+                  className="ghost-button"
+                  href={`${path}?enrollment=${item.id}#szkic`}
+                >
+                  {item.title} · cały kurs
+                </Link>
+                {item.sessions
+                  .filter((session) => session.status !== "cancelled")
+                  .map((session) => (
+                    <Link
+                      key={session.id}
+                      className="ghost-button"
+                      href={`${path}?enrollment=${item.id}&session=${session.id}#szkic`}
+                    >
+                      {item.title} · spotkanie {session.ordinal} ·{" "}
+                      {careDate(session.starts_at)}
+                    </Link>
+                  ))}
+              </div>
+            ))}
+            {fitness.map((item) => (
+              <div className="stack" key={item.id}>
+                <Link
+                  className="ghost-button"
+                  href={`${path}?fitness=${item.id}#szkic`}
+                >
+                  {item.title} · cały pakiet
+                </Link>
+                {item.sessions
+                  .filter((session) =>
+                    ["scheduled", "completed"].includes(session.status),
+                  )
+                  .map((session) => (
+                    <Link
+                      key={session.id}
+                      className="ghost-button"
+                      href={`${path}?fitness=${item.id}&fitness_session=${session.id}#szkic`}
+                    >
+                      {item.title} · spotkanie {session.ordinal}
+                      {session.starts_at
+                        ? ` · ${careDate(session.starts_at)}`
+                        : ""}
+                    </Link>
+                  ))}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  );
+  return (
+    <div className={`stack ${role === "admin" ? styles.adminPage : ""}`}>
+      {role === "admin" ? (
+        <>
+          <header className={styles.adminHeader}>
+            <div>
+              <span className={styles.eyebrow}>Plany i postępy</span>
+              <h2>{dog.name}</h2>
+            </div>
+            <nav
+              className={styles.adminHeaderLinks}
+              aria-label="Przydatne strony"
+            >
+              <Link href={`${base}/dogs/${dog.id}`}>← Karta psa</Link>
+              <Link href="/admin/care/library">
+                <BookOpen aria-hidden="true" size={16} /> Biblioteka materiałów
+              </Link>
+            </nav>
+          </header>
+          <section
+            className={`card ${styles.adminContext}`}
+            aria-label="Plany według usługi"
+          >
+            <section
+              className={styles.adminSelectedContext}
+              aria-label="Powiązanie planu"
+            >
+              <div>
+                <h3>{serviceTitle}</h3>
+                {serviceScope && <p>{serviceScope}</p>}
+              </div>
+              <span className={styles.adminPlanStatus}>
+                {latest
+                  ? `Opublikowany · wersja ${latest.revision}`
+                  : "Nieopublikowany"}
+                {draft ? " · zapisany szkic" : ""}
+              </span>
+            </section>
+            <details className={styles.adminPlanPicker}>
+              <summary>Zmień plan</summary>
+              <div className={styles.adminPlanChoices}>{planChoices}</div>
+            </details>
+          </section>
+        </>
+      ) : (
+        <>
+          <Link className="ghost-button" href={`${base}/dogs/${dog.id}`}>
+            ← Karta psa
+          </Link>
+          <header className={styles.adminHeader}>
+            <div>
+              <h2>{dog.name} · zalecenia</h2>
+            </div>
+          </header>
+          <section className="card pad stack" aria-label="Plany według usługi">
+            <p>
+              <strong>{serviceTitle}</strong>
+              {serviceScope ? ` · ${serviceScope}` : ""}
+            </p>
+            {contexts.some((item) => item.context_key !== selectedKey) && (
+              <ProgressiveDetails
+                label="Zmień plan"
+                className={styles.disclosure}
+              >
+                {planChoices}
+              </ProgressiveDetails>
+            )}
+          </section>
+        </>
+      )}
+      {role === "client" && followUp && (
+        <ContactCard item={followUp} admin={false} />
+      )}
+      {role === "client" && controlInvitation && (
+        <ControlInvitationCard invitation={controlInvitation} admin={false} />
       )}
       {latest ? (
         <PlanDocument plan={latest} role={role} current />
-      ) : (
+      ) : role === "client" ? (
         <article className="card pad">
           <div className={styles.empty}>
-            <h3>
-              {role === "admin"
-                ? "Zacznij od pierwszego planu"
-                : "Wasz plan pojawi się tutaj"}
-            </h3>
+            <h3>Wasz plan pojawi się tutaj</h3>
             <p>
-              {role === "admin"
-                ? "Przygotuj szkic poniżej. Opiekun zobaczy zalecenia dopiero po publikacji."
-                : "Prowadząca udostępni wskazówki dopasowane do Twojego psa. Wtedy możesz też opisać postępy."}
+              Prowadząca udostępni wskazówki dopasowane do Twojego psa. Wtedy
+              możesz też opisać postępy.
             </p>
           </div>
         </article>
-      )}
+      ) : null}
       {role === "admin" && (
-        <article className="card pad" id="szkic">
+        <article className={`card ${styles.adminEditorCard}`} id="szkic">
           {requestedUnavailable && (
             <p className="alert">
               Nie znaleziono dostępnej konsultacji tego psa. Wybierz spotkanie w
@@ -479,7 +549,9 @@ export function DogCareView({
             </p>
           )}
           <CareEditorDisclosure
+            compact
             key={`${dog.id}:${selectedKey}`}
+            openForHash="szkic"
             initiallyOpen={
               !latest ||
               Boolean(requestedConsultation) ||
@@ -506,6 +578,7 @@ export function DogCareView({
             }
           >
             <CareEditor
+              compact
               key={`${dog.id}:${selectedKey}`}
               context={selectedContext}
               dogId={dog.id}
@@ -523,8 +596,61 @@ export function DogCareView({
           </CareEditorDisclosure>
         </article>
       )}
-      {reporting && (
-        <ReportingPanel access={reporting} admin={role === "admin"} />
+      {role === "admin" && (
+        <details className={`card ${styles.adminSettings}`}>
+          <summary>
+            Kontrola i ustawienia
+            <span className={styles.adminSettingsSummary}>
+              {followUp && (
+                <span>
+                  Kontakt prowadzącej: {followUpStates[followUp.status]} ·{" "}
+                  {careDate(followUp.due_on)}
+                </span>
+              )}
+              {controlInvitation && (
+                <span>
+                  Zaproszenie opiekuna: {careDate(controlInvitation.due_on)} ·{" "}
+                  {controlInvitation.status === "open"
+                    ? "otwarte"
+                    : controlInvitation.status === "requested"
+                      ? "zgłoszenie przekazane"
+                      : controlInvitation.status === "superseded"
+                        ? "zastąpione nowym planem"
+                        : "wycofane"}
+                </span>
+              )}
+              {reporting && (
+                <span>
+                  Raportowanie:{" "}
+                  {!reporting.included
+                    ? "wyłączone"
+                    : reporting.allowed
+                      ? "aktywne"
+                      : "zakończone"}
+                  {reporting.expires_at
+                    ? ` · koniec: ${dateLabel(reporting.expires_at)}`
+                    : " · bez daty końca"}
+                </span>
+              )}
+            </span>
+          </summary>
+          <div className={styles.adminSettingsContent}>
+            {followUp && <ContactCard item={followUp} admin />}
+            {controlInvitation && (
+              <ControlInvitationCard invitation={controlInvitation} admin />
+            )}
+            {reporting && <ReportingPanel access={reporting} admin />}
+            <Link
+              className="ghost-button"
+              href={`/admin/work/follow-ups?dog=${dog.id}`}
+            >
+              Kontakty kontrolne i historia →
+            </Link>
+          </div>
+        </details>
+      )}
+      {role === "client" && reporting && (
+        <ReportingPanel access={reporting} admin={false} />
       )}
       {role === "client" && latest && reporting?.allowed !== false && (
         <article className="card pad" id="odpowiedz">

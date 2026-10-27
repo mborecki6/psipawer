@@ -15,6 +15,35 @@ const methods: Record<string, string> = {
   gift_card: "Karta podarunkowa",
 };
 
+export function CourseBalanceSummary({
+  balance: b,
+}: {
+  balance: CourseBalance;
+}) {
+  return (
+    <span className={styles.balanceSummary}>
+      {b.needs_settlement ? (
+        <strong>Kwota po rezygnacji do uzgodnienia</strong>
+      ) : b.refund_due_cents > 0 ? (
+        <strong>Do zwrotu: {money(b.refund_due_cents)}</strong>
+      ) : b.due_cents > 0 ? (
+        <strong>Do zapłaty: {money(b.due_cents)}</strong>
+      ) : (
+        <span>
+          {b.status === "accepted"
+            ? "Opłacone"
+            : b.charge_cents > 0
+              ? "Rozliczone"
+              : "Brak należności"}
+        </span>
+      )}
+      {b.needs_review && (
+        <span className="badge amber">Rozliczenie do sprawdzenia</span>
+      )}
+    </span>
+  );
+}
+
 export function CourseBilling({
   balance: b,
   payments,

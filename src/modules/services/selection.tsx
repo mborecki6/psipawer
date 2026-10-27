@@ -3,6 +3,8 @@ import { useState, useId } from "react";
 import { money } from "@/lib/domain";
 import { serviceTime, serviceReporting, type Service } from "./types";
 import { useHydrated } from "@/components/use-hydrated";
+import { ProgressiveDetails } from "@/components/progressive-details";
+import styles from "./services.module.css";
 export function ConsultationServicePicker({
   services,
   serviceId,
@@ -12,6 +14,7 @@ export function ConsultationServicePicker({
 }) {
   const hydrated = useHydrated();
   const [options] = useState(services);
+  const [explicitService] = useState(services.some((s) => s.id === serviceId));
   const [selected, setSelected] = useState(
     options.find((s) => s.id === serviceId)?.id ||
       options.find((s) => s.id === "60000000-0000-4000-8000-000000000010")
@@ -25,23 +28,37 @@ export function ConsultationServicePicker({
     return <p>Brak dostępnych usług. Skontaktuj się z prowadzącą.</p>;
   return (
     <div className="stack-sm">
-      <div className="field">
-        <label htmlFor={id}>Wybierz usługę</label>
-        <select
-          id={id}
-          name="service_id"
-          value={selected}
-          disabled={!hydrated}
-          onChange={(e) => setSelected(e.target.value)}
-          required
-        >
-          {options.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <ProgressiveDetails
+        className={styles.disclosure}
+        label={
+          explicitService ? (
+            <span>
+              <strong>{current.name}</strong> · Zmień usługę
+            </span>
+          ) : (
+            "Wybierz usługę"
+          )
+        }
+        initiallyOpen={!explicitService}
+      >
+        <div className="field">
+          <label htmlFor={id}>Wybierz usługę</label>
+          <select
+            id={id}
+            name="service_id"
+            value={selected}
+            disabled={!hydrated}
+            onChange={(e) => setSelected(e.target.value)}
+            required
+          >
+            {options.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </ProgressiveDetails>
       <input type="hidden" name="service_version" value={current.version} />
       <div className="alert">
         <div>

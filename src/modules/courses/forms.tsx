@@ -1,5 +1,12 @@
 "use client";
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
@@ -27,6 +34,7 @@ import styles from "./courses.module.css";
 import { CalendarWarning } from "@/modules/calendar/warning";
 import { BookingChoice } from "@/modules/calendar/booking-choice";
 import type { BookingChoices } from "@/modules/calendar/booking-queries";
+import { revealCourseFormFeedback } from "./course-disclosure";
 type Action = (
   state: CourseActionState,
   form: FormData,
@@ -45,6 +53,12 @@ function useCourseForm(action: Action, version: number) {
     },
     { version },
   );
+  useLayoutEffect(() => {
+    // Reveal before Feedback/CalendarWarning effects focus the new result.
+    // Depending on action state (not server props) respects a later collapse.
+    if (state.error || state.success || state.calendarWarning)
+      revealCourseFormFeedback(ref.current);
+  }, [state, ref]);
   useEffect(() => {
     if (state.error) error.current?.focus();
   }, [state]);

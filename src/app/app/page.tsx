@@ -10,18 +10,22 @@ import { money } from "@/lib/domain";
 import { financePackageHref } from "@/lib/finance-pagination";
 import { requireSession } from "@/lib/auth/session";
 import { OnboardingStartCard } from "@/modules/onboarding/start-card";
+import { getDashboardActivities } from "@/modules/dashboard/queries";
+import { buildDashboardItems } from "@/modules/dashboard/model";
+import { DashboardRegistrations } from "@/modules/dashboard/views";
 export default async function Page() {
-  const [
-    { walks, dogs, registrations },
-    finance,
-    nextAppointment,
-    { onboarding },
-  ] = await Promise.all([
+  const { onboarding } = await requireSession("client");
+  const [snapshot, finance, nextAppointment, activities] = await Promise.all([
     getSnapshot(),
     getDashboardFinanceSummary(),
     getNextAppointment(),
-    requireSession("client"),
+    getDashboardActivities(),
   ]);
+  const { walks, dogs, registrations } = snapshot;
+  const dashboard = buildDashboardItems({ snapshot, activities, finance });
+  const activePackages = finance.packages.filter((p) => p.status === "active");
+  const hasFinance =
+    finance.charges.length > 0 || finance.reviewPayments.length > 0;
   const cancelled = walks.filter(
     (w) =>
       w.status === "cancelled" &&
@@ -51,38 +55,7 @@ export default async function Page() {
         <NextAppointment appointment={nextAppointment} admin={false} />
       )}
       <div className="dashboard-grid">
-        <article className="card">
-          <div className="card-head">
-            <h2>Twoje zgłoszenia</h2>
-          </div>
-          <div className="card-body">
-            <div className="list">
-              {registrations.map((r) => (
-                <Link
-                  key={r.id}
-                  className="list-row"
-                  href={`/app/walks/${r.walk_id}`}
-                >
-                  <div className="list-main">
-                    <strong>{dogs.find((d) => d.id === r.dog_id)?.name}</strong>
-                    <span>
-                      {walks.find((w) => w.id === r.walk_id)?.public_location}
-                    </span>
-                  </div>
-                  <Badge
-                    status={
-                      walks.find((w) => w.id === r.walk_id)?.status ===
-                      "cancelled"
-                        ? "cancelled"
-                        : r.status
-                    }
-                  />
-                </Link>
-              ))}
-            </div>
-            {!registrations.length && <p>Nie masz jeszcze zgłoszeń.</p>}
-          </div>
-        </article>
+        <DashboardRegistrations {...dashboard} />
         <article className="card">
           <div className="card-head">
             <h2>Twoje psy</h2>
@@ -107,23 +80,28 @@ export default async function Page() {
           </div>
         </article>
       </div>
-      <article className="card">
-        <div className="card-head">
-          <div>
-            <h2>Wasze pakiety i rozliczenia</h2>
-            <p>
-              {finance.totals.availableEntries} dostępnych wejść ·{" "}
-              {finance.totals.reservedEntries} zarezerwowanych
-            </p>
+      {(activePackages.length > 0 || hasFinance) && (
+        <article className="card">
+          <div className="card-head">
+            <div>
+              <h2>
+                {activePackages.length
+                  ? "Wasze pakiety i rozliczenia"
+                  : "Rozliczenia"}
+              </h2>
+              {activePackages.length > 0 && (
+                <p>
+                  {finance.totals.availableEntries} dostępnych wejść ·{" "}
+                  {finance.totals.reservedEntries} zarezerwowanych
+                </p>
+              )}
+            </div>
+            <Link className="ghost-button" href="/app/finance">
+              Otwórz rozliczenia →
+            </Link>
           </div>
-          <Link className="ghost-button" href="/app/finance">
-            Otwórz rozliczenia →
-          </Link>
-        </div>
-        <div className="card-body">
-          {finance.packages
-            .filter((p) => p.status === "active")
-            .map((p) => (
+          <div className="card-body">
+            {activePackages.map((p) => (
               <Link
                 key={p.id}
                 className="list-row"
@@ -140,19 +118,18 @@ export default async function Page() {
                 </div>
               </Link>
             ))}
-          {!finance.packages.some((p) => p.status === "active") && (
-            <p className="muted">
-              Nie macie jeszcze aktywnego pakietu. O dostępne pakiety zapytaj
-              prowadzącą.
-            </p>
-          )}
-          {finance.totals.dueCents > 0 && (
-            <p>
-              Do rozliczenia: <strong>{money(finance.totals.dueCents)}</strong>
-            </p>
-          )}
-        </div>
-      </article>
+            {finance.totals.dueCents > 0 && (
+              <p>
+                Do rozliczenia:{" "}
+                <strong>{money(finance.totals.dueCents)}</strong>
+              </p>
+            )}
+            {hasFinance && finance.totals.dueCents === 0 && (
+              <p>Sprawdź sprawy rozliczeniowe widoczne przy zgłoszeniach.</p>
+            )}
+          </div>
+        </article>
+      )}
     </div>
   );
 }

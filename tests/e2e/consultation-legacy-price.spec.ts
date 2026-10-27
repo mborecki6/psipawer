@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import {
   test,
@@ -86,7 +87,10 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       "Starsze zgłoszenie bez ustalonej ceny",
     );
     await expect(
-      guardian.getByRole("button", { name: "Zapisz uzgodnioną kwotę" }),
+      guardian.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      }),
     ).toHaveCount(0);
 
     // Actual SSR and delayed scripts verify that the form cannot submit before
@@ -108,7 +112,10 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
         staff.getByLabel("Uzgodniona kwota (zł)", { exact: true }),
       ).toBeDisabled();
       await expect(
-        editor(staff).getByRole("button", { name: "Przygotowuję formularz…" }),
+        editor(staff).getByRole("button", {
+          includeHidden: true,
+          name: "Przygotowuję formularz…",
+        }),
       ).toBeDisabled();
     } finally {
       release();
@@ -151,27 +158,48 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       .replace(" ", "T");
     const location = "Fikcyjna rozmowa do próby historycznej kwoty";
     const scheduleNote = "Termin uzgodniony przed zapisaniem kwoty";
+    await revealFor(staff.getByLabel("Prowadzący", { exact: true }));
     await staff
       .getByLabel("Prowadzący", { exact: true })
       .selectOption(leader.id);
+    await revealFor(staff.getByLabel("Termin (czas polski)"));
     await staff.getByLabel("Termin (czas polski)").fill(input);
+    await revealFor(staff.getByLabel("Forma spotkania"));
     await staff.getByLabel("Forma spotkania").selectOption("online");
+    await revealFor(staff.getByLabel("Miejsce lub instrukcja połączenia"));
     await staff.getByLabel("Miejsce lub instrukcja połączenia").fill(location);
+    await revealFor(staff.getByLabel("Wiadomość dla opiekuna (opcjonalnie)"));
     await staff
       .getByLabel("Wiadomość dla opiekuna (opcjonalnie)")
       .fill(scheduleNote);
+    await revealFor(staff.getByLabel("Uzgodniona kwota (zł)", { exact: true }));
     await staff
       .getByLabel("Uzgodniona kwota (zł)", { exact: true })
       .fill("175,555");
+    await revealFor(
+      staff.getByLabel("Rodzaj uzgodnionej ceny", { exact: true }),
+    );
     await staff
       .getByLabel("Rodzaj uzgodnionej ceny", { exact: true })
       .selectOption("true");
     const note = "Kwota próbna ustalona telefonicznie z opiekunem";
+    await revealFor(
+      staff.getByLabel("Uzasadnienie dla opiekuna", { exact: true }),
+    );
     await staff
       .getByLabel("Uzasadnienie dla opiekuna", { exact: true })
       .fill(note);
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      }),
+    );
     await staff
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      })
       .click();
     await expect(editor(staff).getByRole("alert")).toContainText(
       "Podaj uzgodnioną kwotę",
@@ -192,17 +220,31 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     });
     const stale = await contexts[0].newPage();
     await stale.goto(`/admin/consultations/${id}`);
+    await revealFor(stale.getByLabel("Uzgodniona kwota (zł)", { exact: true }));
     await stale
       .getByLabel("Uzgodniona kwota (zł)", { exact: true })
       .fill("200");
+    await revealFor(
+      stale.getByLabel("Uzasadnienie dla opiekuna", { exact: true }),
+    );
     await stale
       .getByLabel("Uzasadnienie dla opiekuna", { exact: true })
       .fill("Starsza karta z inną kwotą");
+    await revealFor(staff.getByLabel("Uzgodniona kwota (zł)", { exact: true }));
     await staff
       .getByLabel("Uzgodniona kwota (zł)", { exact: true })
       .fill("175,50");
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      }),
+    );
     await staff
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      })
       .click();
     await expect(staff).toHaveURL(
       `${baseURL}/admin/consultations/${id}?price_saved=2#rozliczenie`,
@@ -214,8 +256,17 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     await expect(billing(staff)).toContainText(
       "Samo zgłoszenie nie wymaga wpłaty",
     );
+    await revealFor(
+      stale.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      }),
+    );
     await stale
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+      })
       .click();
     await expect(editor(stale).getByRole("alert")).toContainText(
       "Konsultacja zmieniła się",
@@ -275,6 +326,9 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       ).error,
     ).toBeTruthy();
     await guardian.reload();
+    await revealFor(
+      guardian.getByText("Uzgodniono kwotę spotkania", { exact: true }),
+    );
     await expect(
       guardian.getByText("Uzgodniono kwotę spotkania", { exact: true }),
     ).toBeVisible();
@@ -292,8 +346,19 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       }),
     });
     await expect(notice).toBeVisible();
+    await revealFor(
+      notice.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await notice
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(guardian).toHaveURL(new RegExp(`/app/consultations/${id}$`));
     expect(
@@ -311,8 +376,17 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
     await expect(
       staff.getByLabel("Wiadomość dla opiekuna (opcjonalnie)"),
     ).toHaveValue(scheduleNote);
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Potwierdź uzgodniony termin",
+      }),
+    );
     await staff
-      .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Potwierdź uzgodniony termin",
+      })
       .click();
     await expect(
       staff.getByRole("status").filter({ hasText: "Termin zapisany" }),
@@ -341,16 +415,35 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
       paid_cents: 0,
       due_cents: 17550,
     });
+    await revealFor(
+      billing(staff).getByRole("link", {
+        includeHidden: true,
+        name: "Zapisz wpłatę w finansach →",
+      }),
+    );
     await billing(staff)
       .getByRole("link", { name: "Zapisz wpłatę w finansach →" })
       .click();
     const charge = staff.locator(`#charge-consultation-${id}`);
+    await revealFor(charge.locator("summary").getByText("Rozlicz należność"));
     await charge.locator("summary").getByText("Rozlicz należność").click();
+    await revealFor(charge.getByLabel("Otrzymana kwota (zł)", { exact: true }));
     await charge
       .getByLabel("Otrzymana kwota (zł)", { exact: true })
       .fill("175,50");
+    await revealFor(
+      charge.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz wpłatę",
+        exact: true,
+      }),
+    );
     await charge
-      .getByRole("button", { name: "Zapisz wpłatę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz wpłatę",
+        exact: true,
+      })
       .click();
     await expect
       .poll(balance)
@@ -364,7 +457,18 @@ test("historical agreement → retained invalid draft/conflict → confirmed app
         .eq("id", id),
     );
     await staff.goto(`/admin/consultations/${id}`);
-    await staff.getByRole("button", { name: "Oznacz jako zakończoną" }).click();
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Oznacz jako zakończoną",
+      }),
+    );
+    await staff
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Oznacz jako zakończoną",
+      })
+      .click();
     await expect(staff.getByText("Zakończona", { exact: true })).toBeVisible();
     await expect.poll(balance).toMatchObject({
       status: "completed",

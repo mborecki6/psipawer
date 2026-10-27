@@ -148,6 +148,93 @@ export function OnlinePaymentUnavailable({
   );
 }
 
+function PaymentChargeFacts({
+  charge,
+  preview = false,
+}: {
+  charge: FinanceCharge;
+  preview?: boolean;
+}) {
+  return (
+    <dl className={styles.facts}>
+      <div>
+        <dt>Pies</dt>
+        <dd>{charge.dogName}</dd>
+      </div>
+      <div>
+        <dt>Usługa</dt>
+        <dd>{charge.title}</dd>
+      </div>
+      <div>
+        <dt>Termin</dt>
+        <dd>{dateLabel(charge.date)}</dd>
+      </div>
+      {preview && (
+        <div>
+          <dt>Uzgodniona kwota</dt>
+          <dd>{money(charge.amountCents)}</dd>
+        </div>
+      )}
+      {(preview || charge.paidCents > 0) && (
+        <div>
+          <dt>Już wpłacono</dt>
+          <dd>{money(charge.paidCents)}</dd>
+        </div>
+      )}
+      <div>
+        <dt>{preview ? "Pozostało do zapłaty" : "Do zapłaty w tej próbie"}</dt>
+        <dd className={styles.amount}>{money(charge.dueCents)}</dd>
+      </div>
+    </dl>
+  );
+}
+
+export function OnlinePaymentPreviewView({
+  charge,
+  unresolvedAttempt,
+}: {
+  charge: FinanceCharge;
+  unresolvedAttempt?: Pick<OnlinePaymentAttempt, "id">;
+}) {
+  return (
+    <div className={styles.root}>
+      <Link className="text-button" href="/app/finance">
+        ← Rozliczenia
+      </Link>
+      <header className={styles.header}>
+        <h2>Podgląd płatności online</h2>
+        <p>Aktualne rozliczenie Twojej usługi.</p>
+      </header>
+      <aside className={styles.testNotice} role="status">
+        <strong>Płatności online jeszcze niedostępne</strong>
+        <p>
+          Ten podgląd nie rozpoczyna płatności. Sposób wpłaty ustal z
+          prowadzącą.
+        </p>
+      </aside>
+      {unresolvedAttempt && (
+        <aside className="alert" role="status">
+          Masz wcześniejszą próbę płatności wymagającą sprawdzenia. Przed
+          kolejną wpłatą{" "}
+          <Link href={`/app/payments/${unresolvedAttempt.id}`}>
+            sprawdź jej status →
+          </Link>
+        </aside>
+      )}
+      <section
+        className={`card pad ${styles.panel}`}
+        aria-labelledby="payment-summary-heading"
+      >
+        <h3 id="payment-summary-heading">Podsumowanie płatności</h3>
+        <PaymentChargeFacts charge={charge} preview />
+        <Link className="text-button" href={charge.href}>
+          Zobacz usługę →
+        </Link>
+      </section>
+    </div>
+  );
+}
+
 export function NewOnlinePaymentView({
   charge,
   environment,
@@ -174,30 +261,7 @@ export function NewOnlinePaymentView({
         aria-labelledby="payment-summary-heading"
       >
         <h3 id="payment-summary-heading">Podsumowanie płatności</h3>
-        <dl className={styles.facts}>
-          <div>
-            <dt>Pies</dt>
-            <dd>{charge.dogName}</dd>
-          </div>
-          <div>
-            <dt>Usługa</dt>
-            <dd>{charge.title}</dd>
-          </div>
-          <div>
-            <dt>Termin</dt>
-            <dd>{dateLabel(charge.date)}</dd>
-          </div>
-          {charge.paidCents > 0 && (
-            <div>
-              <dt>Już wpłacono</dt>
-              <dd>{money(charge.paidCents)}</dd>
-            </div>
-          )}
-          <div>
-            <dt>Do zapłaty w tej próbie</dt>
-            <dd className={styles.amount}>{money(charge.dueCents)}</dd>
-          </div>
-        </dl>
+        <PaymentChargeFacts charge={charge} />
         <p className="muted">
           Płatność obejmuje całą pozostałą należność. Kwotę ponownie sprawdzimy
           przed rozpoczęciem.

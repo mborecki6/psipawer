@@ -12,6 +12,7 @@ import { uploadCommunityAvatar } from "@/lib/data/community-actions";
 import type { AvatarState } from "@/lib/data/avatar-cleanup";
 import { usePersistentForm } from "./use-persistent-form";
 import { useHydrated } from "./use-hydrated";
+import { revealFormFeedback } from "./progressive-details";
 import styles from "./avatar-editor.module.css";
 
 export function AvatarEditor({
@@ -56,8 +57,9 @@ export function AvatarEditor({
     {},
   );
   useEffect(() => {
+    if (state.error || state.success) revealFormFeedback(form.current);
     if (state.error) error.current?.focus();
-  }, [state]);
+  }, [state, form]);
   return (
     <form
       ref={form}

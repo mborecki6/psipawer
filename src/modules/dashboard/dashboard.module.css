@@ -1,0 +1,37 @@
+.row {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+.main {
+  flex: 1 1 12rem;
+  overflow-wrap: anywhere;
+}
+.action {
+  flex: 0 1 12rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.main .finance {
+  color: var(--ink);
+  font-weight: 600;
+}
+.details {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+}
+.details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 1rem;
+}
+.links a {
+  text-decoration: underline;
+}

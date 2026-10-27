@@ -5,6 +5,10 @@ import type { Service } from "./types";
 import styles from "./services.module.css";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { useHydrated } from "@/components/use-hydrated";
+import {
+  ProgressiveDetails,
+  revealFormFeedback,
+} from "@/components/progressive-details";
 export function ServiceEditor({ service }: { service: Service }) {
   const hydrated = useHydrated();
   const form = usePersistentForm();
@@ -30,9 +34,23 @@ export function ServiceEditor({ service }: { service: Service }) {
   );
   const id = useId();
   const error = useRef<HTMLDivElement>(null);
+  const details = useRef<HTMLDivElement>(null);
+  const submittedDetailsOpen = useRef(false);
   useEffect(() => {
+    if (state.error || state.success) {
+      revealFormFeedback(form.current);
+      const invalidDetails = [
+        "name",
+        "description",
+        "price_unit",
+        "duration_minutes",
+        "sessions_count",
+      ].some((name) => state.fields?.[name]?.length);
+      if (submittedDetailsOpen.current || invalidDetails)
+        revealFormFeedback(details.current);
+    }
     if (state.error) error.current?.focus();
-  }, [state]);
+  }, [state, form]);
   const field = (name: keyof typeof values) => ({
     id: `${id}-${name}`,
     name,
@@ -47,6 +65,10 @@ export function ServiceEditor({ service }: { service: Service }) {
     <form
       ref={form}
       action={action}
+      onSubmit={() => {
+        submittedDetailsOpen.current =
+          details.current?.closest("details")?.open === true;
+      }}
       className="form-stack"
       aria-busy={!hydrated || pending}
     >
@@ -55,57 +77,16 @@ export function ServiceEditor({ service }: { service: Service }) {
       <fieldset className={styles.fields} disabled={!hydrated || pending}>
         <legend className="sr-only">Dane usługi i cena</legend>
         <div className="field">
-          <label htmlFor={`${id}-name`}>Nazwa usługi</label>
-          <input {...field("name")} required minLength={3} maxLength={160} />
-        </div>
-        <div className="field">
-          <label htmlFor={`${id}-description`}>Krótki opis</label>
-          <textarea {...field("description")} rows={3} maxLength={2000} />
-        </div>
-        <div className={styles.twoColumns}>
-          <div className="field">
-            <label htmlFor={`${id}-price`}>Cena (zł)</label>
-            <input
-              {...field("price")}
-              inputMode="decimal"
-              required
-              maxLength={8}
-            />
-            <small>Kwota za jednostkę podaną obok.</small>
-          </div>
-          <div className="field">
-            <label htmlFor={`${id}-price_unit`}>Za co płaci opiekun?</label>
-            <input
-              {...field("price_unit")}
-              required
-              minLength={3}
-              maxLength={80}
-            />
-          </div>
-        </div>
-        <div className={styles.twoColumns}>
-          <div className="field">
-            <label htmlFor={`${id}-duration_minutes`}>
-              Minuty jednego spotkania
-            </label>
-            <input
-              {...field("duration_minutes")}
-              type="number"
-              min={15}
-              max={original.booking_flow === "consultation" ? 240 : 480}
-              required={original.booking_flow === "consultation"}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor={`${id}-sessions_count`}>Liczba spotkań</label>
-            <input
-              {...field("sessions_count")}
-              type="number"
-              min={1}
-              max={original.booking_flow === "consultation" ? 1 : 100}
-              required={original.booking_flow === "consultation"}
-            />
-          </div>
+          <label htmlFor={`${id}-price`}>Cena (zł)</label>
+          <input
+            {...field("price")}
+            inputMode="decimal"
+            required
+            maxLength={8}
+          />
+          <small>
+            {values.price_unit || "Uzupełnij jednostkę w szczegółach oferty."}
+          </small>
         </div>
         <div className={styles.twoColumns}>
           <div className="field">
@@ -123,6 +104,72 @@ export function ServiceEditor({ service }: { service: Service }) {
             </select>
           </div>
         </div>
+        <ProgressiveDetails
+          id={`szczegoly-oferty-${original.id}`}
+          className={styles.disclosure}
+          label="Szczegóły oferty"
+        >
+          <div ref={details} className={styles.fields}>
+            <div className="field">
+              <label htmlFor={`${id}-name`}>Nazwa usługi</label>
+              <input
+                {...field("name")}
+                required
+                minLength={3}
+                maxLength={160}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor={`${id}-description`}>Krótki opis</label>
+              <textarea {...field("description")} rows={3} maxLength={2000} />
+            </div>
+            <div className="field">
+              <label htmlFor={`${id}-price_unit`}>Za co płaci opiekun?</label>
+              <input
+                {...field("price_unit")}
+                required
+                minLength={3}
+                maxLength={80}
+              />
+            </div>
+            <div className={styles.twoColumns}>
+              <div className="field">
+                <label htmlFor={`${id}-duration_minutes`}>
+                  Minuty jednego spotkania
+                </label>
+                <input
+                  {...field("duration_minutes")}
+                  type="number"
+                  min={15}
+                  max={original.booking_flow === "consultation" ? 240 : 480}
+                  required={original.booking_flow === "consultation"}
+                />
+              </div>
+              {original.booking_flow === "consultation" &&
+              values.sessions_count === "1" ? (
+                <div className="field">
+                  <span>Liczba spotkań: 1</span>
+                  <input
+                    type="hidden"
+                    name="sessions_count"
+                    value={values.sessions_count}
+                  />
+                </div>
+              ) : (
+                <div className="field">
+                  <label htmlFor={`${id}-sessions_count`}>Liczba spotkań</label>
+                  <input
+                    {...field("sessions_count")}
+                    type="number"
+                    min={1}
+                    max={original.booking_flow === "consultation" ? 1 : 100}
+                    required={original.booking_flow === "consultation"}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </ProgressiveDetails>
       </fieldset>
       {state.error && (
         <div role="alert" className="alert red" ref={error} tabIndex={-1}>

@@ -8,6 +8,7 @@ import styles from "./consultations.module.css";
 import { useHydrated } from "@/components/use-hydrated";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
+import { revealFormFeedback } from "@/components/progressive-details";
 import { CalendarWarning } from "@/modules/calendar/warning";
 import { BookingChoice } from "@/modules/calendar/booking-choice";
 import type { BookingChoices } from "@/modules/calendar/booking-queries";
@@ -55,8 +56,13 @@ export function ScheduleEditor({
   const error = useRef<HTMLDivElement>(null);
   const prefix = useId();
   useEffect(() => {
+    if (state.error || state.success || state.calendarWarning) {
+      if (form.current) revealFormFeedback(form.current);
+      if (state.calendarWarning)
+        form.current?.querySelector<HTMLElement>('[role="alert"]')?.focus();
+    }
     if (state.error) error.current?.focus();
-  }, [state]);
+  }, [state, form]);
   const alreadyScheduled =
     original.status === "scheduled" || state.version > original.version;
   // Acknowledge only this tab's explicit price save while retaining the date

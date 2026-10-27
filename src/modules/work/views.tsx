@@ -18,10 +18,12 @@ function WorkRow({
   item,
   today,
   preview = false,
+  returnTo,
 }: {
   item: WorkItem;
   today: string;
   preview?: boolean;
+  returnTo?: string;
 }) {
   const overdue =
     ["followups", "fitness"].includes(item.kind) &&
@@ -44,7 +46,7 @@ function WorkRow({
   return (
     <Link
       className={`${styles.row} ${preview ? styles.previewRow : ""}`}
-      href={workHref(item)}
+      href={workHref(item, returnTo)}
     >
       {!preview && (
         <div className={`${styles.mark} ${overdue ? styles.overdue : ""}`}>
@@ -85,6 +87,28 @@ function WorkRow({
     </Link>
   );
 }
+function WorkQueueScope() {
+  return (
+    <>
+      <p className="muted">
+        Kolejka obejmuje konsultacje, spacery, fitness, kwalifikacje, odpowiedzi
+        do zaleceń i kontakty kontrolne. Zgłoszenia kursowe i prośby o termin
+        sprawdzisz osobno:
+      </p>
+      <div className={styles.links}>
+        <Link className={styles.previewLink} href="/admin/courses">
+          Kursy i zgłoszenia →
+        </Link>
+        <Link
+          className={styles.previewLink}
+          href="/admin/service-requests?filter=open"
+        >
+          Prośby o termin →
+        </Link>
+      </div>
+    </>
+  );
+}
 export function WorkPreview({
   items,
   counts,
@@ -102,12 +126,12 @@ export function WorkPreview({
         <div>
           <h2>Do zrobienia</h2>
           <p>
-            Otwarte sprawy: {total}
+            W tej kolejce: {total}
             {overdue > 0 ? ` · po terminie: ${overdue}` : ""}
           </p>
         </div>
         <Link className={styles.previewLink} href="/admin/work">
-          Wszystkie sprawy →
+          Otwórz kolejkę →
         </Link>
       </div>
       <div className={styles.previewBody}>
@@ -117,16 +141,18 @@ export function WorkPreview({
             item={item}
             today={today}
             preview
+            returnTo="/admin"
           />
         ))}
         {!items.length && (
           <div className={styles.previewEmpty}>
-            <p>Wszystkie bieżące sprawy są obsłużone.</p>
+            <p>W tej kolejce nie ma teraz spraw do obsłużenia.</p>
             <Link className={styles.previewLink} href="/admin/calendar">
               Sprawdź kalendarz →
             </Link>
           </div>
         )}
+        <WorkQueueScope />
       </div>
     </article>
   );
@@ -159,6 +185,7 @@ export function WorkQueueView({
           Zgłoszenia, kwalifikacje psów, odpowiedzi i kontakty kontrolne. Obsłuż
           sprawę w jej karcie, a zniknie z tej listy.
         </p>
+        <WorkQueueScope />
       </header>
       <nav className={styles.filters} aria-label="Rodzaj sprawy">
         <Link
@@ -209,7 +236,12 @@ export function WorkQueueView({
         )}
         <div className={styles.list}>
           {items.map((item) => (
-            <WorkRow key={item.kind + item.id} item={item} today={today} />
+            <WorkRow
+              key={item.kind + item.id}
+              item={item}
+              today={today}
+              returnTo={url(filter, page)}
+            />
           ))}
         </div>
         {!items.length && (
@@ -218,12 +250,16 @@ export function WorkQueueView({
             <h3>
               {page > 1
                 ? "Na tej stronie nie ma już spraw"
-                : "Na teraz wszystko pod kontrolą"}
+                : filter !== "all"
+                  ? "W tym filtrze nie ma teraz spraw"
+                  : "W tej kolejce nie ma teraz spraw do obsłużenia"}
             </h3>
             <p>
               {page > 1
                 ? "Wróć do poprzedniej strony lub zmień filtr."
-                : "Nowe sprawy pojawią się tutaj. Samo otwarcie listy nie oznacza ich jako obsłużonych."}
+                : filter !== "all"
+                  ? "Zmień filtr, aby sprawdzić pozostałe rodzaje spraw w tej kolejce."
+                  : "Nowe sprawy z zakresu tej kolejki pojawią się tutaj. Samo otwarcie listy nie oznacza ich jako obsłużonych."}
             </p>
           </div>
         )}

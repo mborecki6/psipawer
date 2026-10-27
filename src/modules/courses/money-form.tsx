@@ -1,5 +1,11 @@
 "use client";
-import { useActionState, useEffect, useRef, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { useHydrated } from "@/components/use-hydrated";
@@ -7,6 +13,8 @@ import { recordPayment } from "@/lib/data/finance-actions";
 import { settleEnrollment, refundCoursePayment } from "./finance-actions";
 import type { CourseActionState } from "./actions";
 import styles from "./courses.module.css";
+import { revealCourseFormFeedback } from "./course-disclosure";
+import { CalendarWarning } from "@/modules/calendar/warning";
 
 export function CourseMoneyForm({
   kind,
@@ -48,6 +56,10 @@ export function CourseMoneyForm({
   const ref = usePersistentForm(),
     hydrated = useHydrated(),
     errorRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (state.error || state.success || state.calendarWarning)
+      revealCourseFormFeedback(ref.current);
+  }, [state, ref]);
   useEffect(() => {
     if (state.error) errorRef.current?.focus();
   }, [state]);
@@ -59,6 +71,10 @@ export function CourseMoneyForm({
         : "Zapisz uzgodnioną kwotę";
   return (
     <form ref={ref} action={submit} className="stack">
+      <CalendarWarning
+        warning={state.calendarWarning}
+        pending={pending || !hydrated}
+      />
       {state.error && (
         <div ref={errorRef} role="alert" tabIndex={-1} className="alert red">
           {state.error}

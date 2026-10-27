@@ -11,6 +11,56 @@ import type {
 } from "./types";
 import { reportDataReadError } from "@/lib/observability/server-errors";
 import { calendarPractitioners } from "./practitioners";
+import {
+  attachMeetingIds,
+  type CourseMeeting,
+  type FitnessMeeting,
+} from "./meeting-links";
+
+async function clientMeetingIds(
+  db: Awaited<ReturnType<typeof requireSession>>["db"],
+  appointments: Appointment[],
+) {
+  const courseIds = [
+    ...new Set(
+      appointments.filter((a) => a.kind === "course").map((a) => a.id),
+    ),
+  ];
+  const fitnessIds = [
+    ...new Set(
+      appointments.filter((a) => a.kind === "fitness").map((a) => a.id),
+    ),
+  ];
+  const courses: CourseMeeting[] = [];
+  const fitness: FitnessMeeting[] = [];
+  // Read only public identifiers/times through the current guardian's RLS.
+  // Small ID batches also keep PostgREST GET URLs bounded.
+  for (let offset = 0; offset < courseIds.length; offset += 100) {
+    courses.push(
+      ...(await allRows<CourseMeeting>((from, to) =>
+        db
+          .from("course_sessions")
+          .select("id,course_id,starts_at")
+          .in("course_id", courseIds.slice(offset, offset + 100))
+          .order("id")
+          .range(from, to),
+      )),
+    );
+  }
+  for (let offset = 0; offset < fitnessIds.length; offset += 100) {
+    fitness.push(
+      ...(await allRows<FitnessMeeting>((from, to) =>
+        db
+          .from("fitness_sessions")
+          .select("id,package_id,starts_at")
+          .in("package_id", fitnessIds.slice(offset, offset + 100))
+          .order("id")
+          .range(from, to),
+      )),
+    );
+  }
+  return attachMeetingIds(appointments, courses, fitness);
+}
 export async function getCalendar(
   staff: boolean,
   date?: string,
@@ -65,7 +115,9 @@ export async function getCalendar(
     primaryId = primary.data;
   }
   return {
-    appointments,
+    appointments: staff
+      ? appointments
+      : await clientMeetingIds(db, appointments),
     range,
     settings,
     members,
@@ -165,5 +217,7 @@ export async function getNextAppointment() {
     reportDataReadError("calendar.next", error, status);
     throw new Error("Nie udało się pobrać najbliższego spotkania.");
   }
-  return (data?.[0] as Appointment | undefined) || null;
+  const appointment = (data?.[0] as Appointment | undefined) || null;
+  if (!appointment || role === "admin") return appointment;
+  return (await clientMeetingIds(db, [appointment]))[0];
 }

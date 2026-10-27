@@ -19,6 +19,7 @@ import {
 } from "./dates";
 import { BlockEditor, CreateBlockEditor, AssignmentEditor } from "./editor";
 import styles from "./calendar.module.css";
+import { appointmentDetailHref } from "./meeting-links";
 const labels = {
   walk: "Spacer",
   consultation: "Spotkanie indywidualne",
@@ -303,7 +304,7 @@ export function CalendarView({
                     {items.map((item) => {
                       const before = localDate(item.starts_at) < day,
                         later = localDate(item.ends_at) > day;
-                      const detailHref = `${base}/${item.kind === "walk" ? "walks" : item.kind === "course" ? "courses" : item.kind === "fitness" ? "fitness" : "consultations"}/${item.id}`;
+                      const detailHref = appointmentDetailHref(base, item);
                       const selected =
                         selectedEvent ===
                         `${item.kind}:${item.id}:${Date.parse(item.starts_at)}`;
@@ -429,7 +430,7 @@ export function CalendarView({
               </div>
             </details>
             <details className={`card pad ${styles.blockDisclosure}`}>
-              <summary>Zaplanuj spotkanie</summary>
+              <summary>Spacery i konsultacje</summary>
               <p>
                 Termin konsultacji ustalisz z jej zgłoszenia. Spacer dodasz
                 bezpośrednio.

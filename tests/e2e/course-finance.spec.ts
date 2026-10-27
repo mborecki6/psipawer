@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import {
@@ -472,22 +473,47 @@ test("course finance browser: partial receipts → cancellation → stale settle
     async function receipt(amount: string) {
       await staff.goto(url);
       const form = receiptForm(staff);
+      await revealFor(form.locator("summary").first());
       await form.locator("summary").first().click();
       const requestKey = await form
         .locator('input[name="request_id"]')
         .inputValue();
+      await revealFor(form.getByLabel("Otrzymana kwota (zł)", { exact: true }));
       await form
         .getByLabel("Otrzymana kwota (zł)", { exact: true })
         .fill(amount);
-      await form.getByRole("checkbox").check();
+      await revealFor(form.getByRole("checkbox", { includeHidden: true }));
+      await form.getByRole("checkbox", { includeHidden: true }).check();
+      await revealFor(
+        form.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        }),
+      );
       await form
-        .getByRole("button", { name: "Zapisz wpłatę", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        })
         .click();
       await expect(form.getByRole("status")).toContainText("Wpłata zapisana");
       await expect(
-        form.getByRole("button", { name: "Zapisz wpłatę", exact: true }),
+        form.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        }),
       ).toBeDisabled();
       if (amount === "40,00") {
+        await revealFor(
+          form.getByRole("link", {
+            includeHidden: true,
+            name: "Odśwież saldo i przygotuj kolejny wpis →",
+            exact: true,
+          }),
+        );
         await form
           .getByRole("link", {
             name: "Odśwież saldo i przygotuj kolejny wpis →",
@@ -507,15 +533,28 @@ test("course finance browser: partial receipts → cancellation → stale settle
     await guardian.goto(`/app/courses/${cycle}`);
     const decision = guardian.locator("details").filter({
       has: guardian
-        .locator("summary")
+        .locator(":scope > summary")
         .getByText("Rezygnacja z kursu", { exact: true }),
     });
+    await revealFor(decision.locator("summary"));
     await decision.locator("summary").click();
+    await revealFor(decision.getByLabel("Powód dla opiekuna"));
     await decision
       .getByLabel("Powód dla opiekuna")
       .fill("Rezygnuję z dalszego udziału");
+    await revealFor(
+      decision.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę",
+        exact: true,
+      }),
+    );
     await decision
-      .getByRole("button", { name: "Zapisz zmianę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę",
+        exact: true,
+      })
       .click();
     await expect(decision.getByRole("status")).toContainText(
       "Decyzja zapisana",
@@ -530,19 +569,45 @@ test("course finance browser: partial receipts → cancellation → stale settle
       [stale, "22,00", "Zachowaj wpisane uzgodnienie"],
     ] as const) {
       const form = settlement(page);
+      await revealFor(form.locator("summary").first());
       await form.locator("summary").first().click();
+      await revealFor(form.getByLabel("Uzgodniona należność za kurs (zł)"));
       await form.getByLabel("Uzgodniona należność za kurs (zł)").fill(amount);
+      await revealFor(form.getByLabel("Powód uzgodnienia"));
       await form.getByLabel("Powód uzgodnienia").fill(note);
-      await form.getByRole("checkbox").check();
+      await revealFor(form.getByRole("checkbox", { includeHidden: true }));
+      await form.getByRole("checkbox", { includeHidden: true }).check();
     }
+    await revealFor(
+      settlement(staff).getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      }),
+    );
     await settlement(staff)
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      })
       .click();
     await expect(settlement(staff).getByRole("status")).toContainText(
       "Uzgodniona kwota zapisana",
     );
+    await revealFor(
+      settlement(stale).getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      }),
+    );
     await settlement(stale)
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      })
       .click();
     await expect(settlement(stale).getByRole("alert")).toContainText(
       "Zgłoszenie zmieniło się",
@@ -569,14 +634,25 @@ test("course finance browser: partial receipts → cancellation → stale settle
       note: string,
     ) => {
       await page.goto(url);
+      await revealFor(
+        billing(page).getByText("Historia wpłat i zwrotów (2)", {
+          exact: true,
+        }),
+      );
       await billing(page)
         .getByText("Historia wpłat i zwrotów (2)", { exact: true })
         .click();
       const row = page.locator(`#wplata-${id}`);
+      await revealFor(
+        row.getByText("Odnotuj zwrot tej wpłaty", { exact: true }),
+      );
       await row.getByText("Odnotuj zwrot tej wpłaty", { exact: true }).click();
+      await revealFor(row.getByLabel("Zwrócona kwota (zł)"));
       await row.getByLabel("Zwrócona kwota (zł)").fill(amount);
+      await revealFor(row.getByLabel("Powód zwrotu"));
       await row.getByLabel("Powód zwrotu").fill(note);
-      await row.getByRole("checkbox").check();
+      await revealFor(row.getByRole("checkbox", { includeHidden: true }));
+      await row.getByRole("checkbox", { includeHidden: true }).check();
       return row;
     };
     const ownRefund = await refundForm(
@@ -591,14 +667,36 @@ test("course finance browser: partial receipts → cancellation → stale settle
         "40,00",
         "Nie utracimy tej notatki",
       );
+    await revealFor(
+      ownRefund.getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      }),
+    );
     await ownRefund
-      .getByRole("button", { name: "Odnotuj zwrot", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      })
       .click();
     await expect(ownRefund.getByRole("status")).toContainText(
       "Zwrot odnotowany",
     );
+    await revealFor(
+      staleRefund.getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      }),
+    );
     await staleRefund
-      .getByRole("button", { name: "Odnotuj zwrot", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      })
       .click();
     await expect(staleRefund.getByRole("alert")).toContainText(
       "Zwrot przekracza",
@@ -615,20 +713,38 @@ test("course finance browser: partial receipts → cancellation → stale settle
       "50,00",
       "Drugi częściowy zwrot",
     );
+    await revealFor(
+      rest.getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      }),
+    );
     await rest
-      .getByRole("button", { name: "Odnotuj zwrot", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      })
       .click();
     await expect(rest.getByRole("status")).toContainText("Zwrot odnotowany");
     await guardian.reload();
     await expect(billing(guardian)).toContainText("Wpłaty po zwrotach");
     await expect(billing(guardian)).toContainText("30,00");
     await expect(billing(guardian)).not.toContainText("Pozostał zwrot");
+    await revealFor(
+      billing(guardian).getByText("Historia wpłat i zwrotów (2)", {
+        exact: true,
+      }),
+    );
     await billing(guardian)
       .getByText("Historia wpłat i zwrotów (2)", { exact: true })
       .click();
     await expect(billing(guardian)).toContainText("Pierwszy częściowy zwrot");
     await expect(billing(guardian)).toContainText("Drugi częściowy zwrot");
-    await expect(billing(guardian).getByRole("button")).toHaveCount(0);
+    await expect(
+      billing(guardian).getByRole("button", { includeHidden: true }),
+    ).toHaveCount(0);
     await screenshot(guardian, "guardian-refunds-320", 320);
     await screenshot(staff, "staff-refunds-1440", 1440);
     await guardian.goto("/app/finance");

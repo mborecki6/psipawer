@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import assert from "node:assert/strict";
@@ -178,6 +179,7 @@ test("single practitioner: organising administrator, global collisions, confirme
       await staff
         .getByLabel("Dokładne miejsce zbiórki")
         .fill(`FIKCYJNA ZBIÓRKA ${suffix}`);
+      await revealFor(staff.getByLabel("Prowadzący", { exact: true }));
       await staff.getByLabel("Prowadzący", { exact: true }).selectOption(lead);
       await staff
         .getByLabel("Sala do rezerwacji (opcjonalnie)")

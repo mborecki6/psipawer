@@ -3,6 +3,8 @@ import type { CourseActionState } from "@/modules/courses/actions";
 declare global {
   interface Window {
     courseFailure?: string;
+    courseDelay?: number;
+    courseWarning?: boolean;
     courseCalls: {
       operation: string;
       values: Record<string, FormDataEntryValue | FormDataEntryValue[]>;
@@ -18,7 +20,16 @@ function action(operation: string) {
     if (form.has("starts")) values.starts = form.getAll("starts");
     window.courseCalls ||= [];
     window.courseCalls.push({ operation, values });
+    if (window.courseDelay)
+      await new Promise((resolve) => setTimeout(resolve, window.courseDelay));
     if (window.courseFailure) return { error: window.courseFailure };
+    if (window.courseWarning)
+      return {
+        calendarWarning: {
+          message: "Ostrzeżenie kalendarza testowego.",
+          signature: "fixture-warning",
+        },
+      };
     return {
       success: "Zapisano dane testowe.",
       version: Number(form.get("expected_version") || 0) + 1,

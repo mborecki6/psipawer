@@ -14,6 +14,7 @@ import {
 import { consultationFilter, consultationPage } from "./types";
 import { getServices } from "@/modules/services/queries";
 import { getConsultationCare } from "@/modules/care/queries";
+import { WorkReturnLink } from "@/modules/work/return-link";
 export async function ConsultationsPage({
   searchParams,
 }: {
@@ -40,6 +41,7 @@ export async function ConsultationPage({
     page?: string;
     plans?: string;
     price_saved?: string;
+    returnTo?: string;
   }>;
 }) {
   const { id } = await params;
@@ -60,20 +62,23 @@ export async function ConsultationPage({
       (h) => h.action === "price_agreed" && h.version === priceVersion,
     );
   return (
-    <ConsultationView
-      {...data}
-      care={care}
-      plansPage={plansPage}
-      priceRequestId={randomUUID()}
-      priceSaved={priceSaved}
-      confirmedPriceVersion={
-        priceSaved && data.consultation.version === priceVersion
-          ? priceVersion!
-          : undefined
-      }
-      page={page}
-      now={new Date().toISOString()}
-    />
+    <>
+      {data.role === "admin" && <WorkReturnLink target={search.returnTo} />}
+      <ConsultationView
+        {...data}
+        care={care}
+        plansPage={plansPage}
+        priceRequestId={randomUUID()}
+        priceSaved={priceSaved}
+        confirmedPriceVersion={
+          priceSaved && data.consultation.version === priceVersion
+            ? priceVersion!
+            : undefined
+        }
+        page={page}
+        now={new Date().toISOString()}
+      />
+    </>
   );
 }
 export async function ConsultationRequestPage({

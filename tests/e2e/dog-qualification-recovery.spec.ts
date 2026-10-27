@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import {
   test,
@@ -62,7 +63,9 @@ test("another administrator's qualification cannot silently rebase an old draft 
     const old = qualification(first),
       fresh = qualification(second);
     const draft = `Nieaktualna decyzja A ${crypto.randomUUID()}`;
+    await revealFor(old.locator('select[name="status"]'));
     await old.locator('select[name="status"]').selectOption("suspended");
+    await revealFor(old.locator('[name="note"]'));
     await old.locator('[name="note"]').fill(draft);
     const key = await old.locator('[name="request_id"]').inputValue();
     await expect(old.locator('[name="expected_status"]')).toHaveValue(
@@ -73,10 +76,23 @@ test("another administrator's qualification cannot silently rebase an old draft 
     ).toHaveValue(String(initial.qualification_version));
 
     const actualDecision = `Aktualna decyzja B ${crypto.randomUUID()}`;
+    await revealFor(fresh.locator('select[name="status"]'));
     await fresh.locator('select[name="status"]').selectOption("approved");
+    await revealFor(fresh.locator('[name="note"]'));
     await fresh.locator('[name="note"]').fill(actualDecision);
+    await revealFor(
+      fresh.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      }),
+    );
     await fresh
-      .getByRole("button", { name: "Zapisz kwalifikację", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      })
       .click();
     await expect(fresh.getByRole("status")).toContainText("Status psa");
     const decided = {
@@ -91,12 +107,25 @@ test("another administrator's qualification cannot silently rebase an old draft 
     const notesForm = first
       .locator("form")
       .filter({ has: first.getByLabel("Treść notatki", { exact: true }) });
+    await revealFor(notesForm.getByLabel("Treść notatki", { exact: true }));
     await notesForm.getByLabel("Treść notatki", { exact: true }).fill(note);
+    await revealFor(notesForm.locator('select[name="visibility"]'));
     await notesForm
       .locator('select[name="visibility"]')
       .selectOption("admin_only");
+    await revealFor(
+      notesForm.getByRole("button", {
+        includeHidden: true,
+        name: "Dodaj notatkę",
+        exact: true,
+      }),
+    );
     await notesForm
-      .getByRole("button", { name: "Dodaj notatkę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Dodaj notatkę",
+        exact: true,
+      })
       .click();
     await expect(notesForm.getByRole("status")).toContainText(
       "Notatka zapisana",
@@ -111,8 +140,19 @@ test("another administrator's qualification cannot silently rebase an old draft 
       old.locator('[name="expected_qualification_version"]'),
     ).toHaveValue(String(initial.qualification_version));
 
+    await revealFor(
+      old.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      }),
+    );
     await old
-      .getByRole("button", { name: "Zapisz kwalifikację", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      })
       .click();
     await expect(old.getByRole("alert")).toContainText(
       "Kwalifikacja psa zmieniła się w międzyczasie",
@@ -153,12 +193,25 @@ test("another administrator's qualification cannot silently rebase an old draft 
     await expect(
       recovered.locator('[name="expected_qualification_version"]'),
     ).toHaveValue(String(decided.qualification_version));
+    await revealFor(recovered.locator('select[name="status"]'));
     await recovered.locator('select[name="status"]').selectOption("suspended");
+    await revealFor(recovered.locator('[name="note"]'));
     await recovered
       .locator('[name="note"]')
       .fill("Nowa świadoma decyzja po odświeżeniu profilu.");
+    await revealFor(
+      recovered.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      }),
+    );
     await recovered
-      .getByRole("button", { name: "Zapisz kwalifikację", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+        exact: true,
+      })
       .click();
     await expect(recovered.getByRole("status")).toContainText("Status psa");
     await expect.poll(current).toEqual({

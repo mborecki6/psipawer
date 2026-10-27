@@ -304,6 +304,93 @@ try {
     page.getByLabel("Cena za psa (zł)", { exact: true }),
   ).not.toBeEditable();
   await expect(page.getByLabel("Uzupełnij z cennika")).toHaveCount(0);
+  const advanced = page.locator(
+    "#szczegoly-oferty-60000000-0000-4000-8000-000000000010",
+  );
+  for (const result of ["error", "success"]) {
+    await page.goto(`${base}/?view=detail`);
+    await expect(page.getByLabel("Cena (zł)", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Widoczność oferty")).toBeVisible();
+    await expect(page.getByLabel("Rodzaj ceny")).toBeVisible();
+    await expect(page.getByLabel("Nazwa usługi")).toBeHidden();
+    await advanced.locator(":scope > summary").focus();
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Nazwa usługi").fill("Zachowana nazwa usługi");
+    await expect(
+      page.getByText("Liczba spotkań: 1", { exact: true }),
+    ).toBeVisible();
+    await advanced.locator(":scope > summary").click();
+    await advanced.locator(":scope > summary").click();
+    await expect(page.getByLabel("Nazwa usługi")).toHaveValue(
+      "Zachowana nazwa usługi",
+    );
+    await page.evaluate((result) => {
+      window.serviceDelay = 700;
+      window.serviceFail = result === "error";
+    }, result);
+    await page.getByRole("button", { name: "Zapisz usługę i cenę" }).click();
+    await advanced.locator(":scope > summary").click();
+    await expect(advanced).not.toHaveAttribute("open", "");
+    await expect(
+      page.getByRole(result === "error" ? "alert" : "status"),
+    ).toBeVisible();
+    await expect(advanced).toHaveAttribute("open", "");
+    expect(await page.evaluate(() => window.serviceCalls.at(-1))).toMatchObject(
+      {
+        name: "Zachowana nazwa usługi",
+        sessions_count: "1",
+        expected_version: "1",
+        duration_minutes: "90",
+        active: "true",
+        is_test_price: "true",
+      },
+    );
+  }
+  for (const count of ["missing", "two"]) {
+    await page.goto(`${base}/?view=detail&legacy-count=${count}`);
+    await advanced.locator(":scope > summary").click();
+    await expect(
+      page.getByLabel("Liczba spotkań", { exact: true }),
+    ).toHaveValue(count === "missing" ? "" : "2");
+    await advanced.locator(":scope > summary").click();
+    await page.getByRole("button", { name: "Zapisz usługę i cenę" }).click();
+    await expect(advanced).toHaveAttribute("open", "");
+    await expect(
+      page.getByLabel("Liczba spotkań", { exact: true }),
+    ).toBeVisible();
+  }
+  await page.goto(
+    `${base}/?view=picker&service=60000000-0000-4000-8000-000000000011`,
+  );
+  await expect(page.getByLabel("Wybierz usługę", { exact: true })).toBeHidden();
+  await expect(page.getByText("Cena robocza do testów.")).toBeVisible();
+  expect(
+    await page
+      .locator("article form")
+      .evaluate((form) => Object.fromEntries(new FormData(form))),
+  ).toMatchObject({
+    service_id: "60000000-0000-4000-8000-000000000011",
+    service_version: "1",
+  });
+  await page.locator("summary").filter({ hasText: "Zmień usługę" }).click();
+  await page
+    .getByLabel("Wybierz usługę", { exact: true })
+    .selectOption("60000000-0000-4000-8000-000000000010");
+  expect(
+    await page
+      .locator("article form")
+      .evaluate((form) => Object.fromEntries(new FormData(form))),
+  ).toMatchObject({
+    service_id: "60000000-0000-4000-8000-000000000010",
+    service_version: "1",
+  });
+  for (const serviceId of ["", "invalid"]) {
+    await page.goto(`${base}/?view=picker&service=${serviceId}`);
+    await expect(
+      page.getByLabel("Wybierz usługę", { exact: true }),
+    ).toBeVisible();
+  }
+
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const [name, query] of [
@@ -314,6 +401,8 @@ try {
       ["long", "view=list&long=1"],
       ["empty", "empty=1"],
       ["walk", "view=walk"],
+      ["editor-details", "view=detail&long=1"],
+      ["picker", "view=picker&service=60000000-0000-4000-8000-000000000011"],
     ]) {
       await page.goto(`${base}/?${query}`);
       await page
@@ -323,6 +412,8 @@ try {
         })
         .first()
         .waitFor();
+      if (name === "editor-details")
+        await advanced.locator(":scope > summary").click();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth > innerWidth + 1,
@@ -354,7 +445,7 @@ try {
   }
   expect(errors).toEqual([]);
   console.log(
-    "Services UI: editor recovery, version acknowledgement, role controls, client form chooser, direct categories, keyboard and back navigation, separate vouchers, empty categories, walk price defaults and 28 responsive scenarios passed.",
+    "Services UI: editor recovery, full payloads, preserved details and legacy counts, explicit choice summaries, version acknowledgement, role controls, category navigation, walk defaults and 36 responsive scenarios passed.",
   );
 } finally {
   await browser?.close();

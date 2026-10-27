@@ -45,6 +45,43 @@ vi.mock("@/modules/calendar/next-appointment", () => ({
 vi.mock("@/modules/onboarding/start-card", () => ({
   OnboardingStartCard: () => null,
 }));
+vi.mock("@/modules/dashboard/queries", () => ({
+  getDashboardActivities: async () => ({
+    consultations: [],
+    enrollments: [],
+    courseSessions: [],
+    fitness: [],
+    requests: [],
+  }),
+}));
+vi.mock(
+  "@/modules/dashboard/model",
+  async () => import("../src/modules/dashboard/model"),
+);
+vi.mock(
+  "@/modules/dashboard/views",
+  async () => import("../src/modules/dashboard/views"),
+);
+vi.mock(
+  "@/modules/consultations/types",
+  async () => import("../src/modules/consultations/types"),
+);
+vi.mock(
+  "@/modules/courses/types",
+  async () => import("../src/modules/courses/types"),
+);
+vi.mock(
+  "@/modules/fitness/types",
+  async () => import("../src/modules/fitness/types"),
+);
+vi.mock(
+  "@/modules/service-requests/types",
+  async () => import("../src/modules/service-requests/types"),
+);
+vi.mock(
+  "@/components/progressive-details",
+  async () => import("../src/components/progressive-details"),
+);
 vi.mock("@/modules/work/queries", () => ({
   getWorkQueue: async () => ({ items: [], counts: [] }),
 }));
@@ -397,6 +434,39 @@ function populate() {
 function project(data: FinanceData) {
   return {
     chargeCount: data.charges.length,
+    charges: data.charges.map(
+      ({
+        id,
+        kind,
+        dogName,
+        title,
+        date,
+        href,
+        dueCents,
+        reviewReason,
+        refundDueCents,
+      }) => ({
+        id,
+        kind,
+        dogName,
+        title,
+        date,
+        href,
+        dueCents,
+        reviewReason,
+        refundDueCents,
+      }),
+    ),
+    reviewPayments: data.payments
+      .filter((payment) => payment.needsReview)
+      .map(({ id, dogName, title, href, amountCents, paidAt }) => ({
+        id,
+        dogName,
+        title,
+        href,
+        amountCents,
+        paidAt,
+      })),
     totals: {
       dueCents: data.totals.dueCents,
       availableEntries: data.totals.availableEntries,
@@ -465,7 +535,28 @@ it.each<Role>(["client", "admin"])(
     session(role);
     const full = await getFinanceData();
     const summary = await getDashboardFinanceSummary();
-    expect(summary).toEqual(project(full));
+    expect({
+      ...summary,
+      reviewPayments: summary.reviewPayments.map(
+        ({ id, dogName, title, href, amountCents, paidAt }) => ({
+          id,
+          dogName,
+          title,
+          href,
+          amountCents,
+          paidAt,
+        }),
+      ),
+    }).toEqual(project(full));
+    expect(
+      summary.reviewPayments.find((payment) => payment.id === "p-course-review")
+        ?.sourceKey,
+    ).toBe("course:course-review");
+    expect(
+      summary.reviewPayments.find(
+        (payment) => payment.id === "p-fitness-review",
+      )?.sourceKey,
+    ).toBe("fitness:fitness-review");
     expect(summary.chargeCount).toBe(10);
     expect(summary.totals).toEqual({
       dueCents: 34000,
@@ -532,11 +623,13 @@ it.each<Role>(["client", "admin"])(
     });
     expect(Object.keys(summary).sort()).toEqual([
       "chargeCount",
+      "charges",
       "packages",
+      "reviewPayments",
       "totals",
     ]);
     expect(JSON.stringify(summary)).not.toMatch(
-      /paidCents|payments|refunds|PRIVATE/,
+      /paidCents|"payments"|"refunds"|"note"|PRIVATE/,
     );
   },
 );
@@ -566,12 +659,89 @@ it("renders the client amounts, active package order and focused links while pre
   expect(html).toContain(
     'href="/app/finance?package=package-old#package-package-old"',
   );
-  expect(html.indexOf("Nowszy aktywny")).toBeLessThan(
-    html.indexOf("Starszy aktywny"),
+  expect(html.lastIndexOf("Nowszy aktywny")).toBeLessThan(
+    html.lastIndexOf("Starszy aktywny"),
   );
-  expect(html).not.toContain("Wygasły");
+  // Expiry does not hide the outstanding balance on this package.
+  expect(html).toContain("Wygasły");
   expect(html).not.toContain("Anulowany");
-  expect(html.match(/class="list-row" href="\/app\/walks\//g)).toHaveLength(6);
+  expect(
+    html.match(/class="list-row [^"]*" href="\/app\/walks\//g),
+  ).toHaveLength(6);
+  expect(html).toContain("Historia zgłoszeń");
+  expect(html).toContain("Rozliczenie po rezygnacji do uzgodnienia");
+  expect(html).toContain("Do zwrotu:");
+  expect(html).toContain("Organizator odwołał spacer: Park");
+});
+
+it("retains the review of a cancelled paid consultation even when there is no charge or debt", async () => {
+  rows = {
+    consultation_balances: [
+      {
+        ...consultation("cancelled-paid", 0),
+        status: "cancelled",
+        paid_cents: 10000,
+        needs_review: true,
+      },
+    ],
+    payments: [
+      payment("receipt", 10000, { consultation_id: "cancelled-paid" }),
+    ],
+  };
+  mocks.snapshot.mockResolvedValue({
+    dogs: [dog],
+    walks: [],
+    registrations: [],
+  });
+  const summary = await getDashboardFinanceSummary();
+  expect(summary.chargeCount).toBe(0);
+  expect(summary.charges).toEqual([]);
+  expect(summary.totals.dueCents).toBe(0);
+  expect(summary.reviewPayments).toEqual([
+    expect.objectContaining({
+      id: "receipt",
+      sourceKey: "consultation:cancelled-paid",
+      href: "/app/consultations/cancelled-paid",
+      amountCents: 10000,
+    }),
+  ]);
+  const html = renderToStaticMarkup(await ClientPage());
+  expect(html).toContain("Wpłata 100,00");
+  expect(html).toContain("wymaga sprawdzenia");
+  expect(html).toContain("Otwórz rozliczenia →");
+});
+
+it("removes the review only after the existing model reports a closed and fully refunded course", async () => {
+  mocks.snapshot.mockResolvedValue({
+    dogs: [dog],
+    walks: [],
+    registrations: [],
+  });
+  rows = {
+    course_balances: [
+      course("closed", {
+        status: "cancelled",
+        course_status: "cancelled",
+        charge_cents: 0,
+        paid_cents: 0,
+        refunded_cents: 10000,
+        needs_review: false,
+        needs_settlement: false,
+        due_cents: 0,
+        refund_due_cents: 0,
+        settled_at: at,
+      }),
+    ],
+    payments: [
+      payment("refunded-receipt", 10000, {
+        course_enrollment_id: "closed",
+        status: "refunded",
+      }),
+    ],
+  };
+  const summary = await getDashboardFinanceSummary();
+  expect(summary.charges).toEqual([]);
+  expect(summary.reviewPayments).toEqual([]);
 });
 
 it("renders the admin count including three zero-debt review items and the original finance destination", async () => {
@@ -589,11 +759,15 @@ it("preserves empty summaries and both dashboard empty states", async () => {
   mocks.snapshot.mockResolvedValue({ dogs: [], walks: [], registrations: [] });
   expect(await getDashboardFinanceSummary()).toEqual({
     chargeCount: 0,
+    charges: [],
+    reviewPayments: [],
     packages: [],
     totals: { dueCents: 0, availableEntries: 0, reservedEntries: 0 },
   });
   const client = renderToStaticMarkup(await ClientPage());
-  expect(client).toContain("Nie macie jeszcze aktywnego pakietu");
+  expect(client).toContain("Nie masz jeszcze zgłoszeń.");
+  expect(client).not.toContain("Wasze pakiety i rozliczenia");
+  expect(client).not.toContain("Otwórz rozliczenia →");
   expect(client).not.toContain("Do rozliczenia:");
   session("admin");
   const admin = renderToStaticMarkup(await AdminPage());

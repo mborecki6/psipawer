@@ -7,6 +7,7 @@ export type RequestSearch = {
   page?: string | string[];
   filter?: string | string[];
   saved?: string | string[];
+  request?: string | string[];
 };
 export async function ServiceRequestFormPage({
   params,
@@ -18,10 +19,16 @@ export async function ServiceRequestFormPage({
   const { id } = await params;
   const search = await searchParams;
   const page = requestPage(search.page);
-  const focus =
+  const saved =
     typeof search.saved === "string" && z.uuid().safeParse(search.saved).success
       ? search.saved
       : undefined;
+  const focus =
+    saved ||
+    (typeof search.request === "string" &&
+    z.uuid().safeParse(search.request).success
+      ? search.request
+      : undefined);
   const data = await getServiceRequestForm(id, page, focus);
   return (
     <RequestFormView
@@ -30,7 +37,7 @@ export async function ServiceRequestFormPage({
       page={page}
       focused={Boolean(focus)}
       saved={Boolean(
-        focus && data.requests.some((request) => request.id === focus),
+        saved && data.requests.some((request) => request.id === saved),
       )}
     />
   );

@@ -58,7 +58,26 @@ export function workPage(value?: string) {
     ? Math.min(50000, Math.max(1, Number(value)))
     : 1;
 }
-export function workHref(item: WorkItem) {
+export function workReturnTo(value?: unknown) {
+  if (value === "/admin") return value;
+  if (typeof value !== "string" || !value.startsWith("/admin/work"))
+    return null;
+  try {
+    const url = new URL(value, "https://psi.local");
+    if (url.origin !== "https://psi.local" || url.pathname !== "/admin/work")
+      return null;
+    if (
+      [...url.searchParams.keys()].some(
+        (key) => !["filter", "page"].includes(key),
+      )
+    )
+      return null;
+    return `/admin/work?filter=${workFilter(url.searchParams.get("filter") || undefined)}&page=${workPage(url.searchParams.get("page") || undefined)}`;
+  } catch {
+    return null;
+  }
+}
+function sourceHref(item: WorkItem) {
   if (item.kind === "followups") return `/admin/work/follow-ups/${item.id}`;
   if (item.kind === "progress") return `/admin/work/progress/${item.id}`;
   if (item.kind === "walks")
@@ -66,4 +85,11 @@ export function workHref(item: WorkItem) {
   if (item.kind === "consultations") return `/admin/consultations/${item.id}`;
   if (item.kind === "fitness") return `/admin/fitness/${item.id}`;
   return `/admin/dogs/${item.dog_id}`;
+}
+export function workHref(item: WorkItem, returnTo?: string) {
+  const href = sourceHref(item);
+  const back = workReturnTo(returnTo);
+  if (!back) return href;
+  const [path, anchor] = href.split("#");
+  return `${path}?returnTo=${encodeURIComponent(back)}${anchor ? `#${anchor}` : item.kind === "profiles" ? "#kwalifikacja" : ""}`;
 }

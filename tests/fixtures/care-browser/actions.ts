@@ -3,12 +3,15 @@
 type FixtureWindow = Window & {
   careCalls?: Record<string, unknown>[];
   careFail?: boolean;
+  careDelay?: number;
 };
 async function record(kind: string, form: FormData) {
   const host = window as FixtureWindow;
   const payload = Object.fromEntries(form);
   host.careCalls ||= [];
   host.careCalls.push({ kind, ...payload });
+  if (host.careDelay)
+    await new Promise((resolve) => setTimeout(resolve, host.careDelay));
   if (host.careFail)
     return {
       error: "Nie udało się zapisać zmian. Twoja treść pozostaje w formularzu.",

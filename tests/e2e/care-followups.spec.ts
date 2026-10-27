@@ -8,6 +8,7 @@ import {
   publishCarePlan as publish,
   careDay as day,
   careScreenshot as screenshot,
+  openCareSection,
 } from "./care-journey";
 test("follow-up lifecycle preserves private notes, original plan and stale edits", async ({
   browser,
@@ -27,6 +28,7 @@ test("follow-up lifecycle preserves private notes, original plan and stale edits
     await planForm
       .getByLabel("Zalecenia dla opiekuna", { exact: true })
       .fill(body);
+    await openCareSection(planForm, "Kontrola i przypomnienia");
     await planForm
       .getByLabel("Termin kontaktu kontrolnego (opcjonalnie)")
       .fill(firstDay);
@@ -58,6 +60,7 @@ test("follow-up lifecycle preserves private notes, original plan and stale edits
       due_on: firstDay,
     });
     const taskPath = `/admin/work/follow-ups/${task!.id}`;
+    const taskQueuePath = `${taskPath}?returnTo=${encodeURIComponent("/admin/work?filter=followups&page=1")}`;
     const history = () =>
       checked(
         db
@@ -99,7 +102,8 @@ test("follow-up lifecycle preserves private notes, original plan and stale edits
       }).format(target),
     ).toBe("09:00");
     await staff.goto("/admin/work?filter=followups");
-    await staff.locator(`a[href="${taskPath}"]`).click();
+    await staff.locator(`a[href="${taskQueuePath}"]`).click();
+    await expect(staff).toHaveURL(taskQueuePath);
     expect(
       (await checked(
         db.from("care_follow_ups").select("status").eq("id", task!.id).single(),
@@ -301,7 +305,7 @@ test("follow-up lifecycle preserves private notes, original plan and stale edits
     await expect(contact).toContainText("Kontakt zakończony");
     await expect(contact).not.toContainText(careDate(movedDay));
     await staff.goto("/admin/work?filter=followups");
-    await expect(staff.locator(`a[href="${taskPath}"]`)).toHaveCount(0);
+    await expect(staff.locator(`a[href="${taskQueuePath}"]`)).toHaveCount(0);
     await staff.goto(taskPath);
     await form.getByLabel("Nowa data kontaktu").fill(reopenedDay);
     await form
@@ -420,6 +424,9 @@ test("an older guardian response keeps its plan and explicit review clears only 
     await responseForm
       .getByLabel("Co udało się zrobić?", { exact: true })
       .fill(response);
+    await responseForm
+      .getByText("Dodaj więcej szczegółów (opcjonalnie)", { exact: true })
+      .click();
     await responseForm.getByLabel("Co poszło dobrze? (opcjonalnie)").fill(well);
     await responseForm
       .getByLabel("Co było trudne lub wymaga wyjaśnienia? (opcjonalnie)")
@@ -481,10 +488,14 @@ test("an older guardian response keeps its plan and explicit review clears only 
     await expect(guardian.locator(`#progress-${secondId}`)).toBeVisible();
     await staff.goto("/admin/work?filter=progress");
     const path = `/admin/work/progress/${responseId}`,
-      secondPath = `/admin/work/progress/${secondId}`;
-    await expect(staff.locator(`a[href="${path}"]`)).toBeVisible();
-    await expect(staff.locator(`a[href="${secondPath}"]`)).toBeVisible();
-    await staff.locator(`a[href="${path}"]`).click();
+      secondPath = `/admin/work/progress/${secondId}`,
+      queueReturn = encodeURIComponent("/admin/work?filter=progress&page=1"),
+      queuePath = `${path}?returnTo=${queueReturn}`,
+      secondQueuePath = `${secondPath}?returnTo=${queueReturn}`;
+    await expect(staff.locator(`a[href="${queuePath}"]`)).toBeVisible();
+    await expect(staff.locator(`a[href="${secondQueuePath}"]`)).toBeVisible();
+    await staff.locator(`a[href="${queuePath}"]`).click();
+    await expect(staff).toHaveURL(queuePath);
     await expect(staff.getByText(response, { exact: true })).toBeVisible();
     await expect(
       staff.getByText("Odpowiedź do wersji 1 planu", { exact: true }),
@@ -567,8 +578,8 @@ test("an older guardian response keeps its plan and explicit review clears only 
       ))!.length,
     ).toBe(1);
     await staff.goto("/admin/work?filter=progress");
-    await expect(staff.locator(`a[href="${path}"]`)).toHaveCount(0);
-    await expect(staff.locator(`a[href="${secondPath}"]`)).toBeVisible();
+    await expect(staff.locator(`a[href="${queuePath}"]`)).toHaveCount(0);
+    await expect(staff.locator(`a[href="${secondQueuePath}"]`)).toBeVisible();
     await checked(
       ownerDb.rpc("submit_care_progress", {
         p_id: responseId,

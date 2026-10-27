@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { completeServerAction } from "./action-completion";
@@ -89,25 +90,62 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     await login(guardian, owner, "client");
     async function request(name: string) {
       await guardian.goto("/app/dogs/new");
+      await revealFor(guardian.getByLabel("Imię psa"));
       await guardian.getByLabel("Imię psa").fill(name);
+      await revealFor(
+        guardian.getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        }),
+      );
       await guardian
-        .getByRole("button", { name: "Dodaj psa", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Dodaj psa",
+          exact: true,
+        })
         .click();
       await expect(guardian).toHaveURL(/\/app\/dogs\/[a-f0-9-]+(?:\?.*)?$/);
       const dog = new URL(guardian.url()).pathname.split("/").at(-1)!;
       dogs.push(dog);
+      await revealFor(
+        guardian.getByRole("link", {
+          includeHidden: true,
+          name: "Konsultacje indywidualne →",
+        }),
+      );
       await guardian
-        .getByRole("link", { name: "Otwórz konsultacje →" })
+        .getByRole("link", { name: "Konsultacje indywidualne →" })
         .click();
+      await revealFor(
+        guardian.getByRole("link", {
+          includeHidden: true,
+          name: "Poproś o konsultację",
+        }),
+      );
       await guardian
         .getByRole("link", { name: "Poproś o konsultację" })
         .click();
+      await revealFor(guardian.getByLabel("Wybierz usługę"));
       await guardian.getByLabel("Wybierz usługę").selectOption(service);
+      await revealFor(guardian.getByLabel("Co chcesz omówić?"));
       await guardian
         .getByLabel("Co chcesz omówić?")
         .fill(`Fikcyjne rozliczenie ${name}`);
+      await revealFor(
+        guardian.getByRole("button", {
+          includeHidden: true,
+          name: "Przekaż zgłoszenie",
+          exact: true,
+        }),
+      );
       await guardian
-        .getByRole("button", { name: "Przekaż zgłoszenie", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Przekaż zgłoszenie",
+          exact: true,
+        })
         .click();
       await expect(guardian).toHaveURL(/\/app\/consultations\/[a-f0-9-]+$/);
       return new URL(guardian.url()).pathname.split("/").at(-1)!;
@@ -150,15 +188,27 @@ test("consultation price → partial payments → reschedule/conflict → guardi
         .format(new Date(value))
         .replace(" ", "T");
     await staff.goto(`/admin/consultations/${id}`);
+    await revealFor(staff.getByLabel("Prowadzący", { exact: true }));
     await staff
       .getByLabel("Prowadzący", { exact: true })
       .selectOption(leader.id);
+    await revealFor(staff.getByLabel("Termin (czas polski)"));
     await staff.getByLabel("Termin (czas polski)").fill(dateInput(start));
+    await revealFor(staff.getByLabel("Miejsce lub instrukcja połączenia"));
     await staff
       .getByLabel("Miejsce lub instrukcja połączenia")
       .fill("Fikcyjna wideorozmowa do testów.");
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Potwierdź uzgodniony termin",
+      }),
+    );
     await staff
-      .getByRole("button", { name: "Potwierdź uzgodniony termin" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Potwierdź uzgodniony termin",
+      })
       .click();
     await expect(staff.getByRole("status")).toContainText("Termin zapisany");
     expect(
@@ -217,20 +267,42 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     expect(denied.error?.message).toContain("Brak uprawnień");
     async function receipt(amount: string) {
       await staff.goto(`/admin/consultations/${id}`);
+      await revealFor(
+        billing(staff).getByRole("link", {
+          includeHidden: true,
+          name: "Zapisz wpłatę w finansach →",
+        }),
+      );
       await billing(staff)
         .getByRole("link", { name: "Zapisz wpłatę w finansach →" })
         .click();
       const charge = staff.locator(`#charge-consultation-${id}`);
       await expect(charge).toBeVisible();
+      await revealFor(charge.locator("summary").getByText("Rozlicz należność"));
       await charge.locator("summary").getByText("Rozlicz należność").click();
+      await revealFor(
+        charge.getByLabel("Otrzymana kwota (zł)", { exact: true }),
+      );
       await charge
         .getByLabel("Otrzymana kwota (zł)", { exact: true })
         .fill(amount);
+      await revealFor(charge.getByLabel(/^Notatka \(opcjonalnie\)/));
       await charge
         .getByLabel(/^Notatka \(opcjonalnie\)/)
         .fill(`Fikcyjna wpłata ${amount} zł ${suffix}`);
+      await revealFor(
+        charge.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        }),
+      );
       await charge
-        .getByRole("button", { name: "Zapisz wpłatę", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz wpłatę",
+          exact: true,
+        })
         .click();
     }
     await receipt("40,00");
@@ -244,11 +316,27 @@ test("consultation price → partial payments → reschedule/conflict → guardi
       "Wpłacono 40,00",
     );
     await expect(
-      guardian.getByRole("button", { name: "Zapisz wpłatę", exact: true }),
+      guardian.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz wpłatę",
+        exact: true,
+      }),
     ).toHaveCount(0);
     await staff.goto(`/admin/services/${service}`);
+    await revealFor(staff.getByLabel("Cena (zł)", { exact: true }));
     await staff.getByLabel("Cena (zł)", { exact: true }).fill("150,00");
-    await staff.getByRole("button", { name: "Zapisz usługę i cenę" }).click();
+    await revealFor(
+      staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz usługę i cenę",
+      }),
+    );
+    await staff
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz usługę i cenę",
+      })
+      .click();
     await expect(staff.getByRole("status")).toContainText("Usługa zapisana");
     expect(await balance()).toMatchObject({
       agreed_price_cents: 10000,
@@ -267,11 +355,14 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     ).toMatchObject({ agreed_price_cents: 15000, status: "requested" });
     const stale = await staffContext.newPage();
     await stale.goto(`/admin/consultations/${id}`);
+    await revealFor(stale.getByLabel("Powód zmiany dla opiekuna"));
     await stale
       .getByLabel("Powód zmiany dla opiekuna")
       .fill("Zachowana treść ze starego formularza");
     await staff.goto(`/admin/consultations/${id}`);
+    await revealFor(staff.getByLabel("Termin (czas polski)"));
     await staff.getByLabel("Termin (czas polski)").fill(dateInput(changed));
+    await revealFor(staff.getByLabel("Powód zmiany dla opiekuna"));
     await staff
       .getByLabel("Powód zmiany dla opiekuna")
       .fill(`Fikcyjna zmiana ${suffix}`);
@@ -282,16 +373,28 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     const beforeReschedule = Number(await scheduleVersion.inputValue());
     expect(Number.isSafeInteger(beforeReschedule)).toBe(true);
     await expect(scheduleForm.getByRole("status")).toHaveCount(0);
+    await revealFor(
+      scheduleForm.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę terminu",
+      }),
+    );
     await completeServerAction(
       staff,
-      scheduleForm.getByRole("button", { name: "Zapisz zmianę terminu" }),
+      scheduleForm.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę terminu",
+      }),
       async (remaining) => {
         await expect(scheduleForm).toHaveAttribute("aria-busy", "false", {
           timeout: remaining(),
         });
-        await expect(scheduleVersion).toHaveValue(String(beforeReschedule + 1), {
-          timeout: remaining(),
-        });
+        await expect(scheduleVersion).toHaveValue(
+          String(beforeReschedule + 1),
+          {
+            timeout: remaining(),
+          },
+        );
         await expect(scheduleForm.getByRole("status")).toContainText(
           "Termin zapisany",
           { timeout: remaining() },
@@ -299,7 +402,18 @@ test("consultation price → partial payments → reschedule/conflict → guardi
       },
     );
     await expect(staff.getByRole("status")).toContainText("Termin zapisany");
-    await stale.getByRole("button", { name: "Zapisz zmianę terminu" }).click();
+    await revealFor(
+      stale.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę terminu",
+      }),
+    );
+    await stale
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmianę terminu",
+      })
+      .click();
     await expect(
       stale
         .locator("form")
@@ -349,13 +463,28 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     await expect(
       billing(guardian).getByText("Opłacone", { exact: true }),
     ).toBeVisible();
+    await revealFor(
+      guardian.getByText("Potrzebujesz odwołać?", { exact: true }),
+    );
     await guardian.getByText("Potrzebujesz odwołać?", { exact: true }).click();
+    await revealFor(guardian.getByLabel("Powód odwołania", { exact: true }));
     await guardian
       .getByLabel("Powód odwołania", { exact: true })
       .fill(`Fikcyjna rezygnacja ${suffix}`);
     guardian.once("dialog", (dialog) => dialog.accept());
+    await revealFor(
+      guardian.getByRole("button", {
+        includeHidden: true,
+        name: "Odwołaj konsultację",
+        exact: true,
+      }),
+    );
     await guardian
-      .getByRole("button", { name: "Odwołaj konsultację", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Odwołaj konsultację",
+        exact: true,
+      })
       .click();
     await expect(guardian.getByText("Odwołana", { exact: true })).toBeVisible();
     await expect.poll(balance).toMatchObject({
@@ -412,20 +541,38 @@ test("consultation price → partial payments → reschedule/conflict → guardi
       await staff.goto("/admin/finance");
       const row = staff.locator(`#payment-${payment.id}`);
       await expect(row).toContainText("Do sprawdzenia: zwrot wpłaty");
+      await revealFor(
+        row
+          .locator("summary")
+          .getByText("Zapisz zwrot lub popraw błędną wpłatę"),
+      );
       await row
         .locator("summary")
         .getByText("Zapisz zwrot lub popraw błędną wpłatę")
         .click();
+      await revealFor(row.getByLabel(/^Powód zwrotu lub korekty/));
       await row
         .getByLabel(/^Powód zwrotu lub korekty/)
         .fill(`Fikcyjne rozliczenie zwrotu ${index + 1} ${suffix}`);
       staff.once("dialog", (dialog) => dialog.accept());
+      await revealFor(
+        row.getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz zwrot / korektę",
+          exact: true,
+        }),
+      );
       await row
-        .getByRole("button", { name: "Zapisz zwrot / korektę", exact: true })
+        .getByRole("button", {
+          includeHidden: true,
+          name: "Zapisz zwrot / korektę",
+          exact: true,
+        })
         .click();
       await expect(row).toContainText("Zwrot / korekta");
       await expect(
         row.getByRole("button", {
+          includeHidden: true,
           name: "Zapisz zwrot / korektę",
           exact: true,
         }),
@@ -454,6 +601,12 @@ test("consultation price → partial payments → reschedule/conflict → guardi
     await expect(billing(guardian)).toContainText(
       "Spotkanie odwołane — brak należności",
     );
+    await revealFor(
+      billing(guardian).getByRole("link", {
+        includeHidden: true,
+        name: "Historia i rozliczenia →",
+      }),
+    );
     await billing(guardian)
       .getByRole("link", { name: "Historia i rozliczenia →" })
       .click();
@@ -463,6 +616,7 @@ test("consultation price → partial payments → reschedule/conflict → guardi
       );
     await expect(
       guardian.getByRole("button", {
+        includeHidden: true,
         name: "Zapisz zwrot / korektę",
         exact: true,
       }),

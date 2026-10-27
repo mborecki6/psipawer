@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ServicesView, ServiceDetailView } from "@/modules/services/views";
-import { WalkServiceFields } from "@/modules/services/selection";
+import {
+  WalkServiceFields,
+  ConsultationServicePicker,
+} from "@/modules/services/selection";
 import { serviceCategory, serviceFilter } from "@/modules/services/catalogue";
 import type { Service } from "@/modules/services/types";
 import { testServices } from "../services-data";
@@ -46,8 +49,11 @@ const catalogueServices: Service[] = [
   },
 ];
 function Fixture() {
-  const [service, setService] = useState({
+  const [service, setService] = useState<Service>({
     ...testServices[0],
+    ...(search.has("legacy-count")
+      ? { sessions_count: search.get("legacy-count") === "missing" ? null : 2 }
+      : {}),
     ...(search.has("long")
       ? {
           name: "DługaNazwaUsługiBezSpacji".repeat(6),
@@ -102,6 +108,17 @@ function Fixture() {
             page={1}
             more={false}
           />
+        ) : view === "picker" ? (
+          <article className="card pad">
+            <form>
+              <ConsultationServicePicker
+                services={testServices.filter(
+                  (s) => s.booking_flow === "consultation",
+                )}
+                serviceId={search.get("service") || undefined}
+              />
+            </form>
+          </article>
         ) : view === "walk" ? (
           <article className="card pad">
             <form className="form-stack">

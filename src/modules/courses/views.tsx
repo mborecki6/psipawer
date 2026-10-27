@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { CourseCarePanel } from "./care-panel";
 import type { CourseCarePage } from "@/modules/care/types";
 import { GraduationCap, Clock3, MapPin, ArrowRight } from "lucide-react";
@@ -24,7 +25,48 @@ import {
 import { changeCourse, decideEnrollment, changeSession } from "./actions";
 import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import styles from "./courses.module.css";
-import { CourseBilling } from "./billing";
+import { CourseBalanceSummary, CourseBilling } from "./billing";
+import { CourseAdminNavigation, CourseDisclosure } from "./course-disclosure";
+
+function CourseSupport({
+  admin,
+  children,
+}: {
+  admin: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <CourseDisclosure
+      id="ustawienia-kursu"
+      label={admin ? "Warunki i ustawienia cyklu" : "Warunki i zapisy"}
+      className={`card ${styles.supportDisclosure}`}
+      bodyClassName={styles.supportBody}
+    >
+      {children}
+    </CourseDisclosure>
+  );
+}
+
+function CourseHistorySection({
+  initiallyOpen,
+  children,
+}: {
+  admin: boolean;
+  initiallyOpen: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <CourseDisclosure
+      id="historia"
+      label="Historia kursu"
+      initiallyOpen={initiallyOpen}
+      className={`card ${styles.supportDisclosure}`}
+      bodyClassName={styles.supportBody}
+    >
+      {children}
+    </CourseDisclosure>
+  );
+}
 const courseOptions = [
   { value: "publish", label: "Otwórz zapisy" },
   { value: "close", label: "Zamknij zapisy" },
@@ -302,10 +344,211 @@ export function CourseDetailView({
             "cancel",
           ]
         : [];
-  const href = (f = filter, p = page, h = historyPage) =>
-    `?${new URLSearchParams({ filter: f, page: String(p), history: String(h), plans: String(plansPage), ...(focus ? { enrollment: focus } : {}) })}`;
-  return (
-    <div className="stack">
+  const href = (
+    f = filter,
+    p = page,
+    h = historyPage,
+    focused: string | null = focus || null,
+  ) =>
+    `?${new URLSearchParams({ filter: f, page: String(p), history: String(h), plans: String(plansPage), ...(focused ? { enrollment: focused } : {}) })}`;
+  const chronological = [...sessions].sort(
+    (a, b) =>
+      Date.parse(a.starts_at) - Date.parse(b.starts_at) ||
+      a.ordinal - b.ordinal,
+  );
+  const scheduled = chronological.filter((s) => s.status === "scheduled");
+  const current = scheduled.find(
+    (s) =>
+      s.starts_at <= now &&
+      Date.parse(s.starts_at) + s.duration_minutes * 60000 > Date.parse(now),
+  );
+  const next = scheduled.find((s) => s.starts_at > now);
+  const defaultSession =
+    current || next || scheduled.at(-1) || chronological.at(-1);
+  const enrollmentsPanel = (
+    <section className="card pad" id="zgloszenia" aria-label="Zgłoszenia kursu">
+      <h3>{admin ? "Skład i zgłoszenia" : "Twoje zgłoszenia"}</h3>
+      {focus && (
+        <p className="alert">
+          Otwierasz wybrane zgłoszenie.{" "}
+          <Link href={`${href("all", 1, historyPage, null)}#zgloszenia`}>
+            Pokaż wszystkie zgłoszenia →
+          </Link>
+        </p>
+      )}
+      {admin && (
+        <p className="muted">
+          Przyjętych: {roster.length} / {c.capacity}. Rezerwa nie zajmuje
+          miejsca i wymaga osobnej decyzji o przyjęciu.
+        </p>
+      )}
+      <nav aria-label="Filtry zgłoszeń" className={styles.badges}>
+        {[
+          ["all", "Wszystkie"],
+          ["requested", "Do decyzji"],
+          ["accepted", "Przyjęte"],
+          ["waitlisted", "Rezerwa"],
+          ["history", "Zamknięte"],
+        ].map(([value, label]) => (
+          <Link
+            key={value}
+            className={filter === value ? "small-button" : "ghost-button"}
+            aria-current={filter === value ? "page" : undefined}
+            href={`${href(value, 1)}#zgloszenia`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+      {enrollments.map((e) => {
+        const balance = balances.find((balance) => balance.id === e.id);
+        const available =
+          active && !["rejected", "cancelled"].includes(e.status);
+        const choices = available
+          ? [
+              ...(admin &&
+              future &&
+              ["requested", "waitlisted"].includes(e.status)
+                ? ["accept", "waitlist", "reject"]
+                : []),
+              "cancel",
+            ]
+          : [];
+        return (
+          <article
+            className={styles.enrollment}
+            key={e.id}
+            id={`zgloszenie-${e.id}`}
+            data-course-enrollment
+            aria-label={`Zgłoszenie: ${e.dogs?.name || "Pies"}`}
+          >
+            <CourseDisclosure
+              enrollment
+              initiallyOpen={focus === e.id}
+              className={styles.enrollmentDisclosure}
+              bodyClassName={styles.enrollmentBody}
+              label={
+                <span className={styles.enrollmentSummary}>
+                  <span className={styles.enrollmentIdentity}>
+                    <strong>{e.dogs?.name || "Pies zgłoszenia"}</strong>
+                    <span>
+                      Cena: {money(e.agreed_price_cents)} za cały cykl
+                    </span>
+                  </span>
+                  <span className={styles.badges}>
+                    <span className="badge">{enrollmentLabels[e.status]}</span>
+                    {care[e.id]?.hasDraft && admin && (
+                      <span className="badge amber">Szkic zaleceń</span>
+                    )}
+                  </span>
+                  {balance && <CourseBalanceSummary balance={balance} />}
+                  <span className={styles.enrollmentPrompt}>
+                    Rozliczenie i szczegóły
+                  </span>
+                </span>
+              }
+            >
+              <h4>
+                {admin ? (
+                  <Link href={`/admin/dogs/${e.dog_id}`}>
+                    {e.dogs?.name || "Pies zgłoszenia"}
+                  </Link>
+                ) : (
+                  e.dogs?.name || "Pies zgłoszenia"
+                )}
+              </h4>
+              <span className="badge">{enrollmentLabels[e.status]}</span>
+              <p>
+                Uzgodniona cena: <strong>{money(e.agreed_price_cents)}</strong>{" "}
+                za cały cykl.
+              </p>
+              <p className="muted">
+                {e.status === "requested"
+                  ? "Zgłoszenie nie zajmuje miejsca. Czekamy na decyzję prowadzącej."
+                  : e.status === "waitlisted"
+                    ? "Jesteście na rezerwie. Wolne miejsce nie oznacza automatycznego przyjęcia."
+                    : e.status === "accepted"
+                      ? "Miejsce potwierdzone. Dokładne zbiórki znajdziesz przy spotkaniach."
+                      : "Zgłoszenie jest zamknięte. Dalszy udział uzgodnij z prowadzącą."}
+              </p>
+              {balance && (
+                <CourseBilling
+                  balance={balance}
+                  payments={payments.filter(
+                    (p) => p.course_enrollment_id === e.id,
+                  )}
+                  refunds={refunds.filter((r) => r.enrollment_id === e.id)}
+                  admin={admin}
+                />
+              )}
+              {care[e.id] && (
+                <CourseCarePanel
+                  care={care[e.id]}
+                  enrollment={e}
+                  sessions={sessions}
+                  admin={admin}
+                  available={
+                    e.status === "accepted" &&
+                    ["open", "closed", "completed"].includes(c.status)
+                  }
+                  page={plansPage}
+                  href={(n) =>
+                    `${base}/courses/${c.id}?${new URLSearchParams({ filter, page: String(page), history: String(historyPage), plans: String(n), ...(focus ? { enrollment: focus } : {}) })}#zalecenia-${e.id}`
+                  }
+                />
+              )}
+              <details>
+                <summary>
+                  {admin ? "Decyzja o zgłoszeniu" : "Rezygnacja z kursu"}
+                </summary>
+                <CommandForm
+                  id={e.id}
+                  version={e.version}
+                  action={decideEnrollment}
+                  options={admin ? decisionOptions : [decisionOptions[3]]}
+                  allowed={choices}
+                  label={`Decyzja: ${e.dogs?.name || "Pies"}`}
+                />
+              </details>
+              {admin && (
+                <ReopeningPanel
+                  enrollment={e}
+                  enabled={
+                    active &&
+                    future &&
+                    sessions.some((s) => s.status === "scheduled")
+                  }
+                />
+              )}
+            </CourseDisclosure>
+          </article>
+        );
+      })}
+      {!enrollments.length && (
+        <p className="muted">Brak zgłoszeń w tym widoku.</p>
+      )}
+      <nav className={styles.badges} aria-label="Strony zgłoszeń">
+        {page > 1 && (
+          <Link
+            className="ghost-button"
+            href={`${href(filter, page - 1)}#zgloszenia`}
+          >
+            ← Poprzednia
+          </Link>
+        )}
+        {more && (
+          <Link
+            className="ghost-button"
+            href={`${href(filter, page + 1)}#zgloszenia`}
+          >
+            Następna →
+          </Link>
+        )}
+      </nav>
+    </section>
+  );
+  const content = (
+    <>
       <div className={styles.toolbar}>
         <Link className="ghost-button" href={`${base}/courses`}>
           ← Kursy
@@ -314,7 +557,7 @@ export function CourseDetailView({
           Odśwież dane →
         </a>
       </div>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${admin ? styles.adminHeader : ""}`}>
         <div className={styles.badges}>
           <span className="badge">
             {c.status === "open" && !future
@@ -329,7 +572,16 @@ export function CourseDetailView({
         <p className="muted">
           {c.service_name} · {c.sessions_count} spotkań po {c.duration_minutes}{" "}
           min
+          {admin && ` · przyjętych ${roster.length}/${c.capacity}`}
         </p>
+        {!admin && (current || next) && (
+          <p>
+            {current ? "Trwa spotkanie" : "Najbliższe spotkanie"}:{" "}
+            <a href={`#spotkanie-${(current || next)!.id}`}>
+              {dateLabel((current || next)!.starts_at)}
+            </a>
+          </p>
+        )}
         <div className={styles.badges}>
           {!admin && dogs.length > 0 && c.status === "open" && future && (
             <a className="primary-button" href="#zgloszenie">
@@ -339,11 +591,25 @@ export function CourseDetailView({
           <a className="ghost-button" href="#zgloszenia">
             {admin ? "Skład i zgłoszenia ↓" : "Twoje zgłoszenia ↓"}
           </a>
+          {admin && (
+            <>
+              <a className="ghost-button" href="#ustawienia-kursu">
+                Warunki i ustawienia ↓
+              </a>
+              <a className="ghost-button" href="#historia">
+                Historia ↓
+              </a>
+            </>
+          )}
         </div>
       </header>
-      <div className={styles.detail}>
+      <div className={admin ? styles.adminDetail : styles.detail}>
         <div className="stack">
-          <section className="stack" aria-label="Spotkania kursu">
+          {!admin && enrollmentsPanel}
+          <section
+            className={styles.adminMeetings}
+            aria-label="Spotkania kursu"
+          >
             <div className={styles.sectionHead}>
               <h3>Plan spotkań</h3>
               <Link className="ghost-button" href={`${base}/calendar`}>
@@ -373,27 +639,8 @@ export function CourseDetailView({
                 accepted.every((e) =>
                   meetingAttendance.some((a) => a.enrollment_id === e.id),
                 );
-              return (
-                <article
-                  className={`card pad ${styles.session}`}
-                  key={s.id}
-                  id={`spotkanie-${s.ordinal}`}
-                >
-                  <span
-                    id={`spotkanie-${s.id}`}
-                    className={styles.anchor}
-                    aria-hidden="true"
-                  />
-                  <div className={styles.sectionHead}>
-                    <h3>
-                      Spotkanie {s.ordinal} z {c.sessions_count}
-                    </h3>
-                    <span className="badge">{sessionLabels[s.status]}</span>
-                  </div>
-                  <p>
-                    <strong>{dateLabel(s.starts_at)}</strong> ·{" "}
-                    {s.duration_minutes} min
-                  </p>
+              const meetingContent = (
+                <>
                   <p className="muted">Okolica: {s.public_location}</p>
                   {s.course_session_private_details ? (
                     <p className={styles.location}>
@@ -415,16 +662,6 @@ export function CourseDetailView({
                   ))}
                   {admin && (
                     <>
-                      <details>
-                        <summary>Zmień termin lub miejsce</summary>
-                        <SessionEditor
-                          session={s}
-                          booking={booking}
-                          enabled={
-                            unfinished && s.status === "scheduled" && !started
-                          }
-                        />
-                      </details>
                       <details>
                         <summary>Obecności uczestników</summary>
                         <p className="muted">
@@ -461,284 +698,203 @@ export function CourseDetailView({
                           </p>
                         )}
                       </details>
-                      <details>
-                        <summary>Zakończ lub odwołaj spotkanie</summary>
-                        <CommandForm
-                          id={s.id}
-                          version={s.version}
-                          action={changeSession}
-                          options={sessionOptions}
-                          allowed={
-                            active && s.status === "scheduled"
-                              ? [...(canComplete ? ["complete"] : []), "cancel"]
-                              : []
-                          }
-                          label={`Zmiana spotkania ${s.ordinal}`}
-                        />
+                      <details className={styles.sessionOptions}>
+                        <summary>Opcje spotkania</summary>
+                        <details>
+                          <summary>Zmień termin lub miejsce</summary>
+                          <SessionEditor
+                            session={s}
+                            booking={booking}
+                            enabled={
+                              unfinished && s.status === "scheduled" && !started
+                            }
+                          />
+                        </details>
+                        <details>
+                          <summary>Zakończ lub odwołaj spotkanie</summary>
+                          <CommandForm
+                            id={s.id}
+                            version={s.version}
+                            action={changeSession}
+                            options={sessionOptions}
+                            allowed={
+                              active && s.status === "scheduled"
+                                ? [
+                                    ...(canComplete ? ["complete"] : []),
+                                    "cancel",
+                                  ]
+                                : []
+                            }
+                            label={`Zmiana spotkania ${s.ordinal}`}
+                          />
+                        </details>
                       </details>
                     </>
                   )}
-                </article>
+                </>
               );
-            })}
-          </section>
-          <section
-            className="card pad"
-            id="zgloszenia"
-            aria-label="Zgłoszenia kursu"
-          >
-            <h3>{admin ? "Skład i zgłoszenia" : "Twoje zgłoszenia"}</h3>
-            {focus && (
-              <p className="alert">
-                Otwierasz wybrane zgłoszenie.{" "}
-                <Link href={`${href("all", 1)}#zgloszenia`}>
-                  Pokaż wszystkie zgłoszenia →
-                </Link>
-              </p>
-            )}
-            {admin && (
-              <p className="muted">
-                Przyjętych: {roster.length} / {c.capacity}. Rezerwa nie zajmuje
-                miejsca i wymaga osobnej decyzji o przyjęciu.
-              </p>
-            )}
-            <nav aria-label="Filtry zgłoszeń" className={styles.badges}>
-              {[
-                ["all", "Wszystkie"],
-                ["requested", "Do decyzji"],
-                ["accepted", "Przyjęte"],
-                ["waitlisted", "Rezerwa"],
-                ["history", "Zamknięte"],
-              ].map(([value, label]) => (
-                <Link
-                  key={value}
-                  className={filter === value ? "small-button" : "ghost-button"}
-                  aria-current={filter === value ? "page" : undefined}
-                  href={`${href(value, 1)}#zgloszenia`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-            {enrollments.map((e) => {
-              const available =
-                active && !["rejected", "cancelled"].includes(e.status);
-              const choices = available
-                ? [
-                    ...(admin &&
-                    future &&
-                    ["requested", "waitlisted"].includes(e.status)
-                      ? ["accept", "waitlist", "reject"]
-                      : []),
-                    "cancel",
-                  ]
-                : [];
               return (
                 <article
-                  className={styles.enrollment}
-                  key={e.id}
-                  aria-label={`Zgłoszenie: ${e.dogs?.name || "Pies"}`}
+                  className={`card ${styles.compactSession} ${styles.session}`}
+                  key={s.id}
+                  id={`spotkanie-${s.ordinal}`}
+                  data-course-session
                 >
-                  <h4>
-                    {admin ? (
-                      <Link href={`/admin/dogs/${e.dog_id}`}>
-                        {e.dogs?.name || "Pies zgłoszenia"}
-                      </Link>
-                    ) : (
-                      e.dogs?.name || "Pies zgłoszenia"
-                    )}
-                  </h4>
-                  <span className="badge">{enrollmentLabels[e.status]}</span>
-                  <p>
-                    Uzgodniona cena:{" "}
-                    <strong>{money(e.agreed_price_cents)}</strong> za cały cykl.
-                  </p>
-                  <p className="muted">
-                    {e.status === "requested"
-                      ? "Zgłoszenie nie zajmuje miejsca. Czekamy na decyzję prowadzącej."
-                      : e.status === "waitlisted"
-                        ? "Jesteście na rezerwie. Wolne miejsce nie oznacza automatycznego przyjęcia."
-                        : e.status === "accepted"
-                          ? "Miejsce potwierdzone. Dokładne zbiórki znajdziesz przy spotkaniach."
-                          : "Zgłoszenie jest zamknięte. Dalszy udział uzgodnij z prowadzącą."}
-                  </p>
-                  {balances.find((b) => b.id === e.id) && (
-                    <CourseBilling
-                      balance={balances.find((b) => b.id === e.id)!}
-                      payments={payments.filter(
-                        (p) => p.course_enrollment_id === e.id,
-                      )}
-                      refunds={refunds.filter((r) => r.enrollment_id === e.id)}
-                      admin={admin}
-                    />
-                  )}
-                  {care[e.id] && (
-                    <CourseCarePanel
-                      care={care[e.id]}
-                      enrollment={e}
-                      sessions={sessions}
-                      admin={admin}
-                      available={
-                        e.status === "accepted" &&
-                        ["open", "closed", "completed"].includes(c.status)
-                      }
-                      page={plansPage}
-                      href={(n) =>
-                        `${base}/courses/${c.id}?${new URLSearchParams({ filter, page: String(page), history: String(historyPage), plans: String(n), ...(focus ? { enrollment: focus } : {}) })}#zalecenia-${e.id}`
-                      }
-                    />
-                  )}
-                  <details>
-                    <summary>
-                      {admin ? "Decyzja o zgłoszeniu" : "Rezygnacja z kursu"}
-                    </summary>
-                    <CommandForm
-                      id={e.id}
-                      version={e.version}
-                      action={decideEnrollment}
-                      options={admin ? decisionOptions : [decisionOptions[3]]}
-                      allowed={choices}
-                      label={`Decyzja: ${e.dogs?.name || "Pies"}`}
-                    />
-                  </details>
-                  {admin && (
-                    <ReopeningPanel
-                      enrollment={e}
-                      enabled={
-                        active &&
-                        future &&
-                        sessions.some((s) => s.status === "scheduled")
-                      }
-                    />
-                  )}
+                  <span
+                    id={`spotkanie-${s.id}`}
+                    className={styles.anchor}
+                    aria-hidden="true"
+                  />
+                  <CourseDisclosure
+                    className={styles.sessionDisclosure}
+                    bodyClassName={styles.sessionBody}
+                    initiallyOpen={s.id === defaultSession?.id}
+                    name={`course-${c.id}-sessions`}
+                    meeting
+                    label={
+                      <span className={styles.sessionSummary}>
+                        <span className={styles.sessionIdentity}>
+                          <strong>
+                            Spotkanie {s.ordinal} z {c.sessions_count}
+                          </strong>
+                          <span>
+                            {dateLabel(s.starts_at)} · {s.duration_minutes} min
+                          </span>
+                        </span>
+                        <span className={styles.badges}>
+                          <span className="badge">
+                            {sessionLabels[s.status]}
+                          </span>
+                          {s.status === "scheduled" && ended && (
+                            <span className="badge amber">Do uzupełnienia</span>
+                          )}
+                        </span>
+                      </span>
+                    }
+                  >
+                    {meetingContent}
+                  </CourseDisclosure>
                 </article>
               );
             })}
-            {!enrollments.length && (
-              <p className="muted">Brak zgłoszeń w tym widoku.</p>
+            {!sessions.length && (
+              <p className="muted">Ten cykl nie ma jeszcze spotkań.</p>
             )}
-            <nav className={styles.badges} aria-label="Strony zgłoszeń">
-              {page > 1 && (
-                <Link
-                  className="ghost-button"
-                  href={`${href(filter, page - 1)}#zgloszenia`}
-                >
-                  ← Poprzednia
-                </Link>
-              )}
-              {more && (
-                <Link
-                  className="ghost-button"
-                  href={`${href(filter, page + 1)}#zgloszenia`}
-                >
-                  Następna →
-                </Link>
-              )}
-            </nav>
           </section>
+          {admin && enrollmentsPanel}
         </div>
         <aside className="stack">
-          <article className="card pad">
-            <h3>Warunki cyklu</h3>
-            <div className={styles.price}>
-              <strong>{money(c.price_cents)}</strong>
-              <small>
-                za cały cykl ·{" "}
-                {c.is_test_price ? "cena robocza" : "cena docelowa"}
-              </small>
-            </div>
-            <dl className={styles.facts}>
-              <div>
-                <dt>Forma</dt>
-                <dd>
-                  {c.course_format === "individual"
-                    ? "Indywidualna"
-                    : "Grupowa"}
-                </dd>
+          <CourseSupport admin={admin}>
+            <article className={admin ? styles.supportSection : "card pad"}>
+              <h3>Warunki cyklu</h3>
+              <div className={styles.price}>
+                <strong>{money(c.price_cents)}</strong>
+                <small>
+                  za cały cykl ·{" "}
+                  {c.is_test_price ? "cena robocza" : "cena docelowa"}
+                </small>
               </div>
-              <div>
-                <dt>Miejsca dla par pies–opiekun</dt>
-                <dd>{c.capacity}</dd>
-              </div>
-              <div>
-                <dt>Okolica</dt>
-                <dd>{c.public_location}</dd>
-              </div>
-            </dl>
-            <p className="muted">
-              Przyjęcie obejmuje cały cykl. Zmiana ceny w katalogu nie zmienia
-              tego kursu.
-            </p>
-          </article>
-          {admin ? (
-            <article className="card pad">
-              <h3>Zarządzaj cyklem</h3>
-              <details>
-                <summary>Edytuj nazwę i liczbę miejsc</summary>
-                <CourseSettingsForm
+              <dl className={styles.facts}>
+                <div>
+                  <dt>Forma</dt>
+                  <dd>
+                    {c.course_format === "individual"
+                      ? "Indywidualna"
+                      : "Grupowa"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Miejsca dla par pies–opiekun</dt>
+                  <dd>{c.capacity}</dd>
+                </div>
+                <div>
+                  <dt>Okolica</dt>
+                  <dd>{c.public_location}</dd>
+                </div>
+              </dl>
+              <p className="muted">
+                Przyjęcie obejmuje cały cykl. Zmiana ceny w katalogu nie zmienia
+                tego kursu.
+              </p>
+            </article>
+            {admin ? (
+              <article className={styles.supportSection}>
+                <h3>Zarządzaj cyklem</h3>
+                <details>
+                  <summary>Edytuj nazwę i liczbę miejsc</summary>
+                  <CourseSettingsForm
+                    course={c}
+                    enabled={unfinished}
+                    requestId={requestId}
+                  />
+                </details>
+                <details>
+                  <summary>Zmień status cyklu</summary>
+                  <p className="muted">
+                    Szkic nie zajmuje kalendarza. Otwarcie zapisów sprawdza i
+                    rezerwuje wszystkie terminy. Zamknięcie zapisów zachowuje
+                    potwierdzone miejsca.
+                  </p>
+                  <CommandForm
+                    id={c.id}
+                    version={c.version}
+                    action={changeCourse}
+                    options={courseOptions}
+                    allowed={courseAllowed}
+                    label="Zmiana kursu"
+                  />
+                  <p className="muted">
+                    Odwołanie zamknie aktywne zgłoszenia i zaplanowane
+                    spotkania. Rozliczenia wymagają osobnego uzgodnienia.
+                  </p>
+                </details>
+              </article>
+            ) : (
+              <article className="card pad" id="zgloszenie">
+                <h3>Zgłoś swojego psa</h3>
+                {!dogs.length && (
+                  <p className="muted">
+                    {hasDogs
+                      ? "Każdy Twój pies ma już zgłoszenie na ten cykl. Jego status sprawdzisz w swoich zgłoszeniach."
+                      : "Najpierw dodaj profil swojego psa."}
+                  </p>
+                )}
+                <EnrollmentForm
                   course={c}
-                  enabled={unfinished}
-                  requestId={requestId}
+                  dogs={dogs}
+                  id={requestId}
+                  enabled={c.status === "open" && future}
                 />
-              </details>
-              <p className="muted">
-                Szkic nie zajmuje kalendarza. Otwarcie zapisów sprawdza i
-                rezerwuje wszystkie terminy. Zamknięcie zapisów zachowuje
-                potwierdzone miejsca.
-              </p>
-              <CommandForm
-                id={c.id}
-                version={c.version}
-                action={changeCourse}
-                options={courseOptions}
-                allowed={courseAllowed}
-                label="Zmiana kursu"
-              />
-              <p className="muted">
-                Odwołanie zamknie aktywne zgłoszenia i zaplanowane spotkania.
-                Rozliczenia wymagają osobnego uzgodnienia.
-              </p>
-            </article>
-          ) : (
-            <article className="card pad" id="zgloszenie">
-              <h3>Zgłoś swojego psa</h3>
-              {!dogs.length && (
-                <p className="muted">
-                  {hasDogs
-                    ? "Każdy Twój pies ma już zgłoszenie na ten cykl. Jego status sprawdzisz w swoich zgłoszeniach."
-                    : "Najpierw dodaj profil swojego psa."}
-                </p>
-              )}
-              <EnrollmentForm
-                course={c}
-                dogs={dogs}
-                id={requestId}
-                enabled={c.status === "open" && future}
-              />
-              <div className={styles.badges}>
-                {!hasDogs && (
-                  <Link className="ghost-button" href="/app/dogs/new">
-                    Dodaj psa →
-                  </Link>
+                <div className={styles.badges}>
+                  {!hasDogs && (
+                    <Link className="ghost-button" href="/app/dogs/new">
+                      Dodaj psa →
+                    </Link>
+                  )}
+                  {dogs.length > 0 && (
+                    <a
+                      className="ghost-button"
+                      href={`${base}/courses/${c.id}`}
+                    >
+                      Przygotuj kolejne zgłoszenie →
+                    </a>
+                  )}
+                  {hasDogs && !dogs.length && (
+                    <a className="ghost-button" href="#zgloszenia">
+                      Sprawdź zgłoszenia ↑
+                    </a>
+                  )}
+                </div>
+                {(c.status !== "open" || !future) && (
+                  <p className="muted">Zapisy na ten cykl są zamknięte.</p>
                 )}
-                {dogs.length > 0 && (
-                  <a className="ghost-button" href={`${base}/courses/${c.id}`}>
-                    Przygotuj kolejne zgłoszenie →
-                  </a>
-                )}
-                {hasDogs && !dogs.length && (
-                  <a className="ghost-button" href="#zgloszenia">
-                    Sprawdź zgłoszenia ↑
-                  </a>
-                )}
-              </div>
-              {(c.status !== "open" || !future) && (
-                <p className="muted">Zapisy na ten cykl są zamknięte.</p>
-              )}
-            </article>
-          )}
-          <article className="card pad" id="historia">
-            <h3>Historia kursu</h3>
+              </article>
+            )}
+          </CourseSupport>
+          <CourseHistorySection admin={admin} initiallyOpen={historyPage > 1}>
+            {!history.length && (
+              <p className="muted">Historia kursu jest jeszcze pusta.</p>
+            )}
             <ol className={styles.history}>
               {history.map((h) => {
                 const title =
@@ -840,9 +996,19 @@ export function CourseDetailView({
                 </Link>
               )}
             </nav>
-          </article>
+          </CourseHistorySection>
         </aside>
       </div>
-    </div>
+    </>
+  );
+  return (
+    <CourseAdminNavigation
+      key={c.id}
+      admin={admin}
+      className="stack"
+      navigationKey={`${c.id}${href()}`}
+    >
+      {content}
+    </CourseAdminNavigation>
   );
 }

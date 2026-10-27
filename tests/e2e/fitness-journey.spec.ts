@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page, type Locator } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { LocalPostgres, literal as q } from "../helpers/local-postgres.mjs";
@@ -140,17 +141,34 @@ async function submitCommand(
   intent: string,
   note = "Uzgodnione podczas próby",
 ) {
-  await form.getByRole("combobox").first().selectOption(intent);
-  await form.getByRole("textbox").fill(note);
-  await form.getByRole("checkbox").check();
+  await revealFor(form.getByRole("combobox", { includeHidden: true }).first());
   await form
-    .getByRole("button", { name: "Zapisz działanie", exact: true })
+    .getByRole("combobox", { includeHidden: true })
+    .first()
+    .selectOption(intent);
+  await revealFor(form.getByRole("textbox", { includeHidden: true }));
+  await form.getByRole("textbox", { includeHidden: true }).fill(note);
+  await revealFor(form.getByRole("checkbox", { includeHidden: true }));
+  await form.getByRole("checkbox", { includeHidden: true }).check();
+  await revealFor(
+    form.getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz działanie",
+      exact: true,
+    }),
+  );
+  await form
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz działanie",
+      exact: true,
+    })
     .click();
   await expect(form.getByRole("status")).toBeVisible();
 }
 const packageForm = (page: Page) =>
   page
-    .locator("aside form")
+    .locator("#obsluga-pakietu form")
     .filter({ has: page.getByLabel("Działanie dla pakietu") });
 async function screen(
   page: Page,
@@ -280,8 +298,17 @@ test("fitness reminders: staff delivery panel, private meeting link, reschedule 
       "Przed spotkaniem PSI FITNESS · Figa — fitness próbny",
     );
     await staffPage.goto("/admin/reminders?filter=pending");
+    await revealFor(
+      staffPage.getByRole("button", {
+        includeHidden: true,
+        name: "Sprawdź do 50 oczekujących",
+      }),
+    );
     await staffPage
-      .getByRole("button", { name: "Sprawdź do 50 oczekujących" })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Sprawdź do 50 oczekujących",
+      })
       .click();
     await expect(staffPage.getByRole("status")).toContainText(
       "W skrzynkach: 1.",
@@ -307,8 +334,19 @@ test("fitness reminders: staff delivery panel, private meeting link, reschedule 
     });
     await expect(card).toBeVisible();
     await expect(card).not.toContainText("FIKCYJNE PRYWATNE MIEJSCE");
+    await revealFor(
+      card.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await card
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(ownerPage).toHaveURL(
       new RegExp(`/app/fitness/${id}#spotkanie-${meeting.id}$`),
@@ -373,29 +411,58 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
       .getByRole("navigation", { name: "Forma usług", exact: true })
       .locator('a[href="/app/services?category=individual"]');
     await expect(individual).toContainText("Indywidualne");
+    await revealFor(individual);
     await individual.click();
     await expect(page).toHaveURL(/\/app\/services\?category=individual$/);
+    await revealFor(
+      page.getByRole("link", {
+        includeHidden: true,
+        name: "Zgłoś psa na fitness →",
+        exact: true,
+      }),
+    );
     await page
       .getByRole("link", { name: "Zgłoś psa na fitness →", exact: true })
       .click();
     await expect(page).toHaveURL(
       new RegExp(`/app/fitness/new\\?service=${service}`),
     );
+    await revealFor(
+      page.getByRole("combobox", {
+        includeHidden: true,
+        name: "Pies",
+        exact: true,
+      }),
+    );
     await page
-      .getByRole("combobox", { name: "Pies", exact: true })
+      .getByRole("combobox", { includeHidden: true, name: "Pies", exact: true })
       .selectOption(f.dog);
+    await revealFor(page.getByLabel("Cel spotkań"));
     await page
       .getByLabel("Cel spotkań")
       .fill("Praca nad ruchem — rzeczywista próba lokalna");
+    await revealFor(page.getByLabel("Dostępność (opcjonalnie)"));
     await page
       .getByLabel("Dostępność (opcjonalnie)")
       .fill("Wtorki po południu");
-    await page.getByRole("checkbox").check();
+    await revealFor(page.getByRole("checkbox", { includeHidden: true }));
+    await page.getByRole("checkbox", { includeHidden: true }).check();
     await screen(page, "request", 390, "Zgłoszenie na PSI FITNESS");
     const id = await page.locator('input[name="id"]').inputValue();
     f.packages.push(id);
+    await revealFor(
+      page.getByRole("button", {
+        includeHidden: true,
+        name: "Wyślij zgłoszenie fitness",
+        exact: true,
+      }),
+    );
     await page
-      .getByRole("button", { name: "Wyślij zgłoszenie fitness", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Wyślij zgłoszenie fitness",
+        exact: true,
+      })
       .click();
     await expect(page).toHaveURL(new RegExp(`/app/fitness/${id}$`));
     await expect(
@@ -410,8 +477,19 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
         exact: true,
       }),
     });
+    await revealFor(
+      requestedNotice.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await requestedNotice
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(staffPage).toHaveURL(new RegExp(`/admin/fitness/${id}$`));
     // Reading the message does not process the request or remove its task.
@@ -421,35 +499,57 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
       name: /Figa — fitness próbny · Rozpatrz zgłoszenie fitness/,
     });
     await expect(requestTask).toBeVisible();
+    await revealFor(requestTask);
     await requestTask.click();
-    await expect(staffPage).toHaveURL(new RegExp(`/admin/fitness/${id}$`));
+    await expect(staffPage).toHaveURL(
+      `${baseURL}/admin/fitness/${id}?returnTo=${encodeURIComponent("/admin/work?filter=fitness&page=1")}`,
+    );
     await submitCommand(packageForm(staffPage), "accept", "");
     await expect(
-      staffPage.getByRole("heading", { name: /^Spotkanie \d z 4$/ }),
+      staffPage
+        .locator('details[id^="spotkanie-"] > summary strong')
+        .filter({ hasText: /^Spotkanie \d z 4$/ }),
     ).toHaveCount(4);
     const meetings = await f.sessions(id),
       first = meetings![0],
       starts = await f.free();
     await staffPage.reload();
     const article = staffPage.locator(`#spotkanie-${first.id}`);
+    await revealFor(packageForm(staffPage).getByLabel("Działanie dla pakietu"));
     await expect(
       packageForm(staffPage).locator('option[value="complete"]'),
-    ).toBeDisabled();
+    ).toHaveJSProperty("disabled", true);
     await expect(
       packageForm(staffPage).getByLabel("Działanie dla pakietu"),
     ).toHaveValue("");
+    await revealFor(
+      article.getByText("Ustal lub zmień termin spotkania", { exact: true }),
+    );
     await article
       .getByText("Ustal lub zmień termin spotkania", { exact: true })
       .click();
+    await revealFor(article.getByLabel("Termin spotkania (czas polski)"));
     await article
       .getByLabel("Termin spotkania (czas polski)")
       .fill(warsawDateTimeInput(starts));
+    await revealFor(article.getByLabel("Dokładne miejsce spotkania"));
     await article
       .getByLabel("Dokładne miejsce spotkania")
       .fill("FIKCYJNA PRYWATNA ZBIÓRKA FITNESS");
     await screen(staffPage, "schedule", 320);
+    await revealFor(
+      article.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      }),
+    );
     await article
-      .getByRole("button", { name: "Zapisz termin fitness", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      })
       .click();
     await expect(article.getByRole("status")).toContainText(
       "Termin i miejsce zapisane",
@@ -466,8 +566,19 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
     await expect(dateNotice).not.toContainText(
       "FIKCYJNA PRYWATNA ZBIÓRKA FITNESS",
     );
+    await revealFor(
+      dateNotice.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await dateNotice
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(page).toHaveURL(
       new RegExp(`/app/fitness/${id}#spotkanie-${first.id}$`),
@@ -495,6 +606,9 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
     const month = staffPage.getByRole("region", { name: /^Kalendarz:/ });
     await expect(month).toContainText(/spotkanie 1\/4/);
     await screen(staffPage, "calendar-month", 390, "Kalendarz");
+    await revealFor(
+      month.locator(`a[href^="/admin/calendar?date=${calendarDay}&view=week"]`),
+    );
     await month
       .locator(`a[href^="/admin/calendar?date=${calendarDay}&view=week"]`)
       .click();
@@ -507,18 +621,52 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
     await expect(appointment).toContainText(
       "FIKCYJNA PRYWATNA ZBIÓRKA FITNESS",
     );
+    await revealFor(
+      appointment.getByRole("link", {
+        includeHidden: true,
+        name: "Otwórz szczegóły",
+      }),
+    );
     await appointment.getByRole("link", { name: "Otwórz szczegóły" }).click();
-    await expect(staffPage).toHaveURL(new RegExp(`/admin/fitness/${id}$`));
+    await expect(staffPage).toHaveURL(
+      new RegExp(`/admin/fitness/${id}#spotkanie-${first.id}$`),
+    );
+    await page.goto(`/app/calendar?date=${calendarDay}&view=week`);
+    const guardianMeetingLink = page.locator(
+      `a[href="/app/fitness/${id}#spotkanie-${first.id}"]`,
+    );
+    await expect(guardianMeetingLink).toBeVisible();
+    await guardianMeetingLink.click();
+    await expect(page.locator(`#spotkanie-${first.id}`)).toHaveJSProperty(
+      "open",
+      true,
+    );
+    await revealFor(
+      staffPage.getByText("Odnotuj otrzymaną wpłatę", { exact: true }),
+    );
     await staffPage
       .getByText("Odnotuj otrzymaną wpłatę", { exact: true })
       .click();
     let moneyForm = staffPage
       .locator("form")
       .filter({ has: staffPage.getByLabel("Otrzymana kwota (zł)") });
+    await revealFor(moneyForm.getByLabel("Otrzymana kwota (zł)"));
     await moneyForm.getByLabel("Otrzymana kwota (zł)").fill("100,00");
-    await moneyForm.getByRole("checkbox").check();
+    await revealFor(moneyForm.getByRole("checkbox", { includeHidden: true }));
+    await moneyForm.getByRole("checkbox", { includeHidden: true }).check();
+    await revealFor(
+      moneyForm.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz wpłatę",
+        exact: true,
+      }),
+    );
     await moneyForm
-      .getByRole("button", { name: "Zapisz wpłatę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz wpłatę",
+        exact: true,
+      })
       .click();
     await expect(moneyForm.getByRole("status")).toContainText(
       "Wpłata zapisana",
@@ -538,43 +686,82 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
       paid_cents: 10000,
     });
     await staffPage.reload();
+    await revealFor(
+      staffPage.getByText("Uzgodnij kwotę po rezygnacji", { exact: true }),
+    );
     await staffPage
       .getByText("Uzgodnij kwotę po rezygnacji", { exact: true })
       .click();
     moneyForm = staffPage.locator("form").filter({
       has: staffPage.getByLabel("Uzgodniona należność za pakiet fitness (zł)"),
     });
+    await revealFor(
+      moneyForm.getByLabel("Uzgodniona należność za pakiet fitness (zł)"),
+    );
     await moneyForm
       .getByLabel("Uzgodniona należność za pakiet fitness (zł)")
       .fill("30,00");
+    await revealFor(moneyForm.getByLabel("Powód uzgodnienia"));
     await moneyForm
       .getByLabel("Powód uzgodnienia")
       .fill("Uzgodnione rozliczenie po rezygnacji");
-    await moneyForm.getByRole("checkbox").check();
+    await revealFor(moneyForm.getByRole("checkbox", { includeHidden: true }));
+    await moneyForm.getByRole("checkbox", { includeHidden: true }).check();
+    await revealFor(
+      moneyForm.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      }),
+    );
     await moneyForm
-      .getByRole("button", { name: "Zapisz uzgodnioną kwotę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz uzgodnioną kwotę",
+        exact: true,
+      })
       .click();
     await expect(moneyForm.getByRole("status")).toContainText(
       "Uzgodniona kwota zapisana",
     );
     expect((await f.balance(id))!.refund_due_cents).toBe(7000);
     await staffPage.reload();
+    await revealFor(
+      staffPage.getByText("Historia wpłat i zwrotów (1)", { exact: true }),
+    );
     await staffPage
       .getByText("Historia wpłat i zwrotów (1)", { exact: true })
       .click();
+    await revealFor(
+      staffPage.getByText("Odnotuj zwrot tej wpłaty", { exact: true }),
+    );
     await staffPage
       .getByText("Odnotuj zwrot tej wpłaty", { exact: true })
       .click();
     moneyForm = staffPage
       .locator("form")
       .filter({ has: staffPage.getByLabel("Zwrócona kwota (zł)") });
+    await revealFor(moneyForm.getByLabel("Zwrócona kwota (zł)"));
     await moneyForm.getByLabel("Zwrócona kwota (zł)").fill("70,00");
+    await revealFor(moneyForm.getByLabel("Powód zwrotu"));
     await moneyForm
       .getByLabel("Powód zwrotu")
       .fill("Faktycznie zwrócono uzgodnioną część wpłaty");
-    await moneyForm.getByRole("checkbox").check();
+    await revealFor(moneyForm.getByRole("checkbox", { includeHidden: true }));
+    await moneyForm.getByRole("checkbox", { includeHidden: true }).check();
+    await revealFor(
+      moneyForm.getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      }),
+    );
     await moneyForm
-      .getByRole("button", { name: "Odnotuj zwrot", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Odnotuj zwrot",
+        exact: true,
+      })
       .click();
     await expect(moneyForm.getByRole("status")).toContainText(
       "Zwrot odnotowany",
@@ -625,8 +812,19 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
         exact: true,
       }),
     });
+    await revealFor(
+      refundNotice.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await refundNotice
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(page).toHaveURL(
       new RegExp(`/app/fitness/${id}#rozliczenie-${id}$`),
@@ -672,6 +870,7 @@ test("fitness browser: catalogue request, four meetings, shared calendar, paymen
     await page.goto("/app/finance");
     const charge = page.locator(`#charge-fitness-${id}`);
     await expect(charge).toContainText("70,00");
+    await revealFor(charge.getByRole("link", { includeHidden: true }).first());
     await charge.getByRole("link").first().click();
     await expect(page).toHaveURL(new RegExp(`/app/fitness/${id}`));
   } finally {
@@ -706,12 +905,17 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     for (const tab of [page, second]) {
       await tab.goto(`/admin/fitness/${id}`);
       const a = tab.locator(`#spotkanie-${meeting.id}`);
+      await revealFor(
+        a.getByText("Ustal lub zmień termin spotkania", { exact: true }),
+      );
       await a
         .getByText("Ustal lub zmień termin spotkania", { exact: true })
         .click();
+      await revealFor(a.getByLabel("Termin spotkania (czas polski)"));
       await a
         .getByLabel("Termin spotkania (czas polski)")
         .fill(warsawDateTimeInput(starts));
+      await revealFor(a.getByLabel("Dokładne miejsce spotkania"));
       await a
         .getByLabel("Dokładne miejsce spotkania")
         .fill(
@@ -720,16 +924,38 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
             : "Wpisane miejsce w starej karcie",
         );
     }
+    await revealFor(
+      page.locator(`#spotkanie-${meeting.id}`).getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      }),
+    );
     await page
       .locator(`#spotkanie-${meeting.id}`)
-      .getByRole("button", { name: "Zapisz termin fitness", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      })
       .click();
     await expect(
       page.locator(`#spotkanie-${meeting.id}`).getByRole("status"),
     ).toBeVisible();
+    await revealFor(
+      second.locator(`#spotkanie-${meeting.id}`).getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      }),
+    );
     await second
       .locator(`#spotkanie-${meeting.id}`)
-      .getByRole("button", { name: "Zapisz termin fitness", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      })
       .click();
     await expect(
       second.locator(`#spotkanie-${meeting.id}`).getByRole("alert"),
@@ -750,15 +976,20 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     );
     await page.reload();
     let a = page.locator(`#spotkanie-${meeting.id}`);
+    await revealFor(
+      a.getByText("Obecność, odwołanie lub korekta", { exact: true }),
+    );
     await a
       .getByText("Obecność, odwołanie lub korekta", { exact: true })
       .click();
     let command = a
       .locator("form")
       .filter({ has: page.getByLabel("Działanie dla spotkania") });
+    await revealFor(command.getByLabel("Działanie dla spotkania"));
     await command
       .getByLabel("Działanie dla spotkania")
       .selectOption("complete");
+    await revealFor(command.getByLabel("Obecność psa"));
     await command.getByLabel("Obecność psa").selectOption("absent");
     await submitCommand(command, "complete", "");
     expect(await f.balance(id)).toMatchObject({
@@ -768,13 +999,18 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     });
     await page.reload();
     a = page.locator(`#spotkanie-${meeting.id}`);
+    await revealFor(
+      a.getByText("Obecność, odwołanie lub korekta", { exact: true }),
+    );
     await a
       .getByText("Obecność, odwołanie lub korekta", { exact: true })
       .click();
     command = a
       .locator("form")
       .filter({ has: page.getByLabel("Działanie dla spotkania") });
+    await revealFor(command.getByLabel("Działanie dla spotkania"));
     await command.getByLabel("Działanie dla spotkania").selectOption("correct");
+    await revealFor(command.getByLabel("Obecność psa"));
     await command.getByLabel("Obecność psa").selectOption("excused");
     await submitCommand(
       command,
@@ -783,6 +1019,9 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     );
     await page.reload();
     a = page.locator(`#spotkanie-${meeting.id}`);
+    await revealFor(
+      a.getByText("Obecność, odwołanie lub korekta", { exact: true }),
+    );
     await a
       .getByText("Obecność, odwołanie lub korekta", { exact: true })
       .click();
@@ -852,7 +1091,13 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     await page.goto("/admin/finance");
     const charge = page.locator(`#charge-fitness-${id}`);
     await expect(charge).toContainText("100,00");
-    await charge.getByText("Rozlicz należność", { exact: true }).click();
+    await revealFor(
+      charge.getByRole("link", {
+        includeHidden: true,
+        name: "Odnotuj wpłatę w fitnessie →",
+        exact: true,
+      }),
+    );
     await charge
       .getByRole("link", { name: "Odnotuj wpłatę w fitnessie →", exact: true })
       .click();
@@ -887,17 +1132,33 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     await submitCommand(packageForm(staffPage), "accept");
     const meeting = (await f.sessions(id))![0];
     const article = staffPage.locator(`#spotkanie-${meeting.id}`);
+    await revealFor(
+      article.getByText("Ustal lub zmień termin spotkania", { exact: true }),
+    );
     await article
       .getByText("Ustal lub zmień termin spotkania", { exact: true })
       .click();
+    await revealFor(article.getByLabel("Termin spotkania (czas polski)"));
     await article
       .getByLabel("Termin spotkania (czas polski)")
       .fill(warsawDateTimeInput(await f.free()));
+    await revealFor(article.getByLabel("Dokładne miejsce spotkania"));
     await article
       .getByLabel("Dokładne miejsce spotkania")
       .fill("FIKCYJNE MIEJSCE PRÓBY ZALECEŃ");
+    await revealFor(
+      article.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      }),
+    );
     await article
-      .getByRole("button", { name: "Zapisz termin fitness", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz termin fitness",
+        exact: true,
+      })
       .click();
     await expect(article.getByRole("status")).toContainText(
       "Termin i miejsce zapisane",
@@ -905,13 +1166,24 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     const carePanel = staffPage.getByRole("region", {
       name: "Zalecenia fitness",
     });
+    await revealFor(
+      carePanel.getByText("Przygotuj zalecenia po spotkaniu fitness", {
+        exact: true,
+      }),
+    );
     await carePanel
       .getByText("Przygotuj zalecenia po spotkaniu fitness", { exact: true })
       .click();
+    await revealFor(
+      carePanel.getByRole("link", {
+        includeHidden: true,
+        name: /Spotkanie 1 ·/,
+      }),
+    );
     await carePanel.getByRole("link", { name: /Spotkanie 1 ·/ }).click();
     const meetingCare = await careEditor(staffPage);
     await expect(
-      meetingCare.getByRole("region", {
+      staffPage.getByRole("region", {
         name: "Powiązanie planu",
         exact: true,
       }),
@@ -926,28 +1198,39 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
       staffPage.locator('input[name="fitness_session_id"]'),
     ).toHaveValue(meeting.id);
     const draft = "Prywatny szkic prowadzącej do spotkania fitness.";
+    await revealFor(staffPage.getByLabel("Tytuł planu", { exact: true }));
     await staffPage
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Plan po pierwszym spotkaniu fitness");
+    await revealFor(
+      staffPage.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    );
     await staffPage
       .getByLabel("Zalecenia dla opiekuna", { exact: true })
       .fill(draft);
     await expect(
       staffPage.getByRole("button", {
+        includeHidden: true,
         name: "Opublikuj dla opiekuna",
         exact: true,
       }),
     ).toBeDisabled();
+    await revealFor(
+      staffPage.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz szkic",
+        exact: true,
+      }),
+    );
     await staffPage
-      .getByRole("button", { name: "Zapisz szkic", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz szkic",
+        exact: true,
+      })
       .click();
     await expect(staffPage.getByRole("status")).toContainText("Szkic zapisany");
-    await screen(
-      staffPage,
-      "care-draft",
-      320,
-      "Figa — fitness próbny · małe kroki, wspólny plan",
-    );
+    await screen(staffPage, "care-draft", 320, "Figa — fitness próbny");
     await ownerPage.goto(`/app/fitness/${id}`);
     await expect(
       ownerPage.getByRole("region", { name: "Zalecenia fitness" }),
@@ -970,22 +1253,46 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
         .eq("package_id", id),
     );
     await staffPage.goto(`/admin/fitness/${id}`);
+    await revealFor(
+      article.getByText("Obecność, odwołanie lub korekta", { exact: true }),
+    );
     await article
       .getByText("Obecność, odwołanie lub korekta", { exact: true })
       .click();
     const command = article
       .locator("form")
       .filter({ has: staffPage.getByLabel("Działanie dla spotkania") });
+    await revealFor(command.getByLabel("Działanie dla spotkania"));
     await command
       .getByLabel("Działanie dla spotkania")
       .selectOption("complete");
+    await revealFor(command.getByLabel("Obecność psa"));
     await command.getByLabel("Obecność psa").selectOption("present");
-    await command.getByRole("checkbox").check();
+    await revealFor(command.getByRole("checkbox", { includeHidden: true }));
+    await command.getByRole("checkbox", { includeHidden: true }).check();
+    await revealFor(
+      command.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz działanie",
+        exact: true,
+      }),
+    );
     await command
-      .getByRole("button", { name: "Zapisz działanie", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz działanie",
+        exact: true,
+      })
       .click();
     await expect(command.getByRole("status")).toContainText(
       "Zmiana spotkania zapisana",
+    );
+    await revealFor(
+      carePanel.getByRole("link", {
+        includeHidden: true,
+        name: "Otwórz szkic po spotkaniu fitness 1",
+        exact: true,
+      }),
     );
     await carePanel
       .getByRole("link", {
@@ -993,9 +1300,9 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
         exact: true,
       })
       .click();
-    const completedCare = await careEditor(staffPage);
+    await careEditor(staffPage);
     await expect(
-      completedCare.getByRole("region", {
+      staffPage.getByRole("region", {
         name: "Powiązanie planu",
         exact: true,
       }),
@@ -1005,11 +1312,25 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     ).toHaveValue(draft);
     const published =
       "Własne wskazówki prowadzącej po spotkaniu. Treść demonstracyjna, bez gotowych ćwiczeń.";
+    await revealFor(
+      staffPage.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    );
     await staffPage
       .getByLabel("Zalecenia dla opiekuna", { exact: true })
       .fill(published);
+    await revealFor(
+      staffPage.getByRole("button", {
+        includeHidden: true,
+        name: "Opublikuj dla opiekuna",
+        exact: true,
+      }),
+    );
     await staffPage
-      .getByRole("button", { name: "Opublikuj dla opiekuna", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Opublikuj dla opiekuna",
+        exact: true,
+      })
       .click();
     await expect(staffPage.getByRole("status")).toContainText(
       "Plan opublikowany",
@@ -1030,6 +1351,13 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     ]);
     const publication = plans![0].id;
     await ownerPage.reload();
+    await revealFor(
+      ownerPage.getByRole("link", {
+        includeHidden: true,
+        name: "Plan po pierwszym spotkaniu fitness",
+        exact: true,
+      }),
+    );
     await ownerPage
       .getByRole("link", {
         name: "Plan po pierwszym spotkaniu fitness",
@@ -1038,6 +1366,13 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
       .click();
     await expect(ownerPage).toHaveURL(`/app/care/plans/${publication}`);
     await expect(ownerPage.getByText(published, { exact: true })).toBeVisible();
+    await revealFor(
+      ownerPage.getByRole("link", {
+        includeHidden: true,
+        name: "Otwórz spotkanie fitness →",
+        exact: true,
+      }),
+    );
     await ownerPage
       .getByRole("link", { name: "Otwórz spotkanie fitness →", exact: true })
       .click();
@@ -1045,14 +1380,32 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
       `/app/fitness/${id}#spotkanie-${meeting.id}`,
     );
     await screen(ownerPage, "care-published", 390);
+    await revealFor(
+      ownerPage.getByRole("link", {
+        includeHidden: true,
+        name: "Plan pracy i postępy psa →",
+        exact: true,
+      }),
+    );
     await ownerPage
       .getByRole("link", { name: "Plan pracy i postępy psa →", exact: true })
       .click();
+    await revealFor(
+      ownerPage.getByLabel("Co udało się zrobić?", { exact: true }),
+    );
     await ownerPage
       .getByLabel("Co udało się zrobić?", { exact: true })
       .fill("Przeczytaliśmy wskazówki z pierwszego spotkania fitness.");
+    await revealFor(
+      ownerPage.getByRole("button", {
+        includeHidden: true,
+        name: "Przekaż odpowiedź prowadzącej",
+        exact: true,
+      }),
+    );
     await ownerPage
       .getByRole("button", {
+        includeHidden: true,
         name: "Przekaż odpowiedź prowadzącej",
         exact: true,
       })
@@ -1063,6 +1416,13 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     // Returning to the exact current URL with its fragment is a same-document
     // navigation. Re-enter through the package to read the guardian's new reply.
     await staffPage.goto(`/admin/fitness/${id}`);
+    await revealFor(
+      carePanel.getByRole("link", {
+        includeHidden: true,
+        name: "Otwórz szkic po spotkaniu fitness 1",
+        exact: true,
+      }),
+    );
     await carePanel
       .getByRole("link", {
         name: "Otwórz szkic po spotkaniu fitness 1",
@@ -1077,16 +1437,23 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     ).toBeVisible();
     // A separate whole-package draft does not inherit the meeting's text.
     await staffPage.goto(`/admin/fitness/${id}`);
+    await revealFor(
+      carePanel.getByRole("link", {
+        includeHidden: true,
+        name: "Przygotuj plan całego pakietu",
+        exact: true,
+      }),
+    );
     await carePanel
       .getByRole("link", { name: "Przygotuj plan całego pakietu", exact: true })
       .click();
     const packageCare = await careEditor(staffPage);
     await expect(
-      packageCare.getByRole("region", {
+      staffPage.getByRole("region", {
         name: "Powiązanie planu",
         exact: true,
       }),
-    ).toContainText("Plan całego pakietu");
+    ).toContainText("Cały pakiet fitness");
     await expect(
       packageCare.locator('input[name="fitness_session_id"]'),
     ).toHaveValue("");
@@ -1096,14 +1463,29 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
     await expect(
       packageCare.locator('input[name="expected_version"]'),
     ).toHaveValue("0");
+    await revealFor(
+      packageCare.getByLabel("Zalecenia dla opiekuna", { exact: true }),
+    );
     await packageCare
       .getByLabel("Zalecenia dla opiekuna", { exact: true })
       .fill("Oddzielne wskazówki dla całego pakietu.");
+    await revealFor(staffPage.getByLabel("Tytuł planu", { exact: true }));
     await staffPage
       .getByLabel("Tytuł planu", { exact: true })
       .fill("Plan całego pakietu fitness");
+    await revealFor(
+      staffPage.getByRole("button", {
+        includeHidden: true,
+        name: "Opublikuj dla opiekuna",
+        exact: true,
+      }),
+    );
     await staffPage
-      .getByRole("button", { name: "Opublikuj dla opiekuna", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Opublikuj dla opiekuna",
+        exact: true,
+      })
       .click();
     await expect(staffPage.getByRole("status")).toContainText(
       "Plan opublikowany",
@@ -1142,6 +1524,13 @@ test("fitness care: private meeting draft, publication, response, explicit rebin
         exact: true,
       }),
     ).toBeVisible();
+    await revealFor(
+      ownerPage.getByRole("link", {
+        includeHidden: true,
+        name: "Plan po pierwszym spotkaniu fitness",
+        exact: true,
+      }),
+    );
     await ownerPage
       .getByRole("link", {
         name: "Plan po pierwszym spotkaniu fitness",

@@ -4,6 +4,7 @@ import { dateLabel } from "@/lib/domain";
 import type { Appointment } from "./types";
 import { calendarAppointmentHref, clockTime, localDate } from "./dates";
 import styles from "./next-appointment.module.css";
+import { appointmentDetailHref } from "./meeting-links";
 
 const fullDate = new Intl.DateTimeFormat("pl-PL", {
   timeZone: "Europe/Warsaw",
@@ -22,7 +23,7 @@ export function NextAppointment({
 }) {
   const base = admin ? "/admin" : "/app";
   const detailHref = appointment
-    ? `${base}/${appointment.kind === "walk" ? "walks" : appointment.kind === "course" ? "courses" : appointment.kind === "fitness" ? "fitness" : "consultations"}/${appointment.id}`
+    ? appointmentDetailHref(base, appointment)
     : null;
   if (admin) {
     return (

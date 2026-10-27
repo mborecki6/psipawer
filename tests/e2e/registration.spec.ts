@@ -1,7 +1,9 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import {
   test,
   checked,
+  completeNewOnboarding,
   cleanupSteps,
   freeCalendarStart,
   localClients,
@@ -9,12 +11,20 @@ import {
   setupLocalPractitioner,
 } from "./local-fixtures";
 import { dateInput } from "./walk-journey";
-async function passwordLogin(page: Page, email: string, password: string) {
+async function passwordLogin(
+  page: Page,
+  email: string,
+  password: string,
+  role: "admin" | "client",
+) {
   await page.goto("/login");
   await page.getByLabel("Twój e-mail").fill(email);
   await page.getByLabel("Hasło", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Zaloguj się", exact: true }).click();
-  await expect(page).toHaveURL(/\/(admin|app)$/, { timeout: 15000 });
+  if (role === "client") await completeNewOnboarding(page);
+  await expect(page).toHaveURL(role === "admin" ? /\/admin$/ : /\/app$/, {
+    timeout: 15000,
+  });
 }
 test("password → dog → registration → admin approval → private location", async ({
   browser,
@@ -36,7 +46,7 @@ test("password → dog → registration → admin approval → private location"
     });
     if (signup.data.user) ids.push(signup.data.user.id);
     expect(signup.error?.code).toBe("signup_disabled");
-    for (const [i, role] of ["admin", "client"].entries()) {
+    for (const [i, role] of (["admin", "client"] as const).entries()) {
       const email = `psi-e2e-${role}-${suffix}@example.test`;
       const password = `Psi-E2E!${crypto.randomUUID()}`;
       const { data, error } = await db.auth.admin.createUser({
@@ -61,7 +71,7 @@ test("password → dog → registration → admin approval → private location"
         .eq("user_id", data.user.id);
       if (roles.error) throw roles.error;
       if (role === "admin") await setupLocalPractitioner(db, ids, data.user.id);
-      await passwordLogin(i === 0 ? admin : guardian, email, password);
+      await passwordLogin(i === 0 ? admin : guardian, email, password, role);
     }
     await guardian.goto("/admin");
     await expect(guardian).toHaveURL("/app");
@@ -73,6 +83,7 @@ test("password → dog → registration → admin approval → private location"
     await expect(guardian).toHaveURL(/\/app\/dogs\/[a-f0-9-]+/);
     const dogId = guardian.url().split("/").pop()!.split("?")[0];
     await admin.goto(`/admin/dogs/${dogId}`);
+    await revealFor(admin.getByLabel("Status"));
     await admin.getByLabel("Status").selectOption("approved");
     await admin
       .getByLabel("Powód / zalecenia")
@@ -123,6 +134,7 @@ test("password → dog → registration → admin approval → private location"
       .getByRole("link")
       .filter({ hasText: `Park testowy ${suffix}` })
       .click();
+    await revealFor(admin.getByLabel("Decyzja"));
     await admin.getByLabel("Decyzja").selectOption("accepted");
     admin.once("dialog", (dialog) => dialog.accept());
     await admin.getByRole("button", { name: "Zapisz decyzję" }).click();

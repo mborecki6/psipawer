@@ -1,30 +1,30 @@
+import { revealFor } from "./details-ui";
 import { expect } from "@playwright/test";
 import {
   careDay,
   careEditor,
   careFixture,
   careScreenshot,
+  openCareSection,
 } from "./care-journey";
 import { test, checked } from "./local-fixtures";
 
 async function ownService(f: Awaited<ReturnType<typeof careFixture>>) {
   const id = crypto.randomUUID();
   await checked(
-    f.db
-      .from("services")
-      .insert({
-        id,
-        practice_id: "00000000-0000-4000-8000-000000000001",
-        name: `Kontrola lokalna ${id.slice(0, 8)}`,
-        kind: "individual",
-        booking_flow: "consultation",
-        meeting_mode: "in_person",
-        price_cents: 10000,
-        price_unit: "za spotkanie",
-        duration_minutes: 60,
-        sessions_count: 1,
-        source_url: "https://www.psipawer.pl/test",
-      }),
+    f.db.from("services").insert({
+      id,
+      practice_id: "00000000-0000-4000-8000-000000000001",
+      name: `Kontrola lokalna ${id.slice(0, 8)}`,
+      kind: "individual",
+      booking_flow: "consultation",
+      meeting_mode: "in_person",
+      price_cents: 10000,
+      price_unit: "za spotkanie",
+      duration_minutes: 60,
+      sessions_count: 1,
+      source_url: "https://www.psipawer.pl/test",
+    }),
   );
   return id;
 }
@@ -44,6 +44,7 @@ test("control invitation opens an ordinary request and two tabs create only one 
     await form
       .getByLabel("Zalecenia dla opiekuna")
       .fill("Fikcyjne zalecenia do próby zgłoszenia kontroli.");
+    await openCareSection(form, "Kontrola i przypomnienia");
     await form
       .getByLabel("Termin kontaktu kontrolnego (opcjonalnie)")
       .fill(careDay(8));
@@ -71,10 +72,12 @@ test("control invitation opens an ordinary request and two tabs create only one 
       .getByRole("link", { name: "Zgłoś konsultację kontrolną →" })
       .click();
     await expect(f.guardian).toHaveURL(new RegExp(`control=${invitation!.id}`));
-    await expect(f.guardian.getByLabel("Twój pies")).toHaveValue(f.dog);
+    await expect(f.guardian.locator('[name="dog_id"]')).toHaveValue(f.dog);
+    await revealFor(f.guardian.getByLabel("Wybierz usługę"));
     await f.guardian.getByLabel("Wybierz usługę").selectOption(service);
     const second = await f.guardianContext.newPage();
     await second.goto(`/app/consultations/new?control=${invitation!.id}`);
+    await revealFor(second.getByLabel("Wybierz usługę"));
     await second.getByLabel("Wybierz usługę").selectOption(service);
     await second
       .getByLabel("Co chcesz omówić?")
@@ -106,6 +109,7 @@ test("control invitation opens an ordinary request and two tabs create only one 
       ),
     ).toEqual([{ status: "open" }]);
     await f.staff.goto(`/admin/dogs/${f.dog}/care?context=general`);
+    await openCareSection(f.staff, "Kontrola i ustawienia");
     await expect(
       f.staff.getByRole("region", { name: "Zaproszenie do kontroli" }),
     ).toContainText("Opiekun przekazał zgłoszenie");
@@ -212,6 +216,7 @@ test("service reporting snapshot survives offer changes and expiry rejects a sta
     await f.guardian
       .getByLabel("Co udało się zrobić?", { exact: true })
       .fill("Stara karta próbuje zapisać nową odpowiedź.");
+    await openCareSection(f.staff, "Kontrola i ustawienia");
     const panel = f.staff.getByRole("region", {
       name: "Dostęp do raportowania",
     });

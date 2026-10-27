@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef } from "react";
 import type { ActionState } from "@/components/action-form";
+import { revealFormFeedback } from "../../components/progressive-details";
 
 export function CalendarWarning({
   warning,
@@ -12,7 +13,10 @@ export function CalendarWarning({
   const summary = useRef<HTMLDivElement>(null);
   const id = useId();
   useEffect(() => {
-    if (warning) summary.current?.focus();
+    if (warning) {
+      revealFormFeedback(summary.current);
+      summary.current?.focus();
+    }
   }, [warning]);
   if (!warning) return null;
   return (

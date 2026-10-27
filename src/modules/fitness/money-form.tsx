@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
+import { revealFormFeedback } from "@/components/progressive-details";
 import { useHydrated } from "@/components/use-hydrated";
 import { recordPayment } from "@/lib/data/finance-actions";
 import { settleFitnessPackage, refundFitnessPayment } from "./finance-actions";
@@ -49,8 +50,9 @@ export function FitnessMoneyForm({
     hydrated = useHydrated(),
     errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (state.error || state.success) revealFormFeedback(ref.current);
     if (state.error) errorRef.current?.focus();
-  }, [state]);
+  }, [state, ref]);
   const label =
     kind === "payment"
       ? "Zapisz wpłatę"

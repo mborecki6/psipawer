@@ -46,6 +46,9 @@ export function FinanceView({
         attempt.status,
       ),
     ).length || 0;
+  const reviewPayments = data.payments.filter(
+    (payment) => payment.needsReview,
+  ).length;
   return (
     <div className={styles.root}>
       {onlinePayments?.enabled &&
@@ -77,7 +80,15 @@ export function FinanceView({
       <div className={styles.summary} aria-label="Podsumowanie rozliczeń">
         <Link
           className={`${styles.summaryCard} ${styles.summaryPrimary}`}
-          href={`${base}/finance?filter=due#finance-due`}
+          href={
+            data.charges.length
+              ? `${base}/finance?filter=due#finance-due`
+              : reviewPayments
+                ? `${base}/finance#payments`
+                : unresolvedPayments
+                  ? `${base}/finance#online-payments`
+                  : `${base}/finance?filter=due#finance-due`
+          }
         >
           <span className={styles.summaryLabel}>
             Do zapłaty <Wallet aria-hidden="true" />
@@ -88,36 +99,49 @@ export function FinanceView({
           <span className={styles.summaryNote}>
             {data.charges.length
               ? `Rozliczenia wymagające uwagi: ${data.charges.length}`
-              : unresolvedPayments
-                ? `Płatności do sprawdzenia: ${unresolvedPayments}`
-                : "Wszystko rozliczone"}
+              : reviewPayments
+                ? `Wpłaty do sprawdzenia: ${reviewPayments}`
+                : unresolvedPayments
+                  ? `Płatności do sprawdzenia: ${unresolvedPayments}`
+                  : "Wszystko rozliczone"}
           </span>
         </Link>
-        <Link className={styles.summaryCard} href={`${base}/finance#packages`}>
-          <span className={styles.summaryLabel}>
-            Dostępne wejścia <Package aria-hidden="true" />
-          </span>
-          <strong className={styles.summaryValue}>
-            {data.totals.availableEntries}
-          </strong>
-          <span className={styles.summaryNote}>
-            W aktywnych pakietach · zarezerwowane: {data.totals.reservedEntries}
-          </span>
-        </Link>
-        <Link className={styles.summaryCard} href={`${base}/finance#payments`}>
-          <span className={styles.summaryLabel}>
-            {admin ? "Otrzymane wpłaty" : "Twoje wpłaty"}{" "}
-            <Coins aria-hidden="true" />
-          </span>
-          <strong className={styles.summaryValue}>
-            {money(data.totals.paidCents)}
-          </strong>
-          <span className={styles.summaryNote}>
-            {admin
-              ? "Wpływy po korektach, wraz ze sprzedażą kart"
-              : "Wpłaty pieniędzy po korektach; saldo kart zobaczysz osobno"}
-          </span>
-        </Link>
+        {data.packages.length > 0 && (
+          <Link
+            className={styles.summaryCard}
+            href={`${base}/finance#packages`}
+          >
+            <span className={styles.summaryLabel}>
+              Dostępne wejścia <Package aria-hidden="true" />
+            </span>
+            <strong className={styles.summaryValue}>
+              {data.totals.availableEntries}
+            </strong>
+            <span className={styles.summaryNote}>
+              W aktywnych pakietach · zarezerwowane:{" "}
+              {data.totals.reservedEntries}
+            </span>
+          </Link>
+        )}
+        {data.payments.length > 0 && (
+          <Link
+            className={styles.summaryCard}
+            href={`${base}/finance#payments`}
+          >
+            <span className={styles.summaryLabel}>
+              {admin ? "Otrzymane wpłaty" : "Twoje wpłaty"}{" "}
+              <Coins aria-hidden="true" />
+            </span>
+            <strong className={styles.summaryValue}>
+              {money(data.totals.paidCents)}
+            </strong>
+            <span className={styles.summaryNote}>
+              {admin
+                ? "Wpływy po korektach, wraz ze sprzedażą kart"
+                : "Wpłaty pieniędzy po korektach; saldo kart zobaczysz osobno"}
+            </span>
+          </Link>
+        )}
       </div>
       <nav className={styles.tabs} aria-label="Widok rozliczeń">
         <Link
@@ -171,12 +195,27 @@ export function FinanceView({
                       onlinePayments.walkGate === "accepted"),
                   )}
                   onlinePaymentEnvironment={onlinePayments?.environment}
+                  onlinePaymentPreview={Boolean(
+                    onlinePayments &&
+                    !onlinePayments.enabled &&
+                    !onlinePayments.attempts.some(
+                      (attempt) =>
+                        attempt.target_kind === charge.kind &&
+                        attempt.target_id === charge.id &&
+                        [
+                          "creating",
+                          "pending",
+                          "uncertain",
+                          "requires_review",
+                        ].includes(attempt.status),
+                    ),
+                  )}
                 />
               ))}
             </div>
           ) : (
             <Empty
-              title="Wszystko na bieżąco"
+              title="Brak należności do zapłaty"
               copy={
                 admin
                   ? "Nie ma teraz należności do rozliczenia."
@@ -201,96 +240,100 @@ export function FinanceView({
         )}
       {!dueOnly && (
         <>
-          <section
-            className={styles.section}
-            id="packages"
-            aria-labelledby="packages-heading"
-          >
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2 id="packages-heading">
-                  {admin ? "Pakiety spacerowe" : "Twoje pakiety"}
-                </h2>
-                <p>
-                  Dostępne, zarezerwowane i wykorzystane wejścia. Każda zmiana
-                  salda ma swoją historię.
-                </p>
-              </div>
-              <span className={styles.count}>
-                Pakiety: {data.packages.length}
-              </span>
-            </div>
-            <div className={styles.sectionBody}>
-              {data.packages.length ? (
-                <div className={styles.packageGrid}>
-                  {pages.packages.items.map((item) => (
-                    <PackageCard key={item.id} item={item} admin={admin} />
-                  ))}
+          {(data.packages.length > 0 || admin) && (
+            <section
+              className={styles.section}
+              id="packages"
+              aria-labelledby="packages-heading"
+            >
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 id="packages-heading">
+                    {admin ? "Pakiety spacerowe" : "Twoje pakiety"}
+                  </h2>
+                  <p>
+                    Dostępne, zarezerwowane i wykorzystane wejścia. Każda zmiana
+                    salda ma swoją historię.
+                  </p>
                 </div>
-              ) : (
-                <Empty
-                  title="Tu zaczną się kolejne wspólne kroki"
-                  copy={
-                    admin
-                      ? "Dodaj pakiet wybranemu psu, aby prowadzić saldo jego wejść."
-                      : "Nie masz jeszcze pakietu. Zapytaj behawiorystę o możliwość zakupu."
-                  }
-                />
-              )}
-              <FinancePager
-                pages={pages}
-                section="packages"
-                admin={admin}
-                dueOnly={dueOnly}
-              />
-              {admin && <NewPackageForm data={data} />}
-            </div>
-          </section>
-          <section
-            className={styles.section}
-            id="payments"
-            aria-labelledby="payments-heading"
-          >
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2 id="payments-heading">Historia wpłat</h2>
-                <p>
-                  {admin
-                    ? onlinePayments?.enabled
-                      ? "Potwierdzone wpłaty, w tym testowe płatności online, oraz historia zwrotów i korekt."
-                      : "Wpłaty zapisane ręcznie po otrzymaniu pieniędzy oraz historia zwrotów i korekt."
-                    : onlinePayments?.enabled
-                      ? "Potwierdzone i rozliczone wpłaty. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."
-                      : "Wpłaty potwierdzone przez behawiorystę. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."}
-                </p>
+                <span className={styles.count}>
+                  Pakiety: {data.packages.length}
+                </span>
               </div>
-              <ReceiptText size={23} aria-hidden="true" />
-            </div>
-            <div className={styles.sectionBody}>
-              {data.payments.length ? (
-                <div className={styles.list}>
-                  {pages.payments.items.map((payment) => (
-                    <PaymentRow
-                      key={payment.id}
-                      payment={payment}
-                      admin={admin}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  title="Jeszcze bez zapisanych wpłat"
-                  copy="Potwierdzone wpłaty pojawią się tutaj wraz z datą, kwotą i sposobem płatności."
+              <div className={styles.sectionBody}>
+                {data.packages.length ? (
+                  <div className={styles.packageGrid}>
+                    {pages.packages.items.map((item) => (
+                      <PackageCard key={item.id} item={item} admin={admin} />
+                    ))}
+                  </div>
+                ) : (
+                  <Empty
+                    title="Tu zaczną się kolejne wspólne kroki"
+                    copy={
+                      admin
+                        ? "Dodaj pakiet wybranemu psu, aby prowadzić saldo jego wejść."
+                        : "Nie masz jeszcze pakietu. Zapytaj behawiorystę o możliwość zakupu."
+                    }
+                  />
+                )}
+                <FinancePager
+                  pages={pages}
+                  section="packages"
+                  admin={admin}
+                  dueOnly={dueOnly}
                 />
-              )}
-              <FinancePager
-                pages={pages}
-                section="payments"
-                admin={admin}
-                dueOnly={dueOnly}
-              />
-            </div>
-          </section>
+                {admin && <NewPackageForm data={data} />}
+              </div>
+            </section>
+          )}
+          {data.payments.length > 0 && (
+            <section
+              className={styles.section}
+              id="payments"
+              aria-labelledby="payments-heading"
+            >
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 id="payments-heading">Historia wpłat</h2>
+                  <p>
+                    {admin
+                      ? onlinePayments?.enabled
+                        ? "Potwierdzone wpłaty, w tym testowe płatności online, oraz historia zwrotów i korekt."
+                        : "Wpłaty zapisane ręcznie po otrzymaniu pieniędzy oraz historia zwrotów i korekt."
+                      : onlinePayments?.enabled
+                        ? "Potwierdzone i rozliczone wpłaty. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."
+                        : "Wpłaty potwierdzone przez behawiorystę. Jeśli czegoś brakuje, skontaktuj się z prowadzącą."}
+                  </p>
+                </div>
+                <ReceiptText size={23} aria-hidden="true" />
+              </div>
+              <div className={styles.sectionBody}>
+                {data.payments.length ? (
+                  <div className={styles.list}>
+                    {pages.payments.items.map((payment) => (
+                      <PaymentRow
+                        key={payment.id}
+                        payment={payment}
+                        admin={admin}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Empty
+                    title="Jeszcze bez zapisanych wpłat"
+                    copy="Potwierdzone wpłaty pojawią się tutaj wraz z datą, kwotą i sposobem płatności."
+                  />
+                )}
+                <FinancePager
+                  pages={pages}
+                  section="payments"
+                  admin={admin}
+                  dueOnly={dueOnly}
+                />
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>

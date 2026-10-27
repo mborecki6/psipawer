@@ -6,12 +6,12 @@ uzasadnienia autora. Model i poziom rozumowania są dziedziczone z bieżącej se
 
 ## Role
 
-| Rola | Wejście | Wynik | Odpowiedzialność |
-| --- | --- | --- | --- |
-| `psi_business` | Brief użytkownika, feedback, aktualny produkt | Cel, reguły, wyjątki, kryteria akceptacji i decyzje otwarte | Sprawdza, czy budujemy właściwą funkcję. Nie edytuje kodu ani danych. |
-| `psi_technical` | Brief, istniejąca implementacja, następnie uzgodnione kryteria | Plan techniczny, zmiana kodu i dowody weryfikacji | Projektuje i implementuje w przypisanych plikach. Nie ustala samodzielnie nowych zasad biznesowych. |
-| `psi_reviewer` | Brief, kryteria i aktualny diff | Reprodukowalne uwagi z wagą, plikiem, scenariuszem i zakresem kontroli | Samodzielnie sprawdza zgodność i regresje. Nie poprawia kodu, który recenzuje. |
-| Koordynator | Wyniki wszystkich ról i decyzje użytkownika | Uzgodniony zakres, integracja, odbiór oraz raport | Rozstrzyga rutynowe decyzje techniczne; istotne nierozstrzygnięte reguły produktu kieruje do użytkownika. |
+| Rola            | Wejście                                                        | Wynik                                                                  | Odpowiedzialność                                                                                          |
+| --------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `psi_business`  | Brief użytkownika, feedback, aktualny produkt                  | Cel, reguły, wyjątki, kryteria akceptacji i decyzje otwarte            | Sprawdza, czy budujemy właściwą funkcję. Nie edytuje kodu ani danych.                                     |
+| `psi_technical` | Brief, istniejąca implementacja, następnie uzgodnione kryteria | Plan techniczny, zmiana kodu i dowody weryfikacji                      | Projektuje i implementuje w przypisanych plikach. Nie ustala samodzielnie nowych zasad biznesowych.       |
+| `psi_reviewer`  | Brief, kryteria i aktualny diff                                | Reprodukowalne uwagi z wagą, plikiem, scenariuszem i zakresem kontroli | Samodzielnie sprawdza zgodność i regresje. Nie poprawia kodu, który recenzuje.                            |
+| Koordynator     | Wyniki wszystkich ról i decyzje użytkownika                    | Uzgodniony zakres, integracja, odbiór oraz raport                      | Rozstrzyga rutynowe decyzje techniczne; istotne nierozstrzygnięte reguły produktu kieruje do użytkownika. |
 
 Definicje profili: [biznes](../.codex/agents/psi_business.toml),
 [technika](../.codex/agents/psi_technical.toml),
@@ -96,6 +96,31 @@ Dla większych iteracji przechowujemy wspólny zapis w `docs/iterations/`.
 Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
+
+[Uproszczenia po audycie — lokalnie, 27.10](iterations/2026-10-27-uproszczenia-po-audycie.md):
+po zgodzie użytkownika uzgodniono AC-01–22; biznes doprecyzował wyjątki aktywnych
+zgłoszeń, technika realizowała trzy rozłączne zakresy, koordynator nawigację,
+komponenty wspólne i integrację. Recenzent oceniał wymagania i rzeczywisty diff
+z nowego kontekstu, bez zmian kodu; autorzy zamknęli odtworzone uwagi. Odbiór
+obejmuje komponenty, responsywność i rzeczywiste lokalne ścieżki Next/Supabase.
+Bez publikacji, migracji i uruchamiania integracji.
+
+[Audyt prostoty — 26.10](iterations/2026-10-26-audyt-prostoty.md): niezależne
+propozycje biznesowe i techniczne, osobna ocena ścieżki opiekuna oraz krytyka
+konsolidacji przez recenzenta. Koordynator sprawdził lokalne widoki obu ról;
+raport oddziela obserwacje przeglądarki od wniosków źródłowych i zmiany UI od
+agregacji danych. Wyłącznie analiza i rekomendacje, bez implementacji i publikacji.
+
+[Prostsza obsługa kursu — lokalnie, 26.10](iterations/2026-10-26-prostszy-kurs.md):
+niezależne propozycje, AC-01–08 i źródłowa recenzja czterech plików UI,
+oddzielna własność testów. Kompaktowy harmonogram z wyborem spotkania,
+ustawienia i historia w dalszym planie; zasady zapisów i kwoty bez zmian.
+Brak publikacji.
+
+[Prostsze zalecenia przy psie — lokalnie, 26.10](iterations/2026-10-26-prostsze-zalecenia.md):
+osobne propozycje biznesu i techniki, AC-01–08, jeden właściciel trzech plików UI,
+niezależny przegląd i odbiór rzeczywistych komponentów oraz Next/Supabase.
+Jeden widoczny plan i rozwijane opcje; reguły zapisu bez zmian. Bez publikacji.
 
 [Obowiązkowy start nowych opiekunów — 26.10](iterations/2026-10-26-onboarding.md):
 osobne propozycje biznesu i techniki, uzgodnione AC-01–14, implementacja w dwóch

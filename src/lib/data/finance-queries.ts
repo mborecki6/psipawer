@@ -10,6 +10,8 @@ import {
   type CourseRefundRecord,
   type FinanceData,
   type FinancePackage,
+  type FinanceCharge,
+  type FinancePayment,
 } from "@/lib/finance";
 import { getSnapshot } from "./queries";
 import type { FitnessBalance, FitnessRefund } from "@/modules/fitness/types";
@@ -126,7 +128,7 @@ async function readFinanceData(scope: "full" | "dashboard") {
   packages.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
   transactions.sort((a, b) => b.created_at.localeCompare(a.created_at));
   payments.sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return buildFinanceData({
+  const data = buildFinanceData({
     dogs,
     walks,
     registrations,
@@ -147,14 +149,31 @@ async function readFinanceData(scope: "full" | "dashboard") {
     giftCardCashReturns: giftCashReturns,
     admin: role === "admin",
   });
+  return { data, paymentSources: new Map(payments.map((p) => [p.id, p])) };
 }
 
 export async function getFinanceData() {
-  return readFinanceData("full");
+  return (await readFinanceData("full")).data;
 }
 
 export type DashboardFinanceSummary = {
   chargeCount: number;
+  charges: Pick<
+    FinanceCharge,
+    | "id"
+    | "kind"
+    | "dogName"
+    | "title"
+    | "date"
+    | "href"
+    | "dueCents"
+    | "reviewReason"
+    | "refundDueCents"
+  >[];
+  reviewPayments: (Pick<
+    FinancePayment,
+    "id" | "dogName" | "title" | "href" | "amountCents" | "paidAt"
+  > & { sourceKey: string | null })[];
   totals: Pick<
     FinanceData["totals"],
     "dueCents" | "availableEntries" | "reservedEntries"
@@ -166,12 +185,49 @@ export type DashboardFinanceSummary = {
 };
 
 export async function getDashboardFinanceSummary(): Promise<DashboardFinanceSummary> {
-  // Refund details and gift-card cash receipts affect payment history and
-  // paidCents only. Keep using the full model for every dashboard balance,
-  // then expose just the fields that remain complete without those reads.
-  const data = await readFinanceData("dashboard");
+  // Balances, settlement/refund reasons and payment review flags all come from
+  // the existing finance model. Refund history changes retained receipts, not
+  // these flags; the dashboard neither calculates refunds nor exposes notes.
+  const { data, paymentSources } = await readFinanceData("dashboard");
   return {
     chargeCount: data.charges.length,
+    charges: data.charges.map((charge) => ({
+      id: charge.id,
+      kind: charge.kind,
+      dogName: charge.dogName,
+      title: charge.title,
+      date: charge.date,
+      href: charge.href,
+      dueCents: charge.dueCents,
+      reviewReason: charge.reviewReason,
+      refundDueCents: charge.refundDueCents,
+    })),
+    reviewPayments: data.payments
+      .filter((payment) => payment.needsReview)
+      .map((payment) => {
+        const source = paymentSources.get(payment.id);
+        return {
+          id: payment.id,
+          dogName: payment.dogName,
+          title: payment.title,
+          href: payment.href,
+          amountCents: payment.amountCents,
+          paidAt: payment.paidAt,
+          // Identity is carried alongside the existing review decision. Names
+          // and shared walk URLs cannot distinguish two dogs reliably.
+          sourceKey: source?.fitness_package_id
+            ? `fitness:${source.fitness_package_id}`
+            : source?.course_enrollment_id
+              ? `course:${source.course_enrollment_id}`
+              : source?.consultation_id
+                ? `consultation:${source.consultation_id}`
+                : source?.registration_id
+                  ? `registration:${source.registration_id}`
+                  : source?.package_id
+                    ? `package:${source.package_id}`
+                    : null,
+        };
+      }),
     totals: {
       dueCents: data.totals.dueCents,
       availableEntries: data.totals.availableEntries,

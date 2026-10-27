@@ -115,6 +115,8 @@ try {
     exact: true,
   });
   await expect(attempted).toBeEnabled();
+  await expect(page.getByLabel("Co poszło dobrze? (opcjonalnie)")).toBeHidden();
+  await page.getByText("Dodaj więcej szczegółów (opcjonalnie)", { exact: true }).click();
   await attempted.fill("Spacer i spokojna praca.");
   await page
     .getByLabel("Co poszło dobrze? (opcjonalnie)")
@@ -123,6 +125,10 @@ try {
     .getByLabel("Co było trudne lub wymaga wyjaśnienia? (opcjonalnie)")
     .fill("Hałas na ulicy.");
   const before = await formData();
+  await page.getByText("Dodaj więcej szczegółów (opcjonalnie)", { exact: true }).click();
+  await expect(page.getByLabel("Co poszło dobrze? (opcjonalnie)")).toBeHidden();
+  expect(await formData()).toEqual(before);
+  await page.getByText("Dodaj więcej szczegółów (opcjonalnie)", { exact: true }).click();
   await result("reject");
   await page.getByRole("button").click();
   await expect(page.getByRole("alert")).toBeFocused();
@@ -195,6 +201,29 @@ try {
     .at(-1).data;
   expect(intentional.id).toBe(nextCareId);
   expect(intentional.attempted).toBe(before.attempted);
+  scenarios++;
+
+  // A result must reopen a form closed while awaiting the action, preserve its
+  // draft after failure, and reveal fragment targets even on the same URL.
+  await attempted.fill("Treść zachowana przy zamknięciu sekcji.");
+  await result("defer");
+  await page.getByRole("button").click();
+  await expect(attempted).toBeDisabled();
+  await page.locator("#draft-editor > summary").click();
+  await expect(attempted).toBeHidden();
+  await page.evaluate(() => window.resolveDraftAction({ error: "Oczekiwany błąd po zamknięciu" }));
+  await expect(page.getByRole("alert")).toBeFocused();
+  await expect(attempted).toHaveValue("Treść zachowana przy zamknięciu sekcji.");
+  await page.evaluate(() => { location.hash = "draft-editor"; });
+  await page.locator("#draft-editor > summary").click();
+  await page.evaluate(() => {
+    const link = document.createElement("a");
+    link.href = "#draft-editor";
+    link.textContent = "Ten sam formularz";
+    document.body.append(link);
+  });
+  await page.getByRole("link", { name: "Ten sam formularz" }).click();
+  await expect(attempted).toBeVisible();
   scenarios++;
 
   const paymentProps = {

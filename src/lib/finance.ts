@@ -129,6 +129,7 @@ export type FinanceCharge = {
   paidCents: number;
   dueCents: number;
   canPay: boolean;
+  onlinePaymentEligible?: boolean;
   isTestPrice?: boolean;
   reviewReason?: "settlement" | "refund";
   refundDueCents?: number;
@@ -326,6 +327,9 @@ export function buildFinanceData(input: {
       paidCents,
       dueCents,
       canPay: true,
+      onlinePaymentEligible:
+        r.status === "accepted" &&
+        ["open", "full", "closed", "completed"].includes(w.status),
       availablePackages:
         r.status === "accepted" && Date.parse(w.starts_at) > now && !paidCents
           ? packages
@@ -349,6 +353,7 @@ export function buildFinanceData(input: {
       paidCents: p.paidCents,
       dueCents: p.dueCents,
       canPay: true,
+      onlinePaymentEligible: false,
       availablePackages: [],
     });
   }
@@ -367,6 +372,8 @@ export function buildFinanceData(input: {
       paidCents: c.paid_cents,
       dueCents: c.due_cents,
       canPay: true,
+      onlinePaymentEligible:
+        ["scheduled", "completed"].includes(c.status) && !c.needs_review,
       isTestPrice: Boolean(c.is_test_price),
       availablePackages: [],
     });
@@ -387,6 +394,11 @@ export function buildFinanceData(input: {
       paidCents: c.paid_cents,
       dueCents: c.due_cents,
       canPay: c.can_pay,
+      onlinePaymentEligible:
+        c.status === "accepted" &&
+        ["open", "full", "closed", "completed"].includes(c.course_status) &&
+        c.can_pay &&
+        !c.needs_review,
       isTestPrice: c.is_test_price,
       reviewReason: c.needs_settlement
         ? "settlement"
@@ -414,6 +426,10 @@ export function buildFinanceData(input: {
       paidCents: f.paid_cents,
       dueCents: f.due_cents,
       canPay: f.can_pay,
+      onlinePaymentEligible:
+        ["active", "completed"].includes(f.status) &&
+        f.can_pay &&
+        !f.needs_review,
       isTestPrice: f.is_test_price,
       reviewReason: f.needs_settlement
         ? "settlement"

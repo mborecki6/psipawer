@@ -37,6 +37,7 @@ vi.mock("react", async () => ({
   useId: () => "fixture",
   useRef: () => ({ current: null }),
   useEffect: () => {},
+  useLayoutEffect: () => {},
   useActionState: (reducer: Action, initial: State) => {
     mocks.reducer = reducer;
     mocks.state ??= initial;
@@ -44,6 +45,10 @@ vi.mock("react", async () => ({
   },
 }));
 vi.mock("@/components/use-hydrated", () => ({ useHydrated: () => true }));
+vi.mock(
+  "@/components/progressive-details",
+  async () => import("../src/components/progressive-details"),
+);
 vi.mock("@/components/use-persistent-form", () => ({
   usePersistentForm: () => ({ current: null }),
 }));

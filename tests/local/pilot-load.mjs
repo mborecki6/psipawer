@@ -333,7 +333,7 @@ async function measureDatabase(entry) {
 }
 
 const routes = [
-  { label: "dashboard", path: () => "/app", expected: "Twoje zgłoszenia" },
+  { label: "dashboard", path: () => "/app", expected: "Bieżące zgłoszenia" },
   {
     label: "dog-care",
     // The UI links select a service context explicitly. A bare /care first

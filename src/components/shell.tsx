@@ -406,13 +406,15 @@ export function Shell({
                                           ? "Szczegóły spaceru"
                                           : "Psi Pawer")}
             </h1>
-            <p>
-              {role === "admin"
-                ? path === base
-                  ? "Najbliższe spotkanie i sprawy do zrobienia."
-                  : "Dobry plan. Spokojniejszy spacer."
-                : "Małe kroki, wielkie postępy."}
-            </p>
+            {path === base && (
+              <p>
+                {role === "admin"
+                  ? path === base
+                    ? "Najbliższe spotkanie i sprawy do zrobienia."
+                    : "Dobry plan. Spokojniejszy spacer."
+                  : "Małe kroki, wielkie postępy."}
+              </p>
+            )}
           </div>
           <div className="topbar-actions">
             <Link
@@ -434,18 +436,22 @@ export function Shell({
                 </b>
               )}
             </Link>
-            <Link
-              className="primary-button"
-              href={role === "admin" ? "/admin/activities" : "/app/walks"}
-              aria-label={
-                role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"
-              }
-            >
-              {role === "admin" ? <Plus /> : <CalendarDays />}
-              <span>
-                {role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"}
-              </span>
-            </Link>
+            {(role === "admin" ||
+              path === base ||
+              path.startsWith(`${base}/walks`)) && (
+              <Link
+                className="primary-button"
+                href={role === "admin" ? "/admin/activities" : "/app/walks"}
+                aria-label={
+                  role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"
+                }
+              >
+                {role === "admin" ? <Plus /> : <CalendarDays />}
+                <span>
+                  {role === "admin" ? "Zaplanuj zajęcia" : "Znajdź spacer"}
+                </span>
+              </Link>
+            )}
           </div>
         </header>
         {role === "admin" &&

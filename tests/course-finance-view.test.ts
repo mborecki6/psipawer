@@ -129,6 +129,31 @@ it("adds a frozen course debt and a focused destination using the enrollment gua
   });
   expect(result.totals.dueCents).toBe(6000);
 });
+it("takes staff directly to an existing course payment form instead of an empty intermediate disclosure", () => {
+  const html = renderToStaticMarkup(createElement(FinanceView, { data: data(), admin: true }));
+  expect(html).toContain('href="/admin/courses/cycle?enrollment=enrollment#rozliczenie-enrollment"');
+  expect(html).toContain("Odnotuj wpłatę w kursie");
+  expect(html).not.toContain("Rozlicz należność");
+});
+it("does not call a zero balance settled when a projected receipt still needs review", () => {
+  const result = data({ ...balance, due_cents: 0, paid_cents: 10000 }, [payment]);
+  result.payments[0].needsReview = true;
+  const html = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: false }));
+  expect(html).toContain("Wpłaty do sprawdzenia: 1");
+  expect(html).not.toContain("Wszystko rozliczone");
+  expect(html).toContain('href="/app/finance#payments"');
+  expect(html).toContain('id="payments"');
+});
+it("keeps an empty guardian finance view compact without removing staff package creation", () => {
+  const result = data({ ...balance, due_cents: 0 });
+  const guardian = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: false }));
+  expect(guardian).not.toContain("Twoje pakiety");
+  expect(guardian).not.toContain("Historia wpłat");
+  expect(guardian).toContain("Brak należności do zapłaty");
+  const staff = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: true }));
+  expect(staff).toContain("Pakiety spacerowe");
+  expect(staff).toContain("Dodaj pakiet");
+});
 it("shows cancellation awaiting agreement without counting its provisional quote as debt", () => {
   const result = data({
     ...balance,

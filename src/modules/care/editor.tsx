@@ -22,15 +22,20 @@ import { usePersistentForm } from "@/components/use-persistent-form";
 import { withFormActionRecovery } from "@/components/form-action-recovery";
 import { useHydrated } from "@/components/use-hydrated";
 import styles from "./care.module.css";
+import { careDate } from "./types";
 
 export function CareEditorDisclosure({
   initiallyOpen,
   openForConsultation,
+  openForHash,
   label,
   children,
+  compact = false,
 }: {
+  compact?: boolean;
   initiallyOpen: boolean;
   openForConsultation?: string;
+  openForHash?: string;
   label: string;
   children: ReactNode;
 }) {
@@ -41,8 +46,56 @@ export function CareEditorDisclosure({
   useEffect(() => {
     if (openForConsultation && details.current) details.current.open = true;
   }, [openForConsultation]);
+  useEffect(() => {
+    if (!openForHash) return;
+    const openAtHash = () => {
+      if (window.location.hash === `#${openForHash}` && details.current) {
+        details.current.open = true;
+      }
+    };
+    const reopenAtSameHash = (event: MouseEvent) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const anchor = (event.target as Element | null)?.closest("a[href]");
+      if (
+        !(anchor instanceof HTMLAnchorElement) ||
+        anchor.hasAttribute("download")
+      )
+        return;
+      const target = anchor.getAttribute("target");
+      if (target && target !== "_self") return;
+      // A repeated link to this exact URL emits no hashchange. Listen in the
+      // bubble phase so the editor's dirty guard can stop a cancelled click.
+      // Next Link itself prevents default for its client-side navigation.
+      if (
+        anchor.href === window.location.href &&
+        anchor.hash === `#${openForHash}`
+      ) {
+        openAtHash();
+      }
+    };
+    // Read the anchor on entry and navigation, without overriding a manual
+    // collapse when a save or another action only refreshes server props.
+    openAtHash();
+    window.addEventListener("hashchange", openAtHash);
+    document.addEventListener("click", reopenAtSameHash);
+    return () => {
+      window.removeEventListener("hashchange", openAtHash);
+      document.removeEventListener("click", reopenAtSameHash);
+    };
+  }, [openForHash]);
   return (
-    <details className={styles.disclosure} open={initialOpen} ref={details}>
+    <details
+      className={`${styles.disclosure} ${compact ? styles.adminEditorDisclosure : ""}`}
+      open={initialOpen}
+      ref={details}
+    >
       <summary>{label}</summary>
       {children}
     </details>
@@ -62,7 +115,9 @@ export function CareEditor({
   requestedFitness = null,
   requestedFitnessSession,
   context,
+  compact = false,
 }: {
+  compact?: boolean;
   dogId: string;
   draft: CareDraft | null;
   templates: CareTemplate[];
@@ -158,8 +213,12 @@ export function CareEditor({
     {},
   );
   useEffect(() => {
+    if (compact && (state.error || state.success)) {
+      const disclosure = form.current?.closest("details");
+      if (disclosure) disclosure.open = true;
+    }
     if (state.error) errorRef.current?.focus();
-  }, [state]);
+  }, [state, compact, form]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -211,10 +270,73 @@ export function CareEditor({
     setBody(template.body);
     setDirty(true);
   }
+  const templatePicker = (
+    <div className={styles.templatePicker}>
+      <label className="field">
+        <span>Zacznij od materiału z biblioteki</span>
+        <select
+          value={templateId}
+          onChange={(event) => setTemplateId(event.target.value)}
+        >
+          <option value="">Wybierz materiał…</option>
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.title}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        className="secondary-button"
+        disabled={!templateId}
+        onClick={useTemplate}
+      >
+        Użyj materiału
+      </button>
+    </div>
+  );
+  const dateFields = (
+    <>
+      <label className="field">
+        <span>Termin kontaktu kontrolnego (opcjonalnie)</span>
+        <input
+          type="date"
+          name="follow_up_on"
+          value={followUp}
+          onChange={(event) => {
+            setFollowUp(event.target.value);
+            setDirty(true);
+          }}
+        />
+        <small className="field-hint">
+          Data pojawi się przy planie i utworzy zadanie kontaktu kontrolnego dla
+          prowadzącej.
+        </small>
+      </label>
+      <label className="field">
+        <span>Zaproś opiekuna do zgłoszenia kontroli (opcjonalnie)</span>
+        <input
+          type="date"
+          name="control_invite_on"
+          value={controlInvite}
+          onChange={(event) => {
+            setControlInvite(event.target.value);
+            setDirty(true);
+          }}
+        />
+        <small className="field-hint">
+          Po publikacji, w tym dniu o 9:00, opiekun otrzyma prośbę o zgłoszenie
+          konsultacji kontrolnej. To osobne przypomnienie — nie ustala terminu
+          spotkania.
+        </small>
+      </label>
+    </>
+  );
   return (
     <form
       action={action}
-      className="form-stack"
+      className={`form-stack ${compact ? styles.adminEditor : ""}`}
       aria-busy={!hydrated || pending}
       ref={form}
     >
@@ -236,11 +358,16 @@ export function CareEditor({
           name="fitness_session_id"
           value={fitnessSessionId}
         />
-        <section className={styles.sourceContext} aria-label="Powiązanie planu">
-          <span className={styles.sourceLabel}>Zalecenia dotyczą</span>
-          <strong>{sourceTitle}</strong>
-          <p>{sourceScope}</p>
-        </section>
+        {!compact && (
+          <section
+            className={styles.sourceContext}
+            aria-label="Powiązanie planu"
+          >
+            <span className={styles.sourceLabel}>Zalecenia dotyczą</span>
+            <strong>{sourceTitle}</strong>
+            <p>{sourceScope}</p>
+          </section>
+        )}
         {cannotPublish && (
           <p className="alert">
             {fitnessId
@@ -257,32 +384,15 @@ export function CareEditor({
                   : "Ta konsultacja nie jest dostępna. Wybierz inne spotkanie lub ogólny plan pracy."}
           </p>
         )}
-        {templates.length > 0 && (
-          <div className={styles.templatePicker}>
-            <label className="field">
-              <span>Zacznij od materiału z biblioteki</span>
-              <select
-                value={templateId}
-                onChange={(event) => setTemplateId(event.target.value)}
-              >
-                <option value="">Wybierz materiał…</option>
-                {templates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={!templateId}
-              onClick={useTemplate}
-            >
-              Użyj materiału
-            </button>
-          </div>
-        )}
+        {templates.length > 0 &&
+          (compact ? (
+            <details className={styles.adminEditorOptions}>
+              <summary>Wstaw materiał z biblioteki</summary>
+              {templatePicker}
+            </details>
+          ) : (
+            templatePicker
+          ))}
         <label className="field">
           <span>Tytuł planu</span>
           <input
@@ -315,42 +425,32 @@ export function CareEditor({
             placeholder="Zapisz cel, konkretne kroki i wskazówki dla tego psa."
           />
         </div>
-        <label className="field">
-          <span>Termin kontaktu kontrolnego (opcjonalnie)</span>
-          <input
-            type="date"
-            name="follow_up_on"
-            value={followUp}
-            onChange={(event) => {
-              setFollowUp(event.target.value);
-              setDirty(true);
-            }}
-          />
-          <small className="field-hint">
-            Data pojawi się przy planie i utworzy zadanie kontaktu kontrolnego
-            dla prowadzącej.
-          </small>
-        </label>
-        <label className="field">
-          <span>Zaproś opiekuna do zgłoszenia kontroli (opcjonalnie)</span>
-          <input
-            type="date"
-            name="control_invite_on"
-            value={controlInvite}
-            onChange={(event) => {
-              setControlInvite(event.target.value);
-              setDirty(true);
-            }}
-          />
-          <small className="field-hint">
-            Po publikacji, w tym dniu o 9:00, opiekun otrzyma prośbę o
-            zgłoszenie konsultacji kontrolnej. To osobne przypomnienie — nie
-            ustala terminu spotkania.
-          </small>
-        </label>
+        {compact ? (
+          <details className={styles.adminEditorOptions}>
+            <summary>
+              Kontrola i przypomnienia
+              {(followUp || controlInvite) && (
+                <span className={styles.adminDateSummary}>
+                  {followUp && (
+                    <span>Kontakt prowadzącej: {careDate(followUp)}</span>
+                  )}
+                  {controlInvite && (
+                    <span>Zaproszenie opiekuna: {careDate(controlInvite)}</span>
+                  )}
+                </span>
+              )}
+            </summary>
+            <div className={styles.adminDateFields}>{dateFields}</div>
+          </details>
+        ) : (
+          dateFields
+        )}
         <p className="muted">
-          Szkic widzi tylko zespół prowadzący. Publikacja udostępni opiekunowi
-          treść z tego formularza jako nową wersję.
+          {compact
+            ? "Szkic nie jest widoczny dla opiekuna."
+            : "Szkic widzi tylko zespół prowadzący."}{" "}
+          Publikacja udostępni opiekunowi treść z tego formularza jako nową
+          wersję.
         </p>
         <div className={styles.actions}>
           <button

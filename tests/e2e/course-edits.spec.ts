@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import {
   LocalPostgres,
@@ -7,6 +7,11 @@ import {
 } from "../helpers/local-postgres.mjs";
 import { careFixture, careScreenshot } from "./care-journey";
 import { courseFixture, removeCourseCare } from "./course-fixtures";
+import {
+  openCourseMeeting,
+  openCourseSection,
+  openCourseSettings,
+} from "./course-ui";
 import {
   test,
   account,
@@ -17,10 +22,6 @@ import {
 } from "./local-fixtures";
 
 test.use({ trace: "off" });
-async function settings(page: Page) {
-  await page.getByText("Edytuj nazwę i liczbę miejsc", { exact: true }).click();
-  return page.getByRole("form", { name: "Ustawienia cyklu", exact: true });
-}
 test("course settings and completed attendance: stale cards retain fields, history and frozen balances", async ({
   browser,
   baseURL,
@@ -81,10 +82,10 @@ test("course settings and completed attendance: stale cards retain fields, histo
     );
     const url = `/admin/courses/${cycle.id}?enrollment=${cycle.enrollment}`;
     await f.staff.goto(url);
-    const edit = await settings(f.staff),
+    const edit = await openCourseSettings(f.staff),
       stale = await f.staffContext.newPage();
     await stale.goto(url);
-    const staleEdit = await settings(stale);
+    const staleEdit = await openCourseSettings(stale);
     await staleEdit.getByLabel("Nazwa cyklu").fill("Nazwa ze starszej karty");
     await staleEdit.getByLabel("Liczba psów z opiekunami").fill("4");
     await staleEdit
@@ -229,18 +230,16 @@ test("course settings and completed attendance: stale cards retain fields, histo
     await expect(
       f.staff.getByText("Kurs w trakcie", { exact: true }),
     ).toBeVisible();
-    const meeting = f.staff.locator("#spotkanie-1");
-    await meeting.getByText("Obecności uczestników", { exact: true }).click();
+    const meeting = await openCourseMeeting(f.staff, 1);
+    await openCourseSection(meeting, "Obecności uczestników");
     const correction = meeting.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,
     });
     const staleAttendance = await f.staffContext.newPage();
     await staleAttendance.goto(url);
-    await staleAttendance
-      .locator("#spotkanie-1")
-      .getByText("Obecności uczestników", { exact: true })
-      .click();
+    const staleMeeting = await openCourseMeeting(staleAttendance, 1);
+    await openCourseSection(staleMeeting, "Obecności uczestników");
     const staleCorrection = staleAttendance.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,
@@ -296,10 +295,8 @@ test("course settings and completed attendance: stale cards retain fields, histo
       }),
     );
     await f.staff.goto(url);
-    await f.staff
-      .locator("#spotkanie-1")
-      .getByText("Obecności uczestników", { exact: true })
-      .click();
+    await openCourseMeeting(f.staff, 1);
+    await openCourseSection(meeting, "Obecności uczestników");
     const after = f.staff.getByRole("form", {
       name: `Korekta obecności: ${f.dogName}`,
       exact: true,

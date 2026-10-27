@@ -1,3 +1,4 @@
+import { revealFor } from "./details-ui";
 import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { test, checked, login } from "./local-fixtures";
@@ -14,11 +15,21 @@ async function otherDog(j: Journey) {
       .insert({ id, guardian_id: j.other.id, name: `Luna spacer ${j.suffix}` }),
   );
   await j.staff.goto(`/admin/dogs/${id}`);
+  await revealFor(j.staff.getByLabel("Status"));
   await j.staff.getByLabel("Status").selectOption("approved");
+  await revealFor(j.staff.getByLabel("Powód / zalecenia"));
   await j.staff
     .getByLabel("Powód / zalecenia")
     .fill("Fikcyjna kwalifikacja drugiego psa do próby decyzji.");
-  await j.staff.getByRole("button", { name: "Zapisz kwalifikację" }).click();
+  await revealFor(
+    j.staff.getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz kwalifikację",
+    }),
+  );
+  await j.staff
+    .getByRole("button", { includeHidden: true, name: "Zapisz kwalifikację" })
+    .click();
   await expect(j.staff.getByRole("status")).toContainText("Status psa");
   return id;
 }
@@ -32,11 +43,24 @@ async function decide(
 ) {
   await j.staff.goto(`/admin/walks/${walk}`);
   const card = j.staff.locator(`#registration-${registration}`);
+  await revealFor(card.getByLabel("Decyzja"));
   await card.getByLabel("Decyzja").selectOption(status);
+  await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
   await card.getByLabel("Wiadomość dla opiekuna (opcjonalna)").fill(note);
   j.staff.once("dialog", (d) => d.accept());
+  await revealFor(
+    card.getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz decyzję",
+      exact: true,
+    }),
+  );
   await card
-    .getByRole("button", { name: "Zapisz decyzję", exact: true })
+    .getByRole("button", {
+      includeHidden: true,
+      name: "Zapisz decyzję",
+      exact: true,
+    })
     .click();
   await expect(card.getByRole("status")).toContainText("Decyzja zapisana");
 }
@@ -81,8 +105,11 @@ async function privateLocation(
 }
 
 async function edit(page: Page, start: string, location: string, note: string) {
+  await revealFor(page.getByLabel("Termin (czas polski)"));
   await page.getByLabel("Termin (czas polski)").fill(dateInput(start));
+  await revealFor(page.getByLabel("Ogólna lokalizacja"));
   await page.getByLabel("Ogólna lokalizacja").fill(location);
+  await revealFor(page.getByLabel("Co się zmienia? Informacja dla opiekunów"));
   await page.getByLabel("Co się zmienia? Informacja dla opiekunów").fill(note);
 }
 
@@ -105,9 +132,19 @@ test("a qualification change preserves an existing paid booking and blocks new a
     const privateNote =
       "Fikcyjny prywatny powód ponownej oceny przed kolejnymi zapisami.";
     await j.staff.goto(`/admin/dogs/${j.dogs[0]}`);
+    await revealFor(j.staff.getByLabel("Status"));
     await j.staff.getByLabel("Status").selectOption("needs_review");
+    await revealFor(j.staff.getByLabel("Powód / zalecenia"));
     await j.staff.getByLabel("Powód / zalecenia").fill(privateNote);
-    await j.staff.getByRole("button", { name: "Zapisz kwalifikację" }).click();
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+      }),
+    );
+    await j.staff
+      .getByRole("button", { includeHidden: true, name: "Zapisz kwalifikację" })
+      .click();
     await expect(j.staff.getByRole("status")).toContainText("Status psa");
     expect(await j.registration(existing)).toEqual(paidBefore);
     expect(await j.payments("registration", existing)).toEqual(paymentsBefore);
@@ -117,12 +154,25 @@ test("a qualification change preserves an existing paid booking and blocks new a
     ).toHaveCount(0);
     await j.staff.goto(`/admin/walks/${pendingWalk}`);
     const card = j.staff.locator(`#registration-${pending}`);
+    await revealFor(card.getByLabel("Decyzja"));
     await card.getByLabel("Decyzja").selectOption("accepted");
     const message = "Wiadomość zachowana po odmowie akceptacji.";
+    await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
     await card.getByLabel("Wiadomość dla opiekuna (opcjonalna)").fill(message);
     j.staff.once("dialog", (d) => d.accept());
+    await revealFor(
+      card.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz decyzję",
+        exact: true,
+      }),
+    );
     await card
-      .getByRole("button", { name: "Zapisz decyzję", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz decyzję",
+        exact: true,
+      })
       .click();
     await expect(card.getByRole("alert")).toContainText(
       "Najpierw zakwalifikuj psa",
@@ -149,11 +199,21 @@ test("a qualification change preserves an existing paid booking and blocks new a
       ),
     ).toEqual([]);
     await j.staff.goto(`/admin/dogs/${j.dogs[0]}`);
+    await revealFor(j.staff.getByLabel("Status"));
     await j.staff.getByLabel("Status").selectOption("approved_conditional");
+    await revealFor(j.staff.getByLabel("Powód / zalecenia"));
     await j.staff
       .getByLabel("Powód / zalecenia")
       .fill("Fikcyjna ponowna kwalifikacja z warunkami.");
-    await j.staff.getByRole("button", { name: "Zapisz kwalifikację" }).click();
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz kwalifikację",
+      }),
+    );
+    await j.staff
+      .getByRole("button", { includeHidden: true, name: "Zapisz kwalifikację" })
+      .click();
     await expect(j.staff.getByRole("status")).toContainText("Status psa");
     await j.accept(pendingWalk, pending);
     const automatic = await j.submit(freshWalk);
@@ -230,13 +290,26 @@ test("waitlist → capacity refusal → released place → manual acceptance →
 
     await j.staff.goto(`/admin/walks/${walk}`);
     const card = j.staff.locator(`#registration-${waiting}`);
+    await revealFor(card.getByLabel("Decyzja"));
     await card.getByLabel("Decyzja").selectOption("accepted");
+    await revealFor(card.getByLabel("Wiadomość dla opiekuna (opcjonalna)"));
     await card
       .getByLabel("Wiadomość dla opiekuna (opcjonalna)")
       .fill(`Gotowe przyjęcie ${j.suffix}`);
     j.staff.once("dialog", (d) => d.accept());
+    await revealFor(
+      card.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz decyzję",
+        exact: true,
+      }),
+    );
     await card
-      .getByRole("button", { name: "Zapisz decyzję", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz decyzję",
+        exact: true,
+      })
       .click();
     await expect(card.getByRole("alert")).toContainText("Brak wolnych miejsc");
     await expect(card.getByRole("alert")).toBeFocused();
@@ -414,7 +487,9 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
       `Stara karta ${j.suffix}`,
       `Nieaktualna próba ${j.suffix}`,
     );
+    await revealFor(stale.getByLabel("Czas trwania w minutach"));
     await stale.getByLabel("Czas trwania w minutach").fill("90");
+    await revealFor(stale.getByLabel("Dokładne miejsce zbiórki"));
     await stale
       .getByLabel("Dokładne miejsce zbiórki")
       .fill(`Stara prywatna zbiórka ${j.suffix}`);
@@ -427,10 +502,23 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
       j.staff.getByLabel("Termin odwołania — godzin przed spacerem"),
     ).toHaveAttribute("readonly", "");
     await edit(j.staff, original.starts_at, location, note);
+    await revealFor(j.staff.getByLabel("Liczba miejsc"));
     await j.staff.getByLabel("Liczba miejsc").fill("1");
+    await revealFor(j.staff.getByLabel("Dokładne miejsce zbiórki"));
     await j.staff.getByLabel("Dokładne miejsce zbiórki").fill(exact);
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      }),
+    );
     await j.staff
-      .getByRole("button", { name: "Zapisz zmiany spaceru", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      })
       .click();
     await expect(j.staff.locator("form").getByRole("alert")).toContainText(
       "Limit nie może być mniejszy od zaakceptowanego składu",
@@ -446,12 +534,25 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
     ).toEqual(original);
     expect(await updateCount()).toEqual([]);
 
+    await revealFor(j.staff.getByLabel("Liczba miejsc"));
     await j.staff.getByLabel("Liczba miejsc").fill("2");
+    await revealFor(j.staff.getByLabel("Termin (czas polski)"));
     await j.staff
       .getByLabel("Termin (czas polski)")
       .fill(dateInput(blocked.starts_at));
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      }),
+    );
     await j.staff
-      .getByRole("button", { name: "Zapisz zmiany spaceru", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      })
       .click();
     await expect(j.staff.locator("form").getByRole("alert")).toContainText(
       "Ten czas jest już zajęty",
@@ -486,9 +587,21 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
       ),
     ).toEqual([]);
 
+    await revealFor(j.staff.getByLabel("Termin (czas polski)"));
     await j.staff.getByLabel("Termin (czas polski)").fill(dateInput(moved));
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      }),
+    );
     await j.staff
-      .getByRole("button", { name: "Zapisz zmiany spaceru", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      })
       .click();
     await expect(j.staff).toHaveURL(`/admin/walks/${walk}?saved=1`);
     await expect(j.staff.getByText(note, { exact: true })).toBeVisible();
@@ -519,8 +632,19 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
     for (const job of newJobs?.filter((r) => r.status === "pending") || [])
       expect(Date.parse(job.target_at)).toBe(Date.parse(moved));
 
+    await revealFor(
+      stale.getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      }),
+    );
     await stale
-      .getByRole("button", { name: "Zapisz zmiany spaceru", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zapisz zmiany spaceru",
+        exact: true,
+      })
       .click();
     await expect(stale.locator("form").getByRole("alert")).toContainText(
       "Spacer zmienił się w międzyczasie",
@@ -567,8 +691,19 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
         exact: true,
       }),
     });
+    await revealFor(
+      notification.getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      }),
+    );
     await notification
-      .getByRole("button", { name: "Otwórz sprawę", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Otwórz sprawę",
+        exact: true,
+      })
       .click();
     await expect(j.guardian).toHaveURL(`/app/walks/${walk}`);
     await expect(j.guardian.getByText(note, { exact: true })).toBeVisible();
@@ -594,11 +729,23 @@ test("walk editing rejects capacity, calendar and stale-card conflicts atomicall
       "",
     );
     await expect(j.staff.getByLabel("Tryb zapisów")).toBeEnabled();
+    await revealFor(j.staff.getByLabel("Termin (czas polski)"));
     await j.staff
       .getByLabel("Termin (czas polski)")
       .fill(dateInput(await j.freeStart("future")));
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Utwórz spacer",
+        exact: true,
+      }),
+    );
     await j.staff
-      .getByRole("button", { name: "Utwórz spacer", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Utwórz spacer",
+        exact: true,
+      })
       .click();
     await expect(j.staff).toHaveURL(/\/admin\/walks\/[a-f0-9-]+\?saved=1$/);
     const copy = new URL(j.staff.url()).pathname.split("/").at(-1)!;
@@ -669,11 +816,23 @@ test("invitation-only walks remain hidden until staff invites, and automatic boo
         .error?.message,
     ).toContain("Brak uprawnień");
     await j.staff.goto(`/admin/walks/${walk}`);
+    await revealFor(j.staff.getByLabel("Zaproś psa / dodaj zgłoszenie"));
     await j.staff
       .getByLabel("Zaproś psa / dodaj zgłoszenie")
       .selectOption(j.dogs[0]);
+    await revealFor(
+      j.staff.getByRole("button", {
+        includeHidden: true,
+        name: "Dodaj zgłoszenie",
+        exact: true,
+      }),
+    );
     await j.staff
-      .getByRole("button", { name: "Dodaj zgłoszenie", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Dodaj zgłoszenie",
+        exact: true,
+      })
       .click();
     await expect(j.staff.getByRole("status")).toContainText(
       "Pies dodany do zgłoszeń",
@@ -706,7 +865,11 @@ test("invitation-only walks remain hidden until staff invites, and automatic boo
     ).toEqual([]);
     await privateLocation(j, walk, false);
     await expect(
-      j.guardian.getByRole("button", { name: "Zgłoś psa", exact: true }),
+      j.guardian.getByRole("button", {
+        includeHidden: true,
+        name: "Zgłoś psa",
+        exact: true,
+      }),
     ).toHaveCount(0);
     await j.accept(walk, reg.id);
     await privateLocation(j, walk, true);
@@ -726,9 +889,21 @@ test("invitation-only walks remain hidden until staff invites, and automatic boo
     });
     await privateLocation(j, automatic, true);
     await second.goto(`/app/walks/${automatic}`);
+    await revealFor(second.getByLabel("Wybierz swojego psa"));
     await second.getByLabel("Wybierz swojego psa").selectOption(dog);
+    await revealFor(
+      second.getByRole("button", {
+        includeHidden: true,
+        name: "Zgłoś psa",
+        exact: true,
+      }),
+    );
     await second
-      .getByRole("button", { name: "Zgłoś psa", exact: true })
+      .getByRole("button", {
+        includeHidden: true,
+        name: "Zgłoś psa",
+        exact: true,
+      })
       .click();
     await expect(second.locator("form").getByRole("alert")).toContainText(
       "Brak wolnych miejsc",
