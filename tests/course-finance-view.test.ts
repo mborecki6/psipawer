@@ -25,8 +25,8 @@ vi.mock("@/lib/data/finance-actions", () => ({
   cancelPackage: vi.fn(),
 }));
 vi.mock("@/components/action-form", () => ({
-  ActionForm: ({ children }: { children: ReactNode }) =>
-    createElement("form", null, children),
+  ActionForm: ({ children, label }: { children: ReactNode; label: string }) =>
+    createElement("form", null, children, createElement("button", null, label)),
   Field: () => null,
 }));
 import { CourseBilling } from "../src/modules/courses/billing";
@@ -129,16 +129,83 @@ it("adds a frozen course debt and a focused destination using the enrollment gua
   });
   expect(result.totals.dueCents).toBe(6000);
 });
-it("takes staff directly to an existing course payment form instead of an empty intermediate disclosure", () => {
-  const html = renderToStaticMarkup(createElement(FinanceView, { data: data(), admin: true }));
-  expect(html).toContain('href="/admin/courses/cycle?enrollment=enrollment#rozliczenie-enrollment"');
-  expect(html).toContain("Odnotuj wpłatę w kursie");
-  expect(html).not.toContain("Rozlicz należność");
+it("lets staff record a received course payment within finance after one disclosure", () => {
+  const html = renderToStaticMarkup(
+    createElement(FinanceView, { data: data(), admin: true }),
+  );
+  expect(html).toContain(
+    'href="/admin/courses/cycle?enrollment=enrollment#rozliczenie-enrollment"',
+  );
+  expect(html).toContain("Odnotuj wpłatę</span>");
+  expect(html).toContain("Odnotuj otrzymaną wpłatę");
+  expect(html).toContain('name="target_kind" value="course"');
+  expect(html).toContain('name="target_id" value="enrollment"');
+  expect(html).toContain('name="amount"');
+  expect(html).toContain('value="60,00"');
+  expect(html).toContain("Metoda płatności");
+  expect(html).toContain("Dodaj notatkę (opcjonalnie)");
+  expect(html).toContain("Opis będzie widoczny także dla opiekuna.");
+  const note =
+    /<textarea id="([^"]+)" aria-describedby="([^"]+)" name="note"/.exec(html);
+  expect(note).toBeTruthy();
+  expect(html).toContain(
+    `<label for="${note![1]}">Notatka (opcjonalnie)</label>`,
+  );
+  expect(html).toContain(
+    `<small id="${note![2]}" class="field-hint">Opis będzie widoczny także dla opiekuna.</small>`,
+  );
+  expect(html).not.toContain("Odnotuj wpłatę w kursie");
+});
+it("shows the whole current course charge before any receipt and retains agreed cancellation amounts", () => {
+  const initial = renderToStaticMarkup(
+    createElement(FinanceView, {
+      data: data({ ...balance, paid_cents: 0, due_cents: 10000 }),
+      admin: true,
+    }),
+  );
+  expect(initial).toMatch(/Aktualna należność<\/dt><dd>100,00\s*zł/);
+  expect(initial).toMatch(/Wpłacono<\/dt><dd>0,00\s*zł/);
+  expect(initial).toMatch(/Pozostało<\/dt><dd>100,00\s*zł/);
+  const agreed = renderToStaticMarkup(
+    createElement(FinanceView, {
+      data: data({
+        ...balance,
+        status: "cancelled",
+        settled_at: "2030-01-02T10:00:00Z",
+        charge_cents: 7000,
+        due_cents: 3000,
+      }),
+      admin: true,
+    }),
+  );
+  expect(agreed).toMatch(/Aktualna należność<\/dt><dd>70,00\s*zł/);
+  expect(agreed).toContain("Odnotuj otrzymaną wpłatę");
+  expect(agreed).not.toContain("Cena za cały cykl");
+});
+it("keeps course receipt entry unavailable to guardians and nonpayable or settled charges", () => {
+  const guardian = renderToStaticMarkup(
+    createElement(FinanceView, { data: data(), admin: false }),
+  );
+  expect(guardian).not.toContain('name="target_kind"');
+  expect(guardian).not.toContain("Odnotuj otrzymaną wpłatę");
+  for (const b of [
+    { ...balance, can_pay: false },
+    { ...balance, due_cents: 0, paid_cents: 10000 },
+  ]) {
+    const html = renderToStaticMarkup(
+      createElement(FinanceView, { data: data(b), admin: true }),
+    );
+    expect(html).not.toContain('name="target_kind"');
+  }
 });
 it("does not call a zero balance settled when a projected receipt still needs review", () => {
-  const result = data({ ...balance, due_cents: 0, paid_cents: 10000 }, [payment]);
+  const result = data({ ...balance, due_cents: 0, paid_cents: 10000 }, [
+    payment,
+  ]);
   result.payments[0].needsReview = true;
-  const html = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: false }));
+  const html = renderToStaticMarkup(
+    createElement(FinanceView, { data: result, admin: false }),
+  );
   expect(html).toContain("Wpłaty do sprawdzenia: 1");
   expect(html).not.toContain("Wszystko rozliczone");
   expect(html).toContain('href="/app/finance#payments"');
@@ -146,11 +213,15 @@ it("does not call a zero balance settled when a projected receipt still needs re
 });
 it("keeps an empty guardian finance view compact without removing staff package creation", () => {
   const result = data({ ...balance, due_cents: 0 });
-  const guardian = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: false }));
+  const guardian = renderToStaticMarkup(
+    createElement(FinanceView, { data: result, admin: false }),
+  );
   expect(guardian).not.toContain("Twoje pakiety");
   expect(guardian).not.toContain("Historia wpłat");
   expect(guardian).toContain("Brak należności do zapłaty");
-  const staff = renderToStaticMarkup(createElement(FinanceView, { data: result, admin: true }));
+  const staff = renderToStaticMarkup(
+    createElement(FinanceView, { data: result, admin: true }),
+  );
   expect(staff).toContain("Pakiety spacerowe");
   expect(staff).toContain("Dodaj pakiet");
 });
@@ -176,6 +247,7 @@ it("shows cancellation awaiting agreement without counting its provisional quote
   expect(html).toContain("Do uzgodnienia");
   expect(html).toContain("Do zapłaty i uzgodnienia");
   expect(html).not.toContain("Rozlicz należność");
+  expect(html).not.toContain("Odnotuj otrzymaną wpłatę");
 });
 it("shows the actual refund due as a review item and computes net retained receipts", () => {
   const result = data(
@@ -214,6 +286,7 @@ it("shows the actual refund due as a review item and computes net retained recei
   expect(html).toContain("10,00");
   expect(html).toContain("70,00");
   expect(html).toContain("Odnotuj pełny lub częściowy zwrot w kursie");
+  expect(html).not.toContain("Odnotuj otrzymaną wpłatę");
 });
 it("does not subtract full refunds twice or change original receipt amounts", () => {
   const result = data(

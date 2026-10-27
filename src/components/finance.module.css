@@ -4,6 +4,32 @@
   min-width: 0;
 }
 
+.paymentRecovery {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 24px;
+  min-width: 0;
+}
+
+.recoveryNotice {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--paper-2);
+  overflow-wrap: anywhere;
+}
+
+.recoveryNotice h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.recoveryNotice p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
 .summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
@@ -227,6 +253,47 @@
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.chargeBalance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 12px 13px;
+  border-radius: 10px;
+  background: var(--sage-2);
+}
+
+.chargeBalance div {
+  min-width: 0;
+}
+
+.chargeBalance dt {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chargeBalance dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.paymentNote > summary {
+  display: list-item;
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.paymentNote > :global(.field) {
+  margin-top: 8px;
 }
 
 .reviewNote {

@@ -3,23 +3,31 @@ const mocks = vi.hoisted(() => ({ session: vi.fn(), from: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ requireSession: mocks.session }));
 vi.mock("@/lib/data/queries", async () => import("../src/lib/data/queries"));
-import { getDashboardActivities } from "../src/modules/dashboard/queries";
+import {
+  getDashboardActivities,
+  getDashboardSnapshot,
+} from "../src/modules/dashboard/queries";
 
 let rows: Record<string, Record<string, unknown>[]>;
 let failure: { table: string; from: number } | undefined;
 const reads: { table: string; from: number; to: number }[] = [];
 const selectedIds: string[][] = [];
+const columns: { table: string; selected: string }[] = [];
 beforeEach(() => {
   vi.resetAllMocks();
   rows = {};
   failure = undefined;
   reads.length = 0;
+  columns.length = 0;
   selectedIds.length = 0;
   mocks.session.mockResolvedValue({ db: { from: mocks.from }, role: "client" });
   mocks.from.mockImplementation((table: string) => {
     let ids: string[] | undefined;
     const builder = {
-      select: () => builder,
+      select: (selected: string) => {
+        columns.push({ table, selected });
+        return builder;
+      },
       order: () => builder,
       in: (_: string, value: string[]) => {
         ids = value;
@@ -124,4 +132,42 @@ it("reads no data before a client session is verified and does not cache another
     "client-session-required",
   );
   expect(reads).toEqual([]);
+});
+
+it("home snapshot reads organization and safety without financial columns", async () => {
+  rows.dogs = [{ id: "dog", name: "Figa", breed: "mix", status: "approved" }];
+  rows.walks = [
+    {
+      id: "walk",
+      starts_at: "2030-01-01",
+      status: "open",
+      type: "Spacer",
+      public_location: "Park",
+      duration_minutes: 60,
+      cancellation_reason: null,
+    },
+  ];
+  rows.walk_registrations = [
+    {
+      id: "registration",
+      dog_id: "dog",
+      walk_id: "walk",
+      status: "accepted",
+      attendance: "pending",
+    },
+  ];
+  const snapshot = await getDashboardSnapshot();
+  expect(snapshot.dogs).toHaveLength(1);
+  expect(snapshot.walks).toHaveLength(1);
+  expect(snapshot.registrations).toHaveLength(1);
+  expect(mocks.session).toHaveBeenCalledWith("client");
+  expect(columns.map((item) => item.selected).join(",")).not.toMatch(
+    /\*|price|amount|paid|payment|package/,
+  );
+  expect(columns.find((item) => item.table === "walks")?.selected).toContain(
+    "cancellation_reason",
+  );
+  expect(
+    columns.find((item) => item.table === "walk_registrations")?.selected,
+  ).toContain("attendance");
 });

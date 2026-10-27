@@ -206,9 +206,16 @@ test("finance pages preserve complete balances, direct package links and guardia
     ).toBe(false);
     await charge.getByRole("button", { name: "Zapisz wpłatę" }).click();
     await expect(charge).toHaveCount(0);
-    await expect(staffPage.getByRole("status")).toContainText(
-      "Ta należność jest już rozliczona",
-    );
+    await expect(
+      staffPage.getByRole("status").filter({
+        hasText: "Ta należność jest już rozliczona",
+      }),
+    ).toBeVisible();
+    await expect(
+      staffPage
+        .getByRole("region", { name: "Potwierdzenia wpłat", exact: true })
+        .getByRole("status"),
+    ).toContainText("Wpłata zapisana");
     const receipts = await checked(
       db
         .from("payments")

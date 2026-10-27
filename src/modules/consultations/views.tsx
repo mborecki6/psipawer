@@ -15,6 +15,7 @@ import type { Service } from "@/modules/services/types";
 import { ScheduleEditor } from "./editor";
 import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import { ConsultationPriceEditor } from "./price-editor";
+import { VoiceNotePlaceholder } from "../../components/voice-note-placeholder";
 import { requestConsultation, closeConsultation } from "./actions";
 import {
   consultationLabels,
@@ -455,6 +456,7 @@ export function ConsultationView({
                 poniżej.
               </p>
             )}
+            {role === "admin" && <VoiceNotePlaceholder />}
           </article>
           {role === "admin" &&
             c.agreed_price_cents === null &&

@@ -27,6 +27,10 @@ vi.mock(
 );
 vi.mock("@/lib/domain", async () => import("../src/lib/domain"));
 vi.mock(
+  "@/modules/calendar-offer/model",
+  async () => import("../src/modules/calendar-offer/model"),
+);
+vi.mock(
   "@/lib/finance-pagination",
   async () => import("../src/lib/finance-pagination"),
 );
@@ -45,7 +49,12 @@ vi.mock("@/modules/calendar/next-appointment", () => ({
 vi.mock("@/modules/onboarding/start-card", () => ({
   OnboardingStartCard: () => null,
 }));
+vi.mock("@/modules/care/queries", () => ({
+  getCareOverview: async () => ({ plans: [] }),
+}));
 vi.mock("@/modules/dashboard/queries", () => ({
+  getDashboardSnapshot: mocks.snapshot,
+  getDashboardOfferItems: async () => [],
   getDashboardActivities: async () => ({
     consultations: [],
     enrollments: [],
@@ -648,30 +657,19 @@ it.each<Role>(["client", "admin"])(
   },
 );
 
-it("renders the client amounts, active package order and focused links while preserving every registration", async () => {
+it("keeps client home about activities while finance remains the authoritative ledger", async () => {
+  reads.length = 0;
   const html = renderToStaticMarkup(await ClientPage());
-  expect(html).toContain("4 dostępnych wejść · 2 zarezerwowanych");
-  expect(html).toContain("340,00");
-  expect(html).toContain("3 dostępnych · 0 zarezerwowanych · 1 wykorzystanych");
-  expect(html).toContain(
-    'href="/app/finance?package=package-new#package-package-new"',
-  );
-  expect(html).toContain(
-    'href="/app/finance?package=package-old#package-package-old"',
-  );
-  expect(html.lastIndexOf("Nowszy aktywny")).toBeLessThan(
-    html.lastIndexOf("Starszy aktywny"),
-  );
-  // Expiry does not hide the outstanding balance on this package.
-  expect(html).toContain("Wygasły");
-  expect(html).not.toContain("Anulowany");
-  expect(
-    html.match(/class="list-row [^"]*" href="\/app\/walks\//g),
-  ).toHaveLength(6);
-  expect(html).toContain("Historia zgłoszeń");
-  expect(html).toContain("Rozliczenie po rezygnacji do uzgodnienia");
-  expect(html).toContain("Do zwrotu:");
+  expect(reads).toEqual([]);
+  expect(html).toContain("Zalecenia od Asi");
+  expect(html).toContain("Pomysł na kolejne spotkanie");
+  expect(html).toContain("Bieżące zgłoszenia");
   expect(html).toContain("Organizator odwołał spacer: Park");
+  expect(html).not.toContain("Do zapłaty");
+  expect(html).not.toContain("Do zwrotu");
+  expect(html).not.toContain("Rozliczenie po rezygnacji do uzgodnienia");
+  expect(html).not.toContain("Wasze pakiety i rozliczenia");
+  expect(html).not.toContain("340,00");
 });
 
 it("retains the review of a cancelled paid consultation even when there is no charge or debt", async () => {
@@ -706,9 +704,9 @@ it("retains the review of a cancelled paid consultation even when there is no ch
     }),
   ]);
   const html = renderToStaticMarkup(await ClientPage());
-  expect(html).toContain("Wpłata 100,00");
-  expect(html).toContain("wymaga sprawdzenia");
-  expect(html).toContain("Otwórz rozliczenia →");
+  expect(html).not.toContain("Wpłata 100,00");
+  expect(html).not.toContain("wymaga sprawdzenia");
+  expect(html).toContain("Zalecenia od Asi");
 });
 
 it("removes the review only after the existing model reports a closed and fully refunded course", async () => {

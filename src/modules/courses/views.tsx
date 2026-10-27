@@ -27,6 +27,7 @@ import type { BookingChoices } from "@/modules/calendar/booking-queries";
 import styles from "./courses.module.css";
 import { CourseBalanceSummary, CourseBilling } from "./billing";
 import { CourseAdminNavigation, CourseDisclosure } from "./course-disclosure";
+import { VoiceNotePlaceholder } from "../../components/voice-note-placeholder";
 
 function CourseSupport({
   admin,
@@ -662,6 +663,7 @@ export function CourseDetailView({
                   ))}
                   {admin && (
                     <>
+                      <VoiceNotePlaceholder />
                       <details>
                         <summary>Obecności uczestników</summary>
                         <p className="muted">

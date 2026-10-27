@@ -9,6 +9,7 @@ import { NewPackageForm } from "./finance/package-form";
 import { PackageCard } from "./finance/package-card";
 import { PaymentRow } from "./finance/payment-row";
 import { FinancePager } from "./finance/pagination";
+import { PaymentRecoveryProvider } from "./finance/payment-recovery";
 import {
   OnlinePaymentAttempts,
   OnlinePaymentTestNotice,
@@ -49,7 +50,7 @@ export function FinanceView({
   const reviewPayments = data.payments.filter(
     (payment) => payment.needsReview,
   ).length;
-  return (
+  const content = (
     <div className={styles.root}>
       {onlinePayments?.enabled &&
         onlinePayments.environment &&
@@ -337,5 +338,19 @@ export function FinanceView({
         </>
       )}
     </div>
+  );
+  return admin ? (
+    <PaymentRecoveryProvider
+      visibleTargets={pages.charges.items
+        .filter(
+          (charge) =>
+            charge.canPay && charge.dueCents > 0 && !charge.reviewReason,
+        )
+        .map((charge) => `${charge.kind}:${charge.id}`)}
+    >
+      {content}
+    </PaymentRecoveryProvider>
+  ) : (
+    content
   );
 }

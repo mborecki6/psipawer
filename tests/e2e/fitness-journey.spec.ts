@@ -1091,17 +1091,21 @@ test("fitness browser: concurrent stale scheduling preserves input, attendance c
     await page.goto("/admin/finance");
     const charge = page.locator(`#charge-fitness-${id}`);
     await expect(charge).toContainText("100,00");
-    await revealFor(
-      charge.getByRole("link", {
-        includeHidden: true,
-        name: "Odnotuj wpłatę w fitnessie →",
+    const form = charge.locator("form");
+    await revealFor(form.getByLabel("Otrzymana kwota (zł)", { exact: true }));
+    await expect(
+      form.getByLabel("Otrzymana kwota (zł)", { exact: true }),
+    ).toHaveValue("100,00");
+    await expect(form.locator('[name="target_kind"]')).toHaveValue("fitness");
+    await expect(form.locator('[name="target_id"]')).toHaveValue(id);
+    await expect(form.getByLabel("Metoda płatności")).toHaveValue("transfer");
+    await expect(
+      form.getByRole("button", {
+        name: "Odnotuj otrzymaną wpłatę",
         exact: true,
       }),
-    );
-    await charge
-      .getByRole("link", { name: "Odnotuj wpłatę w fitnessie →", exact: true })
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/admin/fitness/${id}`));
+    ).toBeEnabled();
+    await expect(page).toHaveURL(/\/admin\/finance(?:[?#]|$)/);
   } finally {
     await secondContext.close();
     await f.dispose();

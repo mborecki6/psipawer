@@ -6,6 +6,25 @@ import type {
 } from "@/modules/courses/types";
 import type { FitnessBalance } from "@/modules/fitness/types";
 import type { ServiceRequest } from "@/modules/service-requests/types";
+import type { Dog, Walk, Registration } from "@/lib/data/types";
+
+export type DashboardSnapshot = {
+  dogs: Pick<Dog, "id" | "name" | "breed" | "status">[];
+  walks: Pick<
+    Walk,
+    | "id"
+    | "type"
+    | "public_location"
+    | "status"
+    | "starts_at"
+    | "duration_minutes"
+    | "cancellation_reason"
+  >[];
+  registrations: Pick<
+    Registration,
+    "id" | "dog_id" | "walk_id" | "status" | "attendance"
+  >[];
+};
 
 export type DashboardConsultation = Pick<
   Consultation,

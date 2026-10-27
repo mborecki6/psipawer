@@ -97,6 +97,14 @@ Zrzuty, lokalne sesje i pełne logi pozostają w ignorowanych katalogach.
 
 ## Bieżąca iteracja
 
+[Obsługa w biegu — lokalnie, 27.10](iterations/2026-10-27-obsluga-w-biegu.md):
+niezależne propozycje biznesu i techniki, uzgodnione AC-01–16 i rozłączna własność
+finansów, placeholdera głosu oraz Home. Recenzent oceniał faktyczny diff z nowego
+kontekstu; zamknięto zbędne odczyty finansowe i utratę niepotwierdzonego klucza
+po odświeżeniu/paginacji. Koordynator wykonał przeklik obu ról i prawdziwe lokalne
+scenariusze Next/Supabase w Chromium/WebKit. Szczegółowe dowody oraz ograniczenia
+danych są w iteracji. Bez publikacji, migracji i aktywacji integracji.
+
 [Uproszczenia po audycie — lokalnie, 27.10](iterations/2026-10-27-uproszczenia-po-audycie.md):
 po zgodzie użytkownika uzgodniono AC-01–22; biznes doprecyzował wyjątki aktywnych
 zgłoszeń, technika realizowała trzy rozłączne zakresy, koordynator nawigację,

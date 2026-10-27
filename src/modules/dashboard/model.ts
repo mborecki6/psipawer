@@ -1,11 +1,40 @@
-import type { Snapshot } from "@/lib/data/types";
-import type { DashboardFinanceSummary } from "@/lib/data/finance-queries";
 import { labels } from "@/lib/domain";
 import { consultationLabels } from "@/modules/consultations/types";
 import { enrollmentLabels } from "@/modules/courses/types";
 import { fitnessLabels } from "@/modules/fitness/types";
 import { requestLabels } from "@/modules/service-requests/types";
-import type { DashboardActivities } from "./types";
+import type { DashboardActivities, DashboardSnapshot } from "./types";
+import type { OfferItem } from "@/modules/calendar-offer/types";
+
+export function dashboardSuggestions(
+  items: OfferItem[],
+  now: number,
+  registeredSources: ReadonlySet<string> = new Set(),
+) {
+  const seen = new Set<string>();
+  return items
+    .filter(
+      (item) =>
+        item.availability === "available" &&
+        ["eligible", "needs_dog", "qualification_required"].includes(
+          item.eligibility,
+        ) &&
+        Date.parse(item.starts_at) > now &&
+        !registeredSources.has(`${item.kind}:${item.source_id}`),
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(a.starts_at) - Date.parse(b.starts_at) ||
+        a.id.localeCompare(b.id),
+    )
+    .filter((item) => {
+      const key = `${item.kind}:${item.source_id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 2);
+}
 
 export type DashboardItem = {
   key: string;
@@ -16,29 +45,21 @@ export type DashboardItem = {
   href: string;
   action: string;
   open: boolean;
-  charges: DashboardFinanceSummary["charges"];
-  reviewPayments: DashboardFinanceSummary["reviewPayments"];
 };
-export function hasFinancialIssue(item: DashboardItem) {
-  return item.charges.length > 0 || item.reviewPayments.length > 0;
-}
-
 export function buildDashboardItems({
   snapshot,
   activities,
-  finance,
   now = Date.now(),
 }: {
-  snapshot: Snapshot;
+  snapshot: DashboardSnapshot;
   activities: DashboardActivities;
-  finance: DashboardFinanceSummary;
   now?: number;
 }) {
   const dogs = new Map(snapshot.dogs.map((dog) => [dog.id, dog.name]));
   const walks = new Map(snapshot.walks.map((walk) => [walk.id, walk]));
   const items: DashboardItem[] = [];
   function add(
-    item: Omit<DashboardItem, "charges" | "reviewPayments" | "dogName"> & {
+    item: Omit<DashboardItem, "dogName"> & {
       dogId: string;
     },
   ) {
@@ -46,8 +67,6 @@ export function buildDashboardItems({
     items.push({
       ...row,
       dogName: dogs.get(dogId) || "Pies",
-      charges: [],
-      reviewPayments: [],
     });
   }
   for (const registration of snapshot.registrations) {
@@ -147,58 +166,14 @@ export function buildDashboardItems({
       open: request.status === "open",
     });
   }
-  const keys = new Map(items.map((item) => [item.key, item]));
-  for (const charge of finance.charges) {
-    let item = keys.get(`${charge.kind}:${charge.id}`);
-    if (!item) {
-      item = {
-        key: `${charge.kind}:${charge.id}`,
-        dogName: charge.dogName,
-        service: charge.title,
-        startsAt: charge.date,
-        status: "Sprawa rozliczeniowa",
-        href: charge.href,
-        action: "Otwórz rozliczenie",
-        open: false,
-        charges: [],
-        reviewPayments: [],
-      };
-      items.push(item);
-      keys.set(item.key, item);
-    }
-    item.charges.push(charge);
-  }
-  for (const payment of finance.reviewPayments) {
-    // Match the original payment subject, never a name or shared walk URL.
-    let item = payment.sourceKey ? keys.get(payment.sourceKey) : undefined;
-    if (!item) {
-      item = {
-        key: payment.sourceKey || `payment:${payment.id}`,
-        dogName: payment.dogName,
-        service: payment.title,
-        startsAt: null,
-        status: "Wpłata wymaga sprawdzenia",
-        href: payment.href || "/app/finance",
-        action: "Sprawdź wpłatę",
-        open: false,
-        charges: [],
-        reviewPayments: [],
-      };
-      items.push(item);
-      keys.set(item.key, item);
-    }
-    item.reviewPayments.push(payment);
-  }
+  // The home page shows participation and next steps. Money, including
+  // exceptions on closed services, remains in the dedicated finance section.
   const current = items
-    .filter((item) => item.open || hasFinancialIssue(item))
+    .filter((item) => item.open)
     .sort(
       (a, b) =>
-        Number(hasFinancialIssue(b)) - Number(hasFinancialIssue(a)) ||
         (a.startsAt || "").localeCompare(b.startsAt || "") ||
         a.key.localeCompare(b.key),
     );
-  return {
-    current,
-    history: items.filter((item) => !item.open && !hasFinancialIssue(item)),
-  };
+  return { current, history: items.filter((item) => !item.open) };
 }

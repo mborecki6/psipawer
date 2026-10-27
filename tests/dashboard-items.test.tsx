@@ -1,9 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 import type { Snapshot, Walk, Registration } from "../src/lib/data/types";
-import type { DashboardFinanceSummary } from "../src/lib/data/finance-queries";
 import type { DashboardActivities } from "../src/modules/dashboard/types";
 vi.mock("@/lib/domain", async () => import("../src/lib/domain"));
+vi.mock(
+  "@/modules/calendar-offer/model",
+  async () => import("../src/modules/calendar-offer/model"),
+);
 vi.mock(
   "@/modules/consultations/types",
   async () => import("../src/modules/consultations/types"),
@@ -26,7 +29,7 @@ vi.mock(
 );
 import {
   buildDashboardItems,
-  hasFinancialIssue,
+  dashboardSuggestions,
 } from "../src/modules/dashboard/model";
 import { DashboardRegistrations } from "../src/modules/dashboard/views";
 
@@ -45,14 +48,7 @@ function setup() {
     fitness: [],
     requests: [],
   };
-  const finance: DashboardFinanceSummary = {
-    chargeCount: 0,
-    charges: [],
-    reviewPayments: [],
-    packages: [],
-    totals: { dueCents: 0, availableEntries: 0, reservedEntries: 0 },
-  };
-  return { snapshot, activities, finance, now };
+  return { snapshot, activities, now };
 }
 function walk(id: string, overrides: Partial<Walk> = {}): Walk {
   return {
@@ -225,144 +221,48 @@ it("keeps pending attendance after the walk ends and pending/waitlisted decision
   ).toContain("zamknięcie obecności");
 });
 
-it("keeps late cancellation debt, cancelled paid consultation, unsettled zero-debt course and refund visible", () => {
+it("keeps closed participation in history without creating a financial home feed", () => {
   const input = setup();
   input.snapshot.walks = [walk("late")];
   input.snapshot.registrations = [
     registration("late", { status: "cancelled_late" }),
   ];
-  input.activities.consultations = [
+  input.activities.enrollments = [
     {
       id: "cancelled",
       dog_id: "dog",
-      service_name: "Konsultacja",
+      course_id: "cycle",
       status: "cancelled",
-      starts_at: past,
       created_at: past,
-    },
-  ];
-  input.activities.enrollments = ["settlement", "refund"].map((id) => ({
-    id,
-    dog_id: "dog",
-    course_id: id,
-    status: "cancelled",
-    created_at: past,
-    courses: { title: id, service_name: "Kurs", status: "cancelled" },
-  }));
-  input.finance.charges = [
-    {
-      id: "late",
-      kind: "registration",
-      dogName: "Figa",
-      title: "Spacer",
-      date: past,
-      href: "/app/walks/late",
-      dueCents: 6000,
-    },
-    {
-      id: "settlement",
-      kind: "course",
-      dogName: "Figa",
-      title: "Kurs",
-      date: past,
-      href: "/app/courses/settlement?enrollment=settlement#rozliczenie-settlement",
-      dueCents: 0,
-      reviewReason: "settlement",
-      refundDueCents: 0,
-    },
-    {
-      id: "refund",
-      kind: "course",
-      dogName: "Figa",
-      title: "Kurs",
-      date: past,
-      href: "/app/courses/refund?enrollment=refund#rozliczenie-refund",
-      dueCents: 0,
-      reviewReason: "refund",
-      refundDueCents: 2500,
-    },
-  ];
-  input.finance.reviewPayments = [
-    {
-      id: "paid",
-      dogName: "Figa",
-      title: "Konsultacja",
-      href: "/app/consultations/cancelled",
-      paidAt: past,
-      amountCents: 10000,
-      sourceKey: "consultation:cancelled",
+      courses: { title: "Kurs", service_name: "Usługa", status: "cancelled" },
     },
   ];
   const result = buildDashboardItems(input);
-  expect(result.current).toHaveLength(4);
-  expect(result.current.every(hasFinancialIssue)).toBe(true);
-  expect(result.history).toEqual([]);
-  expect(
-    result.current.find((item) => item.key === "consultation:cancelled")
-      ?.status,
-  ).toBe("Odwołana");
+  expect(result.current).toEqual([]);
+  expect(result.history).toHaveLength(2);
   const html = renderToStaticMarkup(<DashboardRegistrations {...result} />);
-  expect(html).toContain("Do zapłaty: 60,00");
-  expect(html).toContain("Do zwrotu: 25,00");
-  expect(html).toContain("Rozliczenie po rezygnacji do uzgodnienia");
-  expect(html).toContain("Wpłata 100,00");
-  expect(html).not.toContain("Pozostałe bieżące");
+  expect(html).toContain('href="/app/walks/late"');
+  expect(html).toContain('href="/app/courses/cycle?enrollment=cancelled"');
+  expect(html).not.toMatch(/Do zapłaty|Do zwrotu|Sprawdź rozliczenie/);
 });
 
-it("never hides financial exceptions behind the ordinary preview limit and never presents unsettled amounts as final", () => {
+it("keeps the first four organizational next steps and makes the rest available", () => {
   const input = setup();
-  input.finance.charges = Array.from({ length: 8 }, (_, i) => ({
+  input.activities.requests = Array.from({ length: 7 }, (_, i) => ({
     id: String(i),
-    kind: "course" as const,
-    dogName: "Figa",
-    title: `Sprawa ${i}`,
-    date: past,
-    href: `/app/courses/${i}?enrollment=${i}`,
-    dueCents: 99999,
-    reviewReason: "settlement" as const,
+    dog_id: "dog",
+    service_id: "service",
+    service_name: `Spotkanie ${i}`,
+    status: "open",
+    created_at: past,
   }));
   const result = buildDashboardItems(input);
-  const html = renderToStaticMarkup(<DashboardRegistrations {...result} />);
-  expect(html.match(/Rozliczenie po rezygnacji do uzgodnienia/g)).toHaveLength(
-    8,
+  expect(result.current.map((item) => item.key)).toEqual(
+    Array.from({ length: 7 }, (_, i) => `request:${i}`),
   );
-  expect(html).not.toContain("999,99");
-  expect(html).not.toContain("Pozostałe bieżące zgłoszenia");
-});
-
-it("attaches a reviewed payment to its registration even when two dogs share a name and walk URL", () => {
-  const input = setup();
-  input.snapshot.dogs.push({
-    id: "second-dog",
-    name: "Figa",
-  } as Snapshot["dogs"][number]);
-  input.snapshot.walks = [walk("shared")];
-  input.snapshot.registrations = [
-    registration("first", { walk_id: "shared", status: "cancelled_on_time" }),
-    registration("second", {
-      walk_id: "shared",
-      dog_id: "second-dog",
-      status: "cancelled_on_time",
-    }),
-  ];
-  input.finance.reviewPayments = [
-    {
-      id: "payment",
-      dogName: "Figa",
-      title: "Spacer",
-      href: "/app/walks/shared",
-      paidAt: past,
-      amountCents: 6000,
-      sourceKey: "registration:second",
-    },
-  ];
-  const result = buildDashboardItems(input);
-  expect(result.current.map((item) => item.key)).toEqual([
-    "registration:second",
-  ]);
-  expect(result.history.map((item) => item.key)).toEqual([
-    "registration:first",
-  ]);
+  const html = renderToStaticMarkup(<DashboardRegistrations {...result} />);
+  expect(html).toContain("Pozostałe bieżące zgłoszenia (3)");
+  expect(html).toContain("Spotkanie 6");
 });
 
 it("moves closed and settled services to history, including a fully refunded cancellation", () => {
@@ -413,9 +313,7 @@ it("moves closed and settled services to history, including a fully refunded can
   expect(result.current).toEqual([]);
   expect(result.history).toHaveLength(5);
   const html = renderToStaticMarkup(<DashboardRegistrations {...result} />);
-  expect(html).toContain(
-    "Nie masz teraz otwartych zgłoszeń ani spraw rozliczeniowych.",
-  );
+  expect(html).toContain("Nie masz teraz otwartych zgłoszeń.");
   expect(html).toContain("Historia zgłoszeń (5)");
   expect(html).toContain('href="/app/consultations/c"');
   expect(html).toContain('href="/app/service-requests?filter=history"');
@@ -427,4 +325,64 @@ it("shows a true empty state without calling it a completed collaboration", () =
   const html = renderToStaticMarkup(<DashboardRegistrations {...result} />);
   expect(html).toContain("Nie masz jeszcze zgłoszeń.");
   expect(html).not.toContain("Nie masz teraz otwartych");
+});
+
+it("offers two different upcoming available activities, excluding own multi-dog registrations and unavailable offers", () => {
+  const make = (id: string, overrides = {}) =>
+    ({
+      id,
+      source_id: id,
+      kind: "course",
+      category: "group",
+      title: id,
+      starts_at: "2030-01-11T12:00:00Z",
+      ends_at: "2030-01-11T13:00:00Z",
+      public_location: "Park",
+      availability: "available",
+      booking_mode: "approval",
+      eligibility: "eligible",
+      session_ordinal: 1,
+      sessions_count: 5,
+      ...overrides,
+    }) as import("../src/modules/calendar-offer/types").OfferItem;
+  const result = dashboardSuggestions(
+    [
+      make("later", { starts_at: "2030-01-15T12:00:00Z" }),
+      make("first"),
+      make("duplicate", {
+        source_id: "first",
+        starts_at: "2030-01-18T12:00:00Z",
+      }),
+      make("full", { availability: "full" }),
+      make("closed", { availability: "closed" }),
+      make("cancelled", { availability: "cancelled" }),
+      make("past", { starts_at: past }),
+      make("bad-date", { starts_at: "invalid" }),
+      make("registered", { eligibility: "registered" }),
+      make("invited", { eligibility: "invitation_only" }),
+      make("own", { starts_at: "2030-01-10T13:00:00Z" }),
+    ],
+    now,
+    new Set(["course:own"]),
+  );
+  expect(result.map((item) => item.id)).toEqual(["first", "later"]);
+});
+
+it("does not claim qualification or a dog profile that is still needed to join", () => {
+  const item = {
+    id: "walk",
+    source_id: "walk",
+    kind: "walk",
+    category: "group",
+    title: "Wspólny spacer",
+    starts_at: "2030-01-11T12:00:00Z",
+    ends_at: "2030-01-11T13:00:00Z",
+    public_location: "Park",
+    availability: "available",
+    booking_mode: "automatic",
+    eligibility: "qualification_required",
+    session_ordinal: null,
+    sessions_count: null,
+  } as import("../src/modules/calendar-offer/types").OfferItem;
+  expect(dashboardSuggestions([item], now)).toHaveLength(1);
 });

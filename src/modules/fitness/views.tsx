@@ -16,6 +16,7 @@ import {
 import { FitnessCommandForm, FitnessScheduleForm } from "./forms";
 import { FitnessBilling } from "./billing";
 import { FitnessCarePanel } from "./care-panel";
+import { VoiceNotePlaceholder } from "../../components/voice-note-placeholder";
 import type { FitnessCarePage } from "@/modules/care/types";
 import styles from "./fitness.module.css";
 export function FitnessListView({
@@ -407,6 +408,7 @@ export function FitnessDetailView({
                   )}
                 {admin && (
                   <>
+                    <VoiceNotePlaceholder />
                     <ProgressiveDetails
                       label="Ustal lub zmień termin spotkania"
                       initiallyOpen={

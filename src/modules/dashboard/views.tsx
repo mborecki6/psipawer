@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { ProgressiveDetails } from "@/components/progressive-details";
-import { dateLabel, money } from "@/lib/domain";
-import { hasFinancialIssue, type DashboardItem } from "./model";
+import { dateLabel } from "@/lib/domain";
+import type { DashboardItem } from "./model";
+import type { CareSummary } from "@/modules/care/types";
+import type { OfferItem } from "@/modules/calendar-offer/types";
+import { offerBookingNote, offerHref } from "@/modules/calendar-offer/model";
 import styles from "./dashboard.module.css";
 
 function DashboardRow({ item }: { item: DashboardItem }) {
-  const financial = hasFinancialIssue(item);
-  const href =
-    item.charges[0]?.href || item.reviewPayments[0]?.href || item.href;
   return (
-    <Link className={`list-row ${styles.row}`} href={href}>
+    <Link className={`list-row ${styles.row}`} href={item.href}>
       <div className={`list-main ${styles.main}`}>
         <strong>{item.dogName}</strong>
         <span>{item.service}</span>
@@ -21,28 +21,8 @@ function DashboardRow({ item }: { item: DashboardItem }) {
               : "Bez zaplanowanego terminu"}
         </span>
         <span>{item.status}</span>
-        {item.charges.map((charge) => (
-          <span className={styles.finance} key={`${charge.kind}:${charge.id}`}>
-            {charge.reviewReason === "settlement"
-              ? "Rozliczenie po rezygnacji do uzgodnienia"
-              : charge.refundDueCents && charge.refundDueCents > 0
-                ? `Do zwrotu: ${money(charge.refundDueCents)}`
-                : charge.dueCents > 0
-                  ? `Do zapłaty: ${money(charge.dueCents)}`
-                  : "Rozliczenie wymaga sprawdzenia"}
-          </span>
-        ))}
-        {item.reviewPayments.length > 0 && (
-          <span className={styles.finance}>
-            {item.reviewPayments.length === 1
-              ? `Wpłata ${money(item.reviewPayments[0].amountCents)} wymaga sprawdzenia`
-              : `Wpłaty wymagają sprawdzenia: ${item.reviewPayments.length}`}
-          </span>
-        )}
       </div>
-      <span className={styles.action}>
-        {financial ? "Sprawdź rozliczenie" : item.action} →
-      </span>
+      <span className={styles.action}>{item.action} →</span>
     </Link>
   );
 }
@@ -54,12 +34,8 @@ export function DashboardRegistrations({
   current: DashboardItem[];
   history: DashboardItem[];
 }) {
-  // Financial exceptions always remain visible. Only ordinary open cases use
-  // a compact preview, with every remaining case mounted in the disclosure.
-  const financial = current.filter(hasFinancialIssue);
-  const ordinary = current.filter((item) => !hasFinancialIssue(item));
-  const preview = [...financial, ...ordinary.slice(0, 4)];
-  const remaining = ordinary.slice(4);
+  const preview = current.slice(0, 4);
+  const remaining = current.slice(4);
   return (
     <article className="card">
       <div className="card-head">
@@ -74,7 +50,7 @@ export function DashboardRegistrations({
         {!current.length && (
           <p>
             {history.length
-              ? "Nie masz teraz otwartych zgłoszeń ani spraw rozliczeniowych."
+              ? "Nie masz teraz otwartych zgłoszeń."
               : "Nie masz jeszcze zgłoszeń."}
           </p>
         )}
@@ -104,9 +80,87 @@ export function DashboardRegistrations({
             <Link href="/app/service-requests?filter=history">
               Prośby o termin
             </Link>
-            <Link href="/app/finance">Rozliczenia i wpłaty</Link>
           </nav>
         </ProgressiveDetails>
+      </div>
+    </article>
+  );
+}
+
+export function DashboardCare({ plans }: { plans: CareSummary[] }) {
+  return (
+    <article className={`card ${styles.valueCard}`}>
+      <div className="card-head">
+        <h2>Zalecenia od Asi</h2>
+        <Link className="ghost-button" href="/app/care">
+          Wszystkie →
+        </Link>
+      </div>
+      <div className="card-body">
+        {plans.slice(0, 2).map((plan) => (
+          <Link
+            key={plan.id}
+            className={`list-row ${styles.row}`}
+            href={`/app/dogs/${plan.dog_id}/care?plan=${plan.id}`}
+          >
+            <div className={`list-main ${styles.main}`}>
+              <span>{plan.dog_name}</span>
+              <strong>{plan.title}</strong>
+            </div>
+            <span className={styles.action}>Wróć do planu →</span>
+          </Link>
+        ))}
+        {!plans.length && (
+          <p className="muted">
+            Po spotkaniu pojawią się tu wskazówki od Asi — żeby łatwiej było
+            wrócić do nich w domu.
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+export function DashboardSuggestions({ items }: { items: OfferItem[] }) {
+  return (
+    <article className={`card ${styles.valueCard}`}>
+      <div className="card-head">
+        <h2>Pomysł na kolejne spotkanie</h2>
+      </div>
+      <div className="card-body">
+        {items.map((item) => (
+          <div
+            className={styles.suggestion}
+            key={`${item.kind}:${item.source_id}`}
+          >
+            <span className={styles.eyebrow}>
+              {item.category === "group"
+                ? "Wspólnie w grupie"
+                : "Indywidualnie"}
+            </span>
+            <h3>{item.title}</h3>
+            <p>
+              {dateLabel(item.starts_at)}
+              {item.public_location ? ` · ${item.public_location}` : ""}
+            </p>
+            <p className={styles.offerNote}>{offerBookingNote(item)}</p>
+            <Link className="text-button" href={offerHref(item)}>
+              Sprawdź zajęcia →
+            </Link>
+          </div>
+        ))}
+        {!items.length && (
+          <p className="muted">
+            Masz ochotę spróbować czegoś nowego? Poznaj zajęcia i znajdź coś dla
+            Was.
+          </p>
+        )}
+        <Link
+          className="secondary-button"
+          href={items.length ? "/app/calendar/offer" : "/app/services"}
+        >
+          {items.length ? "Zobacz wszystkie zajęcia →" : "Poznaj ofertę →"}
+        </Link>
       </div>
     </article>
   );

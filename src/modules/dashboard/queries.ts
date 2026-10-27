@@ -1,6 +1,7 @@
 import "server-only";
 import { requireSession } from "@/lib/auth/session";
 import { allRows } from "@/lib/data/queries";
+import type { OfferItem } from "@/modules/calendar-offer/types";
 import type {
   DashboardActivities,
   DashboardConsultation,
@@ -8,7 +9,57 @@ import type {
   DashboardCourseSession,
   DashboardFitness,
   DashboardRequest,
+  DashboardSnapshot,
 } from "./types";
+
+export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
+  const { db } = await requireSession("client");
+  const [dogs, walks, registrations] = await Promise.all([
+    allRows<DashboardSnapshot["dogs"][number]>((from, to) =>
+      db
+        .from("dogs")
+        .select("id,name,breed,status")
+        .order("name")
+        .order("id")
+        .range(from, to),
+    ),
+    allRows<DashboardSnapshot["walks"][number]>((from, to) =>
+      db
+        .from("walks")
+        .select(
+          "id,type,public_location,status,starts_at,duration_minutes,cancellation_reason",
+        )
+        .order("starts_at")
+        .order("id")
+        .range(from, to),
+    ),
+    allRows<DashboardSnapshot["registrations"][number]>((from, to) =>
+      db
+        .from("walk_registrations")
+        .select("id,dog_id,walk_id,status,attendance")
+        .order("created_at")
+        .order("id")
+        .range(from, to),
+    ),
+  ]);
+  return { dogs, walks, registrations };
+}
+
+export async function getDashboardOfferItems(now: string) {
+  const { db } = await requireSession("client");
+  const until = new Date(Date.parse(now) + 31 * 86400000).toISOString();
+  const items = await allRows<OfferItem>((from, to) =>
+    db
+      .rpc("calendar_offer", { p_from: now, p_to: until }, { get: true })
+      .eq("availability", "available")
+      .in("eligibility", ["eligible", "needs_dog", "qualification_required"])
+      .order("starts_at")
+      .order("kind")
+      .order("id")
+      .range(from, to),
+  );
+  return items;
+}
 
 export async function getDashboardActivities(): Promise<DashboardActivities> {
   // Use the guardian's verified client throughout; RLS remains the authority.

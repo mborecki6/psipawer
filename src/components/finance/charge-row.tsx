@@ -10,19 +10,13 @@ import { shortDate } from "./format";
 import styles from "../finance.module.css";
 
 function PaymentForm({ charge }: { charge: FinanceCharge }) {
-  if (charge.kind === "fitness")
-    return (
-      <Link className="primary-button" href={charge.href}>
-        Odnotuj wpłatę w fitnessie →
-      </Link>
-    );
-  if (charge.kind === "course")
-    return (
-      <Link className="primary-button" href={charge.href}>
-        Odnotuj wpłatę w kursie →
-      </Link>
-    );
-  return <PaymentEntryForm charge={charge} requestId={crypto.randomUUID()} />;
+  return (
+    <PaymentEntryForm
+      charge={charge}
+      requestId={crypto.randomUUID()}
+      compact={charge.kind === "course" || charge.kind === "fitness"}
+    />
+  );
 }
 
 export function ChargeRow({
@@ -38,6 +32,7 @@ export function ChargeRow({
   onlinePaymentEnvironment?: "sandbox" | "simulator" | "live" | null;
   onlinePaymentPreview?: boolean;
 }) {
+  const cyclePayment = charge.kind === "course" || charge.kind === "fitness";
   return (
     <article className={styles.row} id={`charge-${charge.kind}-${charge.id}`}>
       <div className={styles.rowMain}>
@@ -97,7 +92,23 @@ export function ChargeRow({
           </Link>
         </p>
       )}
-      {charge.paidCents > 0 && !charge.reviewReason && (
+      {cyclePayment && !charge.reviewReason && (
+        <dl className={styles.chargeBalance} aria-label="Saldo należności">
+          <div>
+            <dt>Aktualna należność</dt>
+            <dd>{money(charge.amountCents)}</dd>
+          </div>
+          <div>
+            <dt>Wpłacono</dt>
+            <dd>{money(charge.paidCents)}</dd>
+          </div>
+          <div>
+            <dt>Pozostało</dt>
+            <dd>{money(charge.dueCents)}</dd>
+          </div>
+        </dl>
+      )}
+      {!cyclePayment && charge.paidCents > 0 && !charge.reviewReason && (
         <p className={styles.rowNote}>
           Wpłacono {money(charge.paidCents)} z {money(charge.amountCents)}.
           Pozostało {money(charge.dueCents)}.
@@ -138,16 +149,10 @@ export function ChargeRow({
         )}
       {admin &&
         charge.canPay &&
-        ["course", "fitness"].includes(charge.kind) && (
-          <p className={styles.rowNote}>
-            <PaymentForm charge={charge} />
-          </p>
-        )}
-      {admin &&
-        charge.canPay &&
-        !["course", "fitness"].includes(charge.kind) && (
+        charge.dueCents > 0 &&
+        !charge.reviewReason && (
           <Details
-            title="Rozlicz należność"
+            title={cyclePayment ? "Odnotuj wpłatę" : "Rozlicz należność"}
             icon={<Wallet aria-hidden="true" />}
           >
             <div
@@ -158,7 +163,9 @@ export function ChargeRow({
               }
             >
               <div>
-                <h4 className={styles.actionHeading}>Otrzymana wpłata</h4>
+                {!cyclePayment && (
+                  <h4 className={styles.actionHeading}>Otrzymana wpłata</h4>
+                )}
                 <p className={styles.formHint}>
                   Wpisz kwotę, którą opiekun już zapłacił. Możesz odnotować
                   także część należności.

@@ -25,8 +25,8 @@ vi.mock("@/lib/data/finance-actions", () => ({
   cancelPackage: vi.fn(),
 }));
 vi.mock("@/components/action-form", () => ({
-  ActionForm: ({ children }: { children: ReactNode }) =>
-    createElement("form", null, children),
+  ActionForm: ({ children, label }: { children: ReactNode; label: string }) =>
+    createElement("form", null, children, createElement("button", null, label)),
   Field: () => null,
 }));
 import { FitnessBilling } from "../src/modules/fitness/billing";
@@ -128,6 +128,61 @@ it("adds a frozen course debt and a focused destination using the enrollment gua
   });
   expect(result.totals.dueCents).toBe(6000);
 });
+it("records fitness receipts within finance with amount, explicit method and a secondary note", () => {
+  const html = renderToStaticMarkup(
+    createElement(FinanceView, { data: data(), admin: true }),
+  );
+  expect(html).toContain("Odnotuj wpłatę</span>");
+  expect(html).toContain("Odnotuj otrzymaną wpłatę");
+  expect(html).toContain('name="target_kind" value="fitness"');
+  expect(html).toContain('name="target_id" value="enrollment"');
+  expect(html).toContain('value="60,00"');
+  expect(html).toContain("Metoda płatności");
+  expect(html).toContain("Dodaj notatkę (opcjonalnie)");
+  expect(html).toContain("Opis będzie widoczny także dla opiekuna.");
+  expect(html).not.toContain("Odnotuj wpłatę w fitnessie");
+});
+it("shows zero receipts and the current agreed fitness charge without exposing receipt entry to guardians", () => {
+  const initial = renderToStaticMarkup(
+    createElement(FinanceView, {
+      data: data({ ...balance, paid_cents: 0, due_cents: 10000 }),
+      admin: true,
+    }),
+  );
+  expect(initial).toMatch(/Aktualna należność<\/dt><dd>100,00\s*zł/);
+  expect(initial).toMatch(/Wpłacono<\/dt><dd>0,00\s*zł/);
+  expect(initial).toMatch(/Pozostało<\/dt><dd>100,00\s*zł/);
+  const agreed = renderToStaticMarkup(
+    createElement(FinanceView, {
+      data: data({
+        ...balance,
+        status: "cancelled",
+        settled_at: "2030-01-02T10:00:00Z",
+        charge_cents: 7000,
+        due_cents: 3000,
+      }),
+      admin: true,
+    }),
+  );
+  expect(agreed).toMatch(/Aktualna należność<\/dt><dd>70,00\s*zł/);
+  expect(agreed).toContain("Odnotuj otrzymaną wpłatę");
+  const guardian = renderToStaticMarkup(
+    createElement(FinanceView, { data: data(), admin: false }),
+  );
+  expect(guardian).not.toContain('name="target_kind"');
+  expect(guardian).not.toContain("Odnotuj otrzymaną wpłatę");
+});
+it("does not offer receipt entry for nonpayable or already paid fitness charges", () => {
+  for (const b of [
+    { ...balance, can_pay: false },
+    { ...balance, due_cents: 0, paid_cents: 10000 },
+  ]) {
+    const html = renderToStaticMarkup(
+      createElement(FinanceView, { data: data(b), admin: true }),
+    );
+    expect(html).not.toContain('name="target_kind"');
+  }
+});
 it("shows cancellation awaiting agreement without counting its provisional quote as debt", () => {
   const result = data({
     ...balance,
@@ -150,6 +205,7 @@ it("shows cancellation awaiting agreement without counting its provisional quote
   expect(html).toContain("Do uzgodnienia");
   expect(html).toContain("Do zapłaty i uzgodnienia");
   expect(html).not.toContain("Rozlicz należność");
+  expect(html).not.toContain("Odnotuj otrzymaną wpłatę");
 });
 it("shows the actual refund due as a review item and computes net retained receipts", () => {
   const result = data(
@@ -188,6 +244,7 @@ it("shows the actual refund due as a review item and computes net retained recei
   expect(html).toContain("10,00");
   expect(html).toContain("70,00");
   expect(html).toContain("Odnotuj pełny lub częściowy zwrot w fitnessie");
+  expect(html).not.toContain("Odnotuj otrzymaną wpłatę");
 });
 it("does not subtract full refunds twice or change original receipt amounts", () => {
   const result = data(

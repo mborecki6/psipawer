@@ -12,10 +12,6 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
-.main .finance {
-  color: var(--ink);
-  font-weight: 600;
-}
 .details {
   border-top: 1px solid var(--line);
   margin-top: 1rem;
@@ -34,4 +30,32 @@
 }
 .links a {
   text-decoration: underline;
+}
+.valueCard {
+  min-width: 0;
+}
+.suggestion {
+  min-width: 0;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.suggestion h3 {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.suggestion p {
+  margin: 0.4rem 0;
+  font-size: 0.85rem;
+}
+.suggestion .offerNote {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.eyebrow {
+  color: var(--brand-ink, var(--ink-soft));
+  font-size: 0.75rem;
+  font-weight: 650;
 }

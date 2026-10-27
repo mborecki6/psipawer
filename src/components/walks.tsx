@@ -32,6 +32,7 @@ import { getQualificationWarnings } from "@/lib/qualification";
 import { QualificationAlerts } from "./qualification-alert";
 import { ReopenRegistration } from "./reopen-registration";
 import { DetailsNavigation, ProgressiveDetails } from "./progressive-details";
+import { VoiceNotePlaceholder } from "./voice-note-placeholder";
 import styles from "./walks.module.css";
 export async function WalksList({ filter = "upcoming" }: { filter?: string }) {
   const { walks, registrations, role } = await getSnapshot();
@@ -640,6 +641,7 @@ export async function WalkDetail({ id }: { id: string }) {
 
       {role === "admin" ? (
         <>
+          <VoiceNotePlaceholder />
           {registrations}
           <ProgressiveDetails
             label="Informacje przed spacerem"
